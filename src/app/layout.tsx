@@ -1,42 +1,26 @@
-"use client";
-import "jsvectormap/dist/jsvectormap.css";
-import "flatpickr/dist/flatpickr.min.css";
-import "@/css/satoshi.css";
-import "@/css/style.css";
-import React, { useEffect, useState } from "react";
-import Loader from "@/components/common/Loader";
-import Header from "@/components/Header";
-import { ToastContainer } from "react-toastify";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Be_Vietnam_Pro } from 'next/font/google';
+import './globals.css';
 
-const queryClient = new QueryClient();
+import { SidebarProvider } from '@/context/SidebarContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 
+const beVietnam = Be_Vietnam_Pro({
+  subsets: ['vietnamese'], 
+  weight: ['200', '300', '400', '500'], 
+  display: 'swap',
+});
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    setTimeout(() => setLoading(false), 1000);
-  }, []);
-
   return (
-    <html lang="en">
-      <body suppressHydrationWarning={true}>
-      <QueryClientProvider client={queryClient}>
-        <ToastContainer/>
-        
-        <div className="dark:bg-boxdark-2 dark:text-bodydark">
-
-        
-        
-          {loading ? <Loader /> : children}
-        </div>
-        </QueryClientProvider>
+    <html lang="vi">
+      <body className={`${beVietnam.className} dark:bg-gray-900`}>
+        <ThemeProvider>
+          <SidebarProvider>{children}</SidebarProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
