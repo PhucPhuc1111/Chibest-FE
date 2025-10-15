@@ -2,7 +2,9 @@
 import { ThemeToggleButton } from "@/components/common/ThemeToggleButton";
 import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
+import Button from "@/components/ui/button/Button";
 import { useSidebar } from "@/context/SidebarContext";
+import { BoxCubeIcon, CalenderIcon, GridIcon, PieChartIcon } from "@/icons";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState ,useEffect,useRef} from "react";
@@ -19,6 +21,60 @@ const AppHeader: React.FC = () => {
       toggleMobileSidebar();
     }
   };
+type NavItem = {
+  name: string;
+  icon: React.ReactNode;
+  path?: string;
+  subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+};
+
+const navItems: NavItem[] = [
+  {
+    icon: <GridIcon />,
+    name: "Quản trị hệ thống",
+    subItems: [
+       { name: "Dashboard", path: "/", pro: false },
+      { name: "Chi nhánh", path: "/branch/branch-list", pro: false },
+      { name: "Quản lý nhân viên", path: "/system-management/user-list", pro: false },
+
+    ],
+  },
+  {
+    icon: <CalenderIcon />,
+    name: "Danh mục hàng hóa",
+    subItems: [
+      { name: "Kho hàng", path: "/warehouse/warehouse-list", pro: false },
+      { name: "Loại sản phẩm", path: "/category/category-list", pro: false },
+      { name: "Quy cách", path: "/unit/unit-list", pro: false },
+      { name: "Sản phẩm", path: "/product/product-list", pro: false },
+      { name: "Mã vạch- Nhãn sản phẩm", path: "/ean/ean-list", pro: false },
+
+    ],
+  },
+  {
+    icon: <BoxCubeIcon />,
+    name: "Quản lý kho",
+    subItems: [
+      { name: "Nhập kho", path: "/stockin/stockin-list", pro: false },
+      { name: "Chuyển hàng", path: "/move/move-list", pro: false },
+      { name: "Xóa tag", path: "/clear-tag/clear-tag-list", pro: false },
+    ],
+  },
+  {
+  
+    icon: <PieChartIcon />,
+    name: "Kiểm kê",
+    path:"/inventory/inventory-list",
+  },
+  {
+    icon: <PieChartIcon />,
+    name: "Báo cáo",
+    subItems: [
+      { name: "Đối soát", path: "/report/report-list", pro: false },]
+  },
+
+];
+
 
   const toggleApplicationMenu = () => {
     setApplicationMenuOpen(!isApplicationMenuOpen);
@@ -41,14 +97,17 @@ const AppHeader: React.FC = () => {
   }, []);
 
   return (
+    <div className="sticky top-0  w-full bg-white border-gray-200 z-99999 dark:border-gray-800 dark:bg-gray-900 lg:border-b">
+
+   
     <header className="sticky top-0 flex w-full bg-white border-gray-200 z-99999 dark:border-gray-800 dark:bg-gray-900 lg:border-b">
       <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
         <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
-          <button
-            className="items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-99999 dark:border-gray-800 lg:flex dark:text-gray-400 lg:h-11 lg:w-11 lg:border"
-            onClick={handleToggle}
-            aria-label="Toggle Sidebar"
-          >
+  <button
+    className="items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-99999 dark:border-gray-800 dark:text-gray-400 lg:hidden"
+    onClick={handleToggle}
+    aria-label="Toggle Sidebar"
+  >
             {isMobileOpen ? (
               <svg
                 width="24"
@@ -65,6 +124,7 @@ const AppHeader: React.FC = () => {
                 />
               </svg>
             ) : (
+              
               <svg
                 width="16"
                 height="12"
@@ -82,23 +142,42 @@ const AppHeader: React.FC = () => {
             )}
             {/* Cross Icon */}
           </button>
+            <Link href="/" className="hidden lg:block">
+    <Image
+      width={50}
+      height={50}
+      className="dark:hidden"
+      src="/images/logo/logo.jpg"
+      alt="Logo"
+    />
+    <Image
+      width={70}
+      height={70}
+      className="hidden dark:block"
+      src="/images/logo/logo.jpg"
+      alt="Logo"
+    />
+  </Link>
 
-          <Link href="/" className="lg:hidden">
-          <Image
-            width={70}
-            height={70}
-            className="dark:hidden"
-            src="/images/logo/logo.jpg"
-            alt="Logo"
-          />
-          <Image
-            width={70}
-            height={70}
-            className="hidden dark:block"
-            src="/images/logo/logo.jpg"
-            alt="Logo"
-          />
-        </Link>
+  {/* Logo mobile: chỉ hiện trên màn hình nhỏ */}
+  <Link href="/" className="lg:hidden">
+    <Image
+      width={70}
+      height={70}
+      className="dark:hidden"
+      src="/images/logo/logo.jpg"
+      alt="Logo"
+    />
+    <Image
+      width={70}
+      height={70}
+      className="hidden dark:block"
+      src="/images/logo/logo.jpg"
+      alt="Logo"
+    />
+  </Link>
+
+        
 
 
           <button
@@ -159,7 +238,7 @@ const AppHeader: React.FC = () => {
         <div
           className={`${
             isApplicationMenuOpen ? "flex" : "hidden"
-          } items-center justify-between w-full gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
+          } items-center justify-between w-full gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none` }
         >
           <div className="flex items-center gap-2 2xsm:gap-3">
             {/* <!-- Dark Mode Toggler --> */}
@@ -174,7 +253,42 @@ const AppHeader: React.FC = () => {
     
         </div>
       </div>
-    </header>
+      
+    </header> 
+    <nav className="hidden lg:flex flex-row  items-center bg-amber-100 dark:text-brand-500 dark:bg-gray-900">
+  {navItems.map((nav) =>
+    nav.subItems ? (
+      <div key={nav.name} className="relative group text-sm">
+        <button className="flex items-center gap-1 px-3 py-2 hover:text-brand-500 hover:bg-white dark:hover:bg-gray-800 rounded">
+          {nav.icon}
+          <span>{nav.name}</span>
+          <svg className="w-4 h-4 ml-1" viewBox="0 0 20 20"><path d="M5.5 8l4.5 4 4.5-4" stroke="currentColor" fill="none"/></svg>
+        </button>
+        <div
+          className="absolute left-0 top-full mt-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all bg-white dark: dark:bg-gray-900 shadow-lg rounded z-50 min-w-[180px]"
+        >
+          {nav.subItems.map(sub => (
+            <Link key={sub.name} href={sub.path} className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800">
+              {sub.name}
+            </Link>
+          ))}
+        </div>
+      </div>
+    ) : (
+      nav.path && (
+        <Link key={nav.name} href={nav.path} className=" text-sm flex items-center gap-1 px-3 py-2  hover:text-brand-500 hover:bg-white dark:hover:bg-gray-800 rounded ">
+          {nav.icon}
+          <span>{nav.name}</span>
+        </Link>
+      )
+    )
+  )}
+</nav>
+   </div>
+
+
+  
+ 
   );
 };
 

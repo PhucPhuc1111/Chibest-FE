@@ -1,7 +1,11 @@
 @import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
-
+.ant-table-thead > tr > th {
+  background: #f1f5f9 !important; 
+  color: #1e293b !important;      
+  font-weight: 600;
+}
 @theme {
   --font-*: initial;
   --font-outfit: Outfit, sans-serif;
