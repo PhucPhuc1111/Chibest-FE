@@ -22,6 +22,7 @@ export default function Page() {
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [modalText, setModalText] = useState('Content of the modal');
   const [formCreate] = Form.useForm();
   const [formEdit] = Form.useForm();
@@ -32,18 +33,18 @@ export default function Page() {
     setOpenCreate(true);
     formCreate.resetFields();
   };
-
+ 
   const handleCreateOk = () => {
     formCreate
       .validateFields()
-      .then(values => {
+      .then(() => {
         setModalText('Đã tạo thành công!');
         setConfirmLoading(true);
         setTimeout(() => {
           setOpenCreate(false);
           setConfirmLoading(false);
         }, 1000);
-        // Xử lý lưu dữ liệu tạo mới ở đây
+        
       })
       .catch(() => {});
   };
@@ -62,6 +63,7 @@ export default function Page() {
   const handleEditOk = () => {
     formEdit
       .validateFields()
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       .then(values => {
         setModalText('Đã lưu thành công!');
         setConfirmLoading(true);

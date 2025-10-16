@@ -2,7 +2,6 @@
 import { ThemeToggleButton } from "@/components/common/ThemeToggleButton";
 import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
-import Button from "@/components/ui/button/Button";
 import { useSidebar } from "@/context/SidebarContext";
 import { BoxCubeIcon, CalenderIcon, GridIcon, PieChartIcon } from "@/icons";
 import Image from "next/image";
