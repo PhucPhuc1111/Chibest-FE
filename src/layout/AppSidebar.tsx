@@ -36,6 +36,7 @@ const navItems: NavItem[] = [
       { name: "Quản lý nhân viên", path: "/system-management/user-list", pro: false },
 
     ],
+     path: "/calendar",
   },
   {
     icon: <CalenderIcon />,
