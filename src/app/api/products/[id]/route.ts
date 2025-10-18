@@ -4,11 +4,14 @@ import { GET as getAll } from "../route";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } 
 ) {
-  const allResponse = await getAll(req);
+  const { id } = await context.params; 
+
+  const allResponse = await getAll(new Request("http://local"));
   const allProducts = (await allResponse.json()) as Product[];
-  const found = allProducts.find((p) => p.id === params.id);
+
+  const found = allProducts.find((p) => p.id === id);
 
   if (!found) {
     return NextResponse.json({ message: "Not found" }, { status: 404 });
