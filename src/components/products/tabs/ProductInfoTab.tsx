@@ -2,7 +2,7 @@
 
 import { Button, Descriptions, Tag } from "antd";
 import type { Product, Variant } from "@/types/product";
-
+import { Image } from 'antd';
 interface Props {
   master: Product;
   variant: Variant;
@@ -15,12 +15,19 @@ export default function ProductInfoTab({ master, variant }: Props) {
     <div className="bg-white p-3 rounded-md">
       <div className="flex gap-4">
         {/* Ảnh sản phẩm */}
-        <img
+         <Image.PreviewGroup
+            items={[data.image]} // có thể thêm nhiều ảnh sau này
+          >
+        <Image
           src={data.image}
           alt={data.name}
-          className="w-[96px] h-[112px] rounded-md object-cover border border-gray-200"
+          // className="w-[96px] h-[112px] rounded-md object-cover border border-gray-200"
+           width={96}
+          height={112}
+          className="rounded-md object-cover border border-gray-200 cursor-pointer"
+              preview={{ mask: "Xem ảnh" }}
         />
-
+</Image.PreviewGroup>
         {/* Thông tin chi tiết */}
         <div className="flex-1">
           {/* Tên + thuộc tính */}

@@ -742,3 +742,10 @@ span.flatpickr-weekday,
   opacity: 0.8;
   cursor: grabbing; /* Changes the cursor to indicate dragging */
 }
+.ant-modal-root,
+.ant-modal-wrap {
+  z-index: 100000 !important;
+}
+.ant-modal-mask {
+  z-index: 99999 !important;
+}
