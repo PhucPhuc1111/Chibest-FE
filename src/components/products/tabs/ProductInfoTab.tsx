@@ -16,7 +16,7 @@ export default function ProductInfoTab({ master, variant }: Props) {
       <div className="flex gap-4">
         {/* Ảnh sản phẩm */}
          <Image.PreviewGroup
-            items={[data.image]} // có thể thêm nhiều ảnh sau này
+            items={[data.image]} 
           >
         <Image
           src={data.image}
