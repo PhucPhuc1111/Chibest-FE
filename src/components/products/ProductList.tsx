@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo,useState } from "react";
 import { useProductStore } from "@/stores/useProductStore";
-import { Button, DatePicker, Input, Select, Table ,Skeleton} from "antd";
+import { Button, DatePicker, Input, Select, Table ,Skeleton,Dropdown} from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { SearchOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import SubVariantTable from "./SubVariantTable";
 import type { Product } from "@/types/product";
 const { RangePicker } = DatePicker;
+import ModalCreateProduct from "./modals/ModalCreateProduct";
+import ModalCreateService from "./modals/ModalCreateService";
+import ModalCreateCombo from "./modals/ModalCreateCombo";
 
 export default function ProductList() {
   const {
@@ -20,6 +23,7 @@ export default function ProductList() {
     filters,
   } = useProductStore();
 
+  const [openType, setOpenType] = useState<"product" | "service" | "combo" | null>(null);
   // fetch data mỗi khi filter đổi
   useEffect(() => {
     getAllProducts();
@@ -118,7 +122,24 @@ export default function ProductList() {
       render: () => "0 ngày",
     },
   ];
-
+//dropdownItem create 
+  const dropdownItems = [
+    {
+      key: "product",
+      label: "Hàng hóa",
+      onClick: () => setOpenType("product"),
+    },
+    {
+      key: "service",
+      label: "Dịch vụ",
+      onClick: () => setOpenType("service"),
+    },
+    {
+      key: "combo",
+      label: "Combo - đóng gói",
+      onClick: () => setOpenType("combo"),
+    },
+  ];
   return (
     <div className="flex gap-4">
       {/* Sidebar Filter */}
@@ -228,7 +249,12 @@ export default function ProductList() {
               Tổng: <b>{products.length.toLocaleString()}</b> hàng hoá
             </div>
             <div className="flex gap-2">
-              <Button type="primary">+ Tạo mới</Button>
+              <Dropdown
+                menu={{ items: dropdownItems }}
+                trigger={["hover"]}
+                placement="bottomRight"
+              ><Button type="primary">+ Tạo mới</Button></Dropdown>
+           
               <Button>Import file</Button>
               <Button>Export file</Button>
               
@@ -257,6 +283,9 @@ export default function ProductList() {
             )}
         </div>
       </section>
+      <ModalCreateProduct open={openType === "product"} onClose={() => setOpenType(null)} />
+      <ModalCreateService open={openType === "service"} onClose={() => setOpenType(null)} />
+      <ModalCreateCombo open={openType === "combo"} onClose={() => setOpenType(null)} />
     </div>
   );
 }

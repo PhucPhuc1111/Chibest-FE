@@ -163,7 +163,7 @@ const navItems: NavItem[] = [
   }, []);
   // ======== HEADER ========
   return (
-     <div className="sticky top-0 w-full bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 z-[99999] lg:border-b">
+     <div className="sticky top-0 w-full bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 z-[50] lg:border-b">
       {/* Header top row */}
       <header className="flex flex-col lg:flex-row w-full bg-white dark:bg-gray-900">
         <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 lg:justify-normal lg:border-b-0 lg:px-6 lg:py-4">
