@@ -103,7 +103,7 @@ const navItems: NavItem[] = [
       title: "Kho hàng",
       items: [
         { name: "Chuyển hàng", path: "/transfers" },
-        { name: "Kiểm kho", path: "/kho/demo2" },
+        { name: "Kiểm kho", path: "/stocktakes" },
         { name: "Xuất hủy", path: "/kho/demo3" },
       ],
     },
