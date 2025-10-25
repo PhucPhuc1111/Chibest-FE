@@ -11,7 +11,7 @@ type Payload =
   | { mode: "preset"; value: string }
   | { mode: "custom"; value: [string, string] };
 
-export default function StockDateFilter({
+export default function DateFilter({
   onChange,
 }: {
   onChange: (range: Payload) => void;
@@ -75,16 +75,16 @@ export default function StockDateFilter({
   );
 
   return (
-    <div>
-      <div className="text-[13px] font-semibold mb-1">Ngày tạo</div>
+    <div className=" ">
+      {/* <div className="text-[13px] font-semibold mb-1">Ngày tạo</div> */}
 
       <Radio.Group
         value={mode}
         onChange={(e) => setMode(e.target.value)}
-        className="flex flex-col space-y-2"
+        className="flex flex-col space-y-2 w-full "
       >
         {/* Radio 1: Preset (bảng nút trong dropdown) */}
-        <label className="flex items-center gap-2">
+        <label className="flex items-center gap-2 w-full ">
         <Radio value="preset">
           <Dropdown
             open={open}
@@ -93,10 +93,10 @@ export default function StockDateFilter({
             trigger={["click"]}
                     popupRender={() => presetPanel} // ✅ thay dropdownRender -> popupRender
           >
-            <Button className="w-[250px] h-9 rounded-lg border border-gray-300 bg-white
-                         flex items-center justify-center px-3 text-left
+            <Button className="w-[250px] h-9 rounded-lg border border-gray-300 
+                         flex items-center justify-center  text-left
                          hover:border-blue-400 hover:bg-blue-50 transition">
-              <p className="">{preset}</p>
+              <p className="text-gray-500">{preset}</p>
                <RightOutlined className=" text-gray-400 text-[10px]" />
             </Button>
           </Dropdown>
@@ -105,7 +105,7 @@ export default function StockDateFilter({
         {/* Radio 2: Custom (RangePicker 2 lịch) */}
         <label className="flex items-center gap-2">
         <Radio value="custom">
-             <div className="relative w-[250px]">
+             <div className="relative w-[250px] ">
         
             <RangePicker
               value={customRange ?? undefined}
