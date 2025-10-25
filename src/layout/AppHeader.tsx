@@ -80,7 +80,7 @@ const navItems: NavItem[] = [
       items: [
         { name: "Nhà cung cấp", path: "/suppliers" },
         { name: "Nhập hàng", path: "/PurchaseOrder" },
-        { name: "Trả hàng nhập", path: "/nhaphang/demo3" },
+        { name: "Trả hàng nhập", path: "/purchaseReturns" },
       ],
     },
   ];

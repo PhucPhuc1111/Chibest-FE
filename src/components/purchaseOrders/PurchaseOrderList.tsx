@@ -8,13 +8,13 @@ import {
   Input,
   Button,
   Select,
-//   DatePicker,
+Checkbox,
   Spin,
 } from "antd";
 import type { TableProps } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { usePurchaseOrderStore } from "@/stores/usePurchaseOrderStore";
-import type { PurchaseOrder, PurchaseOrderStatus } from "@/types/purchaseOrder";
+import type { PurchaseOrder } from "@/types/purchaseOrder";
 import PurchaseOrderDetail from "./PurchaseOrderDetail";
 import DateFilter from "../ui/DateFilter/DateFilter";
 // const { RangePicker } = DatePicker;
@@ -90,7 +90,7 @@ export default function PurchaseOrderList() {
 
         <div className="space-y-4">
           {/* Trạng thái */}
-          <div>
+          {/* <div>
             <div className="text-[13px] font-semibold mb-1">Trạng thái</div>
             <Select<PurchaseOrderStatus[]>
               mode="multiple"
@@ -105,8 +105,15 @@ export default function PurchaseOrderList() {
               ]}
               onChange={(v) => setFilters({ status: v && v.length ? v : undefined })}
             />
+          </div> */}
+        <div>
+            <div className="text-[13px] font-semibold mb-1">Trạng thái</div>
+            <div className="flex flex-col gap-2 text-[13px]">
+              <Checkbox defaultChecked> Phiếu tạm </Checkbox>
+              <Checkbox defaultChecked> Đã trả hàng </Checkbox>
+              <Checkbox> Đã hủy </Checkbox>
+            </div>
           </div>
-
           {/* Thời gian */}
           <div>
             <div className="text-[13px] font-semibold mb-1">Thời gian</div>
