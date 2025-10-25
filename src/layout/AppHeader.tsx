@@ -110,7 +110,7 @@ const navItems: NavItem[] = [
     {
       title: "Nhập hàng",
       items: [
-        { name: "Nhà cung cấp", path: "/nhaphang/demo1" },
+        { name: "Nhà cung cấp", path: "/suppliers" },
         { name: "Nhập hàng", path: "/nhaphang/demo2" },
         { name: "Trả hàng nhập", path: "/nhaphang/demo3" },
       ],
