@@ -34,26 +34,14 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Tổng quan",
-    // subItems: [
-    //    { name: "Dashboard", path: "/", pro: false },
-    //   { name: "Chi nhánh", path: "/branch/branch-list", pro: false },
-    //   { name: "Quản lý nhân viên", path: "/system-management/user-list", pro: false },
-
-    // ],
+ 
      path: "/",
   },
   {
     icon: <CalenderIcon />,
     name: "Hàng hóa",
       megaMenu: true,
-    // subItems: [
-    //   { name: "Kho hàng", path: "/warehouse/warehouse-list", pro: false },
-    //   { name: "Loại sản phẩm", path: "/category/category-list", pro: false },
-    //   { name: "Quy cách", path: "/unit/unit-list", pro: false },
-    //   { name: "Sản phẩm", path: "/product/product-list", pro: false },
-    //   { name: "Mã vạch- Nhãn sản phẩm", path: "/ean/ean-list", pro: false },
 
-    // ],
   
   },
    {
@@ -66,27 +54,7 @@ const navItems: NavItem[] = [
       name: "Khách hàng",
       path: "/customer/demo",
     },
-  // {
-  //   icon: <BoxCubeIcon />,
-  //   name: "Quản lý kho",
-  //   subItems: [
-  //     { name: "Nhập kho", path: "/stockin/stockin-list", pro: false },
-  //     { name: "Chuyển hàng", path: "/move/move-list", pro: false },
-  //     { name: "Xóa tag", path: "/clear-tag/clear-tag-list", pro: false },
-  //   ],
-  // },
-  // {
-  
-  //   icon: <PieChartIcon />,
-  //   name: "Kiểm kê",
-  //   path:"/inventory/inventory-list",
-  // },
-  // {
-  //   icon: <PieChartIcon />,
-  //   name: "Báo cáo",
-  //   subItems: [
-  //     { name: "Đối soát", path: "/report/report-list", pro: false },]
-  // },
+ 
 
 ];
 
@@ -111,7 +79,7 @@ const navItems: NavItem[] = [
       title: "Nhập hàng",
       items: [
         { name: "Nhà cung cấp", path: "/suppliers" },
-        { name: "Nhập hàng", path: "/nhaphang/demo2" },
+        { name: "Nhập hàng", path: "/PurchaseOrder" },
         { name: "Trả hàng nhập", path: "/nhaphang/demo3" },
       ],
     },

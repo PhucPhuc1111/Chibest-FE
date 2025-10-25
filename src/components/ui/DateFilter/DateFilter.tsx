@@ -96,7 +96,7 @@ export default function DateFilter({
             <Button className="w-[250px] h-9 rounded-lg border border-gray-300 
                          flex items-center justify-center  text-left
                          hover:border-blue-400 hover:bg-blue-50 transition">
-              <p className="">{preset}</p>
+              <p className="text-gray-500">{preset}</p>
                <RightOutlined className=" text-gray-400 text-[10px]" />
             </Button>
           </Dropdown>
