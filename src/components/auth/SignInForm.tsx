@@ -11,7 +11,6 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-// nếu người dùng đang đăng nhập thì chuyển hướng họ về trang chủ
 export default function SignInForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -38,37 +37,35 @@ export default function SignInForm() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
+    e.preventDefault();
+    setLoading(true);
 
-  try {
-    const res = await api.post("/account/login", formData);
-    const data = res.data.data;
-    const accessToken = data["access-token"];
-    const refreshToken = data["refresh-token"];
-    const userInfo = {
-      accountId: data["account-id"],
-      userName: data["user-name"],
-      email: data["email"],
-      role: data["role"],
-    };
-
-    // ✅ Lưu vào localStorage
-    localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
-    localStorage.setItem("userInfo", JSON.stringify(userInfo));
-
-    toast.success("Đăng nhập thành công!");
-    router.push("/");
-  } catch (error: any) {
-    console.error("Login failed:", error);
-    const message =
-      error.response?.data?.message || "Đăng nhập thất bại, vui lòng thử lại.";
-    toast.error(message);
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      const res = await api.post("/account/login", formData);
+      const data = res.data.data;
+      const accessToken = data["access-token"];
+      const refreshToken = data["refresh-token"];
+      const userInfo = {
+        accountId: data["account-id"],
+        userName: data["user-name"],
+        email: data["email"],
+        role: data["role"],
+      };
+      
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      toast.success("Đăng nhập thành công!");
+      router.push("/");
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      const message =
+        error.response?.data?.message || "Đăng nhập thất bại, vui lòng thử lại.";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   return (
