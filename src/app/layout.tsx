@@ -3,6 +3,7 @@ import './globals.css';
 
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import AuthCheck from '@/components/auth/AuthCheck';
 
 const beVietnam = Be_Vietnam_Pro({
   subsets: ['vietnamese'], 
@@ -19,7 +20,9 @@ export default function RootLayout({
     <html lang="vi">
       <body className={`${beVietnam.className} dark:bg-gray-900`}>
         <ThemeProvider>
-          <SidebarProvider>{children}</SidebarProvider>
+          <SidebarProvider>
+            <AuthCheck>{children}</AuthCheck>
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>
