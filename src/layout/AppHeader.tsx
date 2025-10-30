@@ -3,7 +3,7 @@ import { ThemeToggleButton } from "@/components/common/ThemeToggleButton";
 import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
-import { BoxCubeIcon, CalenderIcon, GridIcon, PieChartIcon } from "@/icons";
+import { BoxCubeIcon, CalenderIcon, GridIcon, PieChartIcon,DollarLineIcon } from "@/icons";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState ,useEffect,useRef} from "react";
@@ -32,11 +32,16 @@ type NavItem = {
     // ======== MAIN NAV ITEMS =========
 const navItems: NavItem[] = [
   {
-    icon: <GridIcon />,
+    icon: <DollarLineIcon />,
     name: "Tổng quan",
  
      path: "/",
   },
+  {
+      icon: <GridIcon />,
+      name: "Quản trị hệ thống",
+      megaMenu: true, // Change this to true
+    },
   {
     icon: <CalenderIcon />,
     name: "Hàng hóa",
@@ -54,6 +59,7 @@ const navItems: NavItem[] = [
       name: "Khách hàng",
       path: "/customer/demo",
     },
+    
  
 
 ];
@@ -84,9 +90,19 @@ const navItems: NavItem[] = [
       ],
     },
   ];
+const quanTriMegaMenu = [
+  {
+    title: "Quản lý hệ thống",
+    items: [
+      { name: "Chi nhánh", path: "/branch" },
+      { name: "Kho", path: "/warehouse" },
+      { name: "Tài khoản", path: "/account" },
+    ],
+  }
+];
 
   // ======== MEGA MENU COMPONENT =========
-  const renderMegaMenu = () => (
+  const renderMegaMenu = (menuData: typeof hangHoaMegaMenu | typeof quanTriMegaMenu) => (
     <div
       className="absolute left-0 top-full mt-2 bg-white dark:bg-gray-900 shadow-lg rounded-xl p-5 grid grid-cols-3 gap-8 w-[760px] z-50 border border-gray-200 dark:border-gray-700 transition-all"
       onMouseEnter={() => {
@@ -94,7 +110,7 @@ const navItems: NavItem[] = [
       }}
       onMouseLeave={() => setActiveMenu(null)}
     >
-      {hangHoaMegaMenu.map((group, idx) => (
+      {menuData.map((group, idx) => (
         <div key={idx}>
           <h4 className="font-semibold text-gray-700 dark:text-gray-300 text-sm mb-3 uppercase tracking-wide">
             {group.title}
@@ -244,7 +260,8 @@ const navItems: NavItem[] = [
             </button>
 
             {/* Render mega menu */}
-            {nav.megaMenu && activeMenu === nav.name && renderMegaMenu()}
+            {nav.megaMenu && activeMenu === nav.name && 
+              renderMegaMenu(nav.name === "Hàng hóa" ? hangHoaMegaMenu : quanTriMegaMenu)}
 
             {/* Normal submenu */}
             {nav.subItems && (
