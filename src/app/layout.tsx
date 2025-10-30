@@ -1,6 +1,6 @@
 import { Be_Vietnam_Pro } from 'next/font/google';
 import './globals.css';
-
+import '@ant-design/v5-patch-for-react-19';
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import AuthCheck from '@/components/auth/AuthCheck';
