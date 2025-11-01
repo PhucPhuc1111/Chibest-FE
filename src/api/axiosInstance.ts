@@ -9,6 +9,7 @@ baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || '/api',
   timeout: 15000, 
   headers: {
     'Content-Type': 'application/json',
+    // 'Content-Type': 'application/json-patch+json',
   },
 });
 
@@ -16,6 +17,10 @@ baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || '/api',
 api.interceptors.request.use(
   (config) => {
     
+  // if (config.data instanceof FormData) {
+  //     delete config.headers['Content-Type'];
+  //   }
+
    if (typeof window !== "undefined") {
   const token = localStorage.getItem("accessToken");
   if (token) {
@@ -35,7 +40,7 @@ api.interceptors.response.use(
     (response) => response, 
     (error) => {
        
-        if (error.response && error.response.status === 401) {
+        if (error.response && error.response.status === 401 && error.response.Code === 401) {
             console.error("Phiên làm việc hết hạn. Vui lòng đăng nhập lại.");
            
             // router.push('/login'); 

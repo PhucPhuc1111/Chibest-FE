@@ -67,7 +67,7 @@ export default function PurchaseOrderList() {
   }, [filters, getAll, messageApi]);
 
   const handleCreateNew = () => {
-    router.push("/PurchaseOrder/new");
+    router.push("/purchaseOrder/new");
   };
 
   const handleSearch = (value: string) => {

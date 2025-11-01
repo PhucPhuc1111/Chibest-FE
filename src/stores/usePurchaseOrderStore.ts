@@ -208,7 +208,12 @@ export const usePurchaseOrderStore = create<State & Actions>()(
       });
 
       try {
-        const res = await api.post("/api/purchase-order", payload);
+        // const res = await api.post("/api/purchase-order", payload);
+         const res = await api.post("/api/purchase-order", payload, {
+      headers: {
+        "Content-Type": "application/json-patch+json", 
+      },
+    });
         
         if (res.data["status-code"] === 200) {
           set((s) => {
@@ -229,5 +234,43 @@ export const usePurchaseOrderStore = create<State & Actions>()(
         return { success: false, message: "Tạo phiếu nhập thất bại. Vui lòng kiểm tra lại dữ liệu." };
       }
     },
+    // Thêm vào usePurchaseOrderStore.ts
+importFile: async (file: File) => {
+  set((s) => {
+    s.isLoading = true;
+    s.error = null;
+  });
+
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await api.post("/api/purchase-order/import", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    if (res.data["status-code"] === 200) {
+      set((s) => {
+        s.isLoading = false;
+      });
+      return { 
+        success: true, 
+        message: res.data.message || "Import file thành công!",
+        data: res.data.data 
+      };
+    } else {
+      set((s) => { s.isLoading = false; });
+      return { success: false, message: res.data.message || "Import file thất bại" };
+    }
+  } catch (err: any) {
+    set((s) => {
+      s.isLoading = false;
+      s.error = err instanceof Error ? err.message : "Import error";
+    });
+    return { success: false, message: "Import file thất bại. Vui lòng kiểm tra lại file." };
+  }
+},
   }))
 );
