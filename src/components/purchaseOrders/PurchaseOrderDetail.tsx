@@ -1,7 +1,8 @@
+// src/components/purchaseOrders/PurchaseOrderDetail.tsx
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { Tabs, Table, Input, Tag, Button, Select, DatePicker } from "antd";
+import { useEffect, useMemo, useState } from "react";
+import { Tabs, Table, Input, Tag, Button, Select, DatePicker, message } from "antd";
 import type { TabsProps, TableProps } from "antd";
 import type { PurchaseOrderItem } from "@/types/purchaseOrder";
 import { usePurchaseOrderStore } from "@/stores/usePurchaseOrderStore";
@@ -13,74 +14,127 @@ import {
   PrinterOutlined,
   UserOutlined,
   CalendarOutlined,
-  UploadOutlined ,
-    MailOutlined,
+  UploadOutlined,
+  MailOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
 export default function PurchaseOrderDetail({ id }: { id: string }) {
+  const [messageApi, contextHolder] = message.useMessage();
   const { detail, getById } = usePurchaseOrderStore();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!detail || detail.id !== id) {
-      getById(id);
+    const loadDetail = async () => {
+      if (!detail || detail.id !== id) {
+        setLoading(true);
+        const result = await getById(id);
+        setLoading(false);
+        if (!result.success && result.message) {
+          messageApi.warning(result.message);
+        }
+      }
+    };
+    loadDetail();
+  }, [id, detail, getById, messageApi]);
+
+  //  lấy màu theo trạng thái
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Draft":
+        return "blue"; 
+      case "Submitted":
+        return "orange"; 
+      case "Received":
+        return "green"; 
+      case "Cancelled":
+        return "red"; 
+      default:
+        return "default"; 
     }
-  }, [id]);
+  };
+
+  //  lấy tên hiển thị theo trạng thái
+  const getStatusDisplayName = (status: string) => {
+    switch (status) {
+      case "Draft":
+        return "Nháp";
+      case "Submitted":
+        return "Đã gửi";
+      case "Received":
+        return "Đã nhận";
+      case "Cancelled":
+        return "Đã hủy";
+      default:
+        return status; 
+    }
+  };
 
   const columns: TableProps<PurchaseOrderItem>["columns"] = useMemo(
     () => [
-      { title: "Mã hàng", dataIndex: "id", width: 150 },
-      { title: "Tên hàng", dataIndex: "name", width: 340 },
-      { title: "Số lượng", dataIndex: "qty", align: "center", width: 120 },
+      { 
+        title: "Mã hàng", 
+        dataIndex: "sku", 
+        width: 150,
+        render: (sku: string) => sku || "—"
+      },
+      { 
+        title: "Tên hàng", 
+        dataIndex: "productName", 
+        width: 340,
+        render: (name: string) => name || "—"
+      },
+      { 
+        title: "Số lượng", 
+        dataIndex: "quantity", 
+        align: "center", 
+        width: 120,
+        render: (qty: number) => qty || 0
+      },
       {
         title: "Đơn giá",
         dataIndex: "unitPrice",
         align: "right",
         width: 140,
-        render: (v: number) => v.toLocaleString(),
+        render: (v: number) => (v || 0).toLocaleString("vi-VN") + " đ",
       },
       {
         title: "Giảm giá",
         dataIndex: "discount",
         align: "right",
         width: 120,
-        render: (v?: number) => (v ?? 0).toLocaleString(),
-      },
-      {
-        title: "Giá nhập",
-        dataIndex: "buyPrice",
-        align: "right",
-        width: 140,
-        render: (_: unknown, r) =>
-          (r.buyPrice ?? Math.max(r.unitPrice - (r.discount ?? 0), 0)).toLocaleString(),
+        render: (v: number) => (v || 0).toLocaleString("vi-VN") + " đ",
       },
       {
         title: "Thành tiền",
         align: "right",
         width: 160,
-        render: (_: unknown, r) =>
-          (r.qty * (r.buyPrice ?? r.unitPrice - (r.discount ?? 0))).toLocaleString(),
+        render: (_: unknown, record: PurchaseOrderItem) => {
+          const total = (record.quantity || 0) * (record.unitPrice || 0) - (record.discount || 0);
+          return total.toLocaleString("vi-VN") + " đ";
+        },
       },
     ],
     []
   );
 
+  if (loading) {
+    return <div className="px-3 py-2 text-center">Đang tải chi tiết phiếu nhập...</div>;
+  }
+
+  if (!detail) {
+    return <div className="px-3 py-2 text-center text-gray-500">Không tìm thấy thông tin phiếu nhập</div>;
+  }
+
   const order = detail;
-  if (!order) return null;
+  const statusColor = getStatusColor(order.status);
+  const statusDisplayName = getStatusDisplayName(order.status);
 
-  const tagColor =
-    order.status === "Phiếu tạm"
-      ? "orange"
-      : order.status === "Đã nhập hàng"
-      ? "green"
-      : "red";
-
-  const totalQty = order.items?.reduce((a, b) => a + b.qty, 0) ?? 0;
-  const totalPrice =
-    order.items?.reduce((a, b) => {
-      const price = b.buyPrice ?? b.unitPrice - (b.discount ?? 0);
-      return a + price * b.qty;
-    }, 0) ?? 0;
+  const totalQty = order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) ?? 0;
+  const totalAmount = order.items?.reduce((sum, item) => {
+    const itemTotal = (item.quantity || 0) * (item.unitPrice || 0) - (item.discount || 0);
+    return sum + itemTotal;
+  }, 0) ?? 0;
 
   const infoTab: TabsProps["items"] = [
     {
@@ -88,18 +142,22 @@ export default function PurchaseOrderDetail({ id }: { id: string }) {
       label: "Thông tin",
       children: (
         <div className="bg-white p-4 rounded-md border">
+          {contextHolder}
           {/* HEADER */}
           <div className="flex justify-between items-center mb-2">
             <div className="text-lg font-semibold flex items-center gap-2">
-              {order.id} <Tag color={tagColor}>{order.status}</Tag>
+              {order.code} <Tag color={statusColor}>{statusDisplayName}</Tag>
             </div>
-            <div className="text-sm text-gray-500">Chibest Quận 4</div>
+            <div className="text-sm text-gray-500">{order.warehouseName}</div>
           </div>
 
           {/* Người tạo + thông tin nhập */}
           <div className="text-sm text-gray-600 mb-3 flex justify-between items-center">
             <span>
-              Người tạo: <b>{order.creator}</b>
+              Người tạo: <b>{order.employeeName}</b>
+            </span>
+            <span>
+              Thời gian: <b>{order.time ? new Date(order.time).toLocaleString('vi-VN') : "—"}</b>
             </span>
           </div>
 
@@ -108,9 +166,10 @@ export default function PurchaseOrderDetail({ id }: { id: string }) {
             <div>
               <label className="block text-gray-600 mb-1">Tên NCC:</label>
               <Input
-                value={order.supplierName ?? ""}
+                value={order.supplierName || ""}
                 placeholder="Nhập tên nhà cung cấp"
                 className="h-8 text-sm"
+                readOnly
               />
             </div>
             <div>
@@ -118,12 +177,11 @@ export default function PurchaseOrderDetail({ id }: { id: string }) {
               <Select
                 className="w-full text-sm"
                 suffixIcon={<UserOutlined />}
-                defaultValue={order.receiver || order.creator}
+                value={order.employeeName|| undefined}
                 options={[
-                  { label: "QUẢN LÝ Q4", value: "QUẢN LÝ Q4" },
-                  { label: "NV_KHO Q4", value: "NV_KHO Q4" },
-                  { label: "ADMIN", value: "ADMIN" },
+                  { label: order.employeeName || "Không xác định", value: order.employeeName || "unknown"  },
                 ]}
+                disabled
               />
             </div>
             <div>
@@ -133,7 +191,8 @@ export default function PurchaseOrderDetail({ id }: { id: string }) {
                 suffixIcon={<CalendarOutlined />}
                 format="DD/MM/YYYY HH:mm"
                 showTime
-                defaultValue={dayjs(order.time, "DD/MM/YYYY HH:mm")}
+                value={order.time ? dayjs(order.time) : null}
+                disabled
               />
             </div>
           </div>
@@ -148,7 +207,7 @@ export default function PurchaseOrderDetail({ id }: { id: string }) {
             <Table<PurchaseOrderItem>
               rowKey="id"
               columns={columns}
-              dataSource={order.items ?? []}
+              dataSource={order.items || []}
               pagination={false}
               size="small"
               scroll={{ x: 1100 }}
@@ -157,10 +216,12 @@ export default function PurchaseOrderDetail({ id }: { id: string }) {
             {/* FOOTER GRID */}
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div>
+                <label className="block text-gray-600 mb-1">Ghi chú:</label>
                 <textarea
                   className="rounded border w-full h-24 p-2 text-sm"
-                  defaultValue={order.note ?? ""}
+                  value={order.note || ""}
                   placeholder="Ghi chú..."
+                  readOnly
                 />
               </div>
 
@@ -172,16 +233,16 @@ export default function PurchaseOrderDetail({ id }: { id: string }) {
                       Số lượng mặt hàng:
                     </label>
                     <div className="text-right font-medium text-gray-800 flex-1">
-                      {order.items?.length ?? 0}
+                      {order.items?.length || 0}
                     </div>
                   </div>
 
                   <div className="flex">
                     <label className="text-gray-600 w-[170px] text-right pr-2">
-                      Tổng tiền hàng (1):
+                      Tổng tiền hàng:
                     </label>
                     <div className="text-right font-medium text-gray-800 flex-1">
-                      {totalPrice.toLocaleString("vi-VN")}
+                      {totalAmount.toLocaleString("vi-VN")} đ
                     </div>
                   </div>
 
@@ -190,7 +251,7 @@ export default function PurchaseOrderDetail({ id }: { id: string }) {
                       Giảm giá:
                     </label>
                     <div className="text-right font-medium text-gray-800 flex-1">
-                      0
+                      {order.discountAmount?.toLocaleString("vi-VN") || "0"} đ
                     </div>
                   </div>
 
@@ -199,7 +260,7 @@ export default function PurchaseOrderDetail({ id }: { id: string }) {
                       Cần trả NCC:
                     </label>
                     <div className="text-right font-semibold text-gray-900 flex-1">
-                      {order.needPayToSupplier.toLocaleString("vi-VN")}
+                      {order.paid?.toLocaleString("vi-VN") || "0"} đ
                     </div>
                   </div>
 
@@ -233,19 +294,18 @@ export default function PurchaseOrderDetail({ id }: { id: string }) {
               </Button>
             </div>
             <div className="flex space-x-2">
-                 <Button type="primary" className="flex items-center gap-1" icon={<ExportOutlined />}>
+              <Button type="primary" className="flex items-center gap-1" icon={<ExportOutlined />}>
                 Mở phiếu
               </Button>
-                 <Button  className="flex items-center gap-1" icon={<SaveOutlined />}>
+              <Button className="flex items-center gap-1" icon={<SaveOutlined />}>
                 Lưu
               </Button>
-              <Button className="flex items-center gap-1" icon={<UploadOutlined  />}>
+              <Button className="flex items-center gap-1" icon={<UploadOutlined />}>
                 Trả hàng nhập
               </Button>
               <Button className="flex items-center gap-1" icon={<PrinterOutlined />}>
                 In mã tem
               </Button>
-             
             </div>
           </div>
         </div>
