@@ -10,12 +10,8 @@ import {
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
-  // ListIcon,
-  // PageIcon,
   PieChartIcon,
-  // PlugInIcon,
-  // TableIcon,
-  // UserCircleIcon,
+  
 } from "../icons/index";
 
 
@@ -42,63 +38,29 @@ const navItems: NavItem[] = [
     icon: <CalenderIcon />,
     name: "Danh mục hàng hóa",
     subItems: [
-      { name: "Kho hàng", path: "/warehouse/warehouse-list", pro: false },
-      { name: "Loại sản phẩm", path: "/category/category-list", pro: false },
-      { name: "Quy cách", path: "/unit/unit-list", pro: false },
-      { name: "Sản phẩm", path: "/product/product-list", pro: false },
-      { name: "Mã vạch- Nhãn sản phẩm", path: "/ean/ean-list", pro: false },
-
+      { name: "Danh sách hàng hóa", path: "/products" },
+      { name: "Thiết lập giá", path: "/pricebook" },
+      { name: "Chuyển hàng", path: "/transfers" },
+      { name: "Kiểm kho", path: "/stocktakes" },
+      { name: "Xuất hủy", path: "/damageitems" },
+      { name: "Nhà cung cấp", path: "/suppliers" },
+      { name: "Nhập hàng", path: "/purchaseOrder" },
+      { name: "Trả hàng nhập", path: "/purchaseReturns" },
     ],
   },
   {
     icon: <BoxCubeIcon />,
     name: "Quản lý kho",
     subItems: [
-      { name: "Nhập kho", path: "/stockin/stockin-list", pro: false },
-      { name: "Chuyển hàng", path: "/move/move-list", pro: false },
-      { name: "Xóa tag", path: "/clear-tag/clear-tag-list", pro: false },
+      { name: "Kho hàng", path: "/warehouses/warehouse-list", pro: false },
     ],
   },
-  // {
-  //   icon: <CalenderIcon />,
-  //   name: "Calendar",
-  //   path: "/calendar",
-  // },
-  // {
-  //   icon: <UserCircleIcon />,
-  //   name: "User Profile",
-  //   path: "/profile",
-  // },
 
-  // {
-  //   name: "Forms",
-  //   icon: <ListIcon />,
-  //   subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
-  // },
-  // {
-  //   name: "Tables",
-  //   icon: <TableIcon />,
-  //   subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
-  // },
-  // {
-  //   name: "Pages",
-  //   icon: <PageIcon />,
-  //   subItems: [
-  //     { name: "Blank Page", path: "/blank", pro: false },
-  //     { name: "404 Error", path: "/error-404", pro: false },
-  //   ],
-  // },
 ];
 
+
 const othersItems: NavItem[] = [
-  // {
-  //   icon: <PieChartIcon />,
-  //   name: "Charts",
-  //   subItems: [
-  //     { name: "Line Chart", path: "/line-chart", pro: false },
-  //     { name: "Bar Chart", path: "/bar-chart", pro: false },
-  //   ],
-  // },
+
    {
     icon: <PieChartIcon />,
     name: "Kiểm kê",
@@ -110,26 +72,7 @@ const othersItems: NavItem[] = [
     subItems: [
       { name: "Đối soát", path: "/report/report-list", pro: false },]
   },
-  // {
-  //   icon: <BoxCubeIcon />,
-  //   name: "UI Elements",
-  //   subItems: [
-  //     { name: "Alerts", path: "/alerts", pro: false },
-  //     { name: "Avatar", path: "/avatars", pro: false },
-  //     { name: "Badge", path: "/badge", pro: false },
-  //     { name: "Buttons", path: "/buttons", pro: false },
-  //     { name: "Images", path: "/images", pro: false },
-  //     { name: "Videos", path: "/videos", pro: false },
-  //   ],
-  // },
-  // {
-  //   icon: <PlugInIcon />,
-  //   name: "Authentication",
-  //   subItems: [
-  //     { name: "Sign In", path: "/signin", pro: false },
-  //     { name: "Sign Up", path: "/signup", pro: false },
-  //   ],
-  // },
+
 ];
 
 const AppSidebar: React.FC = () => {
@@ -409,6 +352,33 @@ const AppSidebar: React.FC = () => {
                 )}
               </h2>
               {renderMenuItems(othersItems, "others")}
+              {/* ======= Hàng hóa (mega menu style) ======= */}
+            {/* <div className="mt-6">
+              <h2 className="mb-4 text-xs uppercase text-gray-400">Hàng hóa</h2>
+              <div className="space-y-4">
+                {hangHoaMegaMenu.map((group, idx) => (
+                  <div key={idx}>
+                    <h3 className="font-medium text-gray-700 mb-2">{group.title}</h3>
+                    <ul className="ml-3 space-y-1">
+                      {group.items.map((item) => (
+                        <li key={item.path}>
+                          <Link
+                            href={item.path}
+                            className={`block px-3 py-1 rounded-md text-sm hover:bg-amber-200 ${
+                              pathname === item.path
+                                ? "bg-amber-300 text-black font-medium"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {item.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div> */}
             </div>
           </div>
         </nav>

@@ -12,19 +12,24 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-          <div className="">
-      {/* Sidebar and Backdrop */}
-      <AppSidebar />
-      <Backdrop />
-      {/* Main Content Area */}
-      <div
-       
-      >
-        {/* Header */}
-        <AppHeader />
-        {/* Page Content */}
-        <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6">{children}</div>
-      </div>
+  <div className="flex h-screen bg-gray-50">
+    {/* Sidebar */}
+    <AppSidebar />
+    <Backdrop />
+
+    {/* Main content */}
+    <div className="flex flex-col flex-1 min-h-0">
+      {/* Header */}
+      <AppHeader />
+
+      {/* Scrollable page area */}
+      <main className="flex-1 overflow-auto bg-gray-50">
+        <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6 ">
+          {children}
+        </div>
+      </main>
     </div>
-  );
+  </div>
+);
+
 }

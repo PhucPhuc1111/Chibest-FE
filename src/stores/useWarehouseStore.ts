@@ -2,93 +2,91 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import api from "@/api/axiosInstance";
 
-export interface Supplier {
+export interface Warehouse {
   id: string;
   code: string;
   name: string;
-  email: string;
+  address: string;
   phoneNumber: string | null;
-  address: string | null;
+  branchName: string;
+  isMainWarehouse: boolean;
   status: string;
 }
 
-interface RawSupplier {
+interface RawWarehouse {
   id: string;
-  "fcm-token": string | null;
-  "refresh-token": string | null;
-  "refresh-token-expiry-time": string | null;
-  "avartar-url": string | null;
   code: string;
-  email: string;
   name: string;
-  "phone-number": string;          
   address: string;
-  cccd: string | null;
-  "fax-number": string | null;
+  "phone-number": string;        
+  "branch-name": string;          
+  "is-main-warehouse": boolean;     
+  status: string;
   "created-at": string;
   "updated-at": string;
-  status: string;
 }
 
 interface AccountState {
-  suppliers: Supplier[];
-   isLoading: boolean;
+  warehouses: Warehouse[];
+  isLoading: boolean;
   error: string | null;
 }
 
 interface AccountActions {
-  getSuppliers: () => Promise<{ success: boolean; message?: string }>;
+  getWarehouses: () => Promise<{ success: boolean; message?: string }>;
   clearError: () => void;
 }
 
-export const useAccountStore = create<AccountState & AccountActions>()(
+export const useWarehouseStore = create<AccountState & AccountActions>()(
   immer((set) => ({
-    // INITIAL STATE
-    suppliers: [],
     warehouses: [],
     isLoading: false,
     error: null,
 
-    // ACTIONS
-    getSuppliers: async () => {
+    getWarehouses: async () => {
       set((s) => {
         s.isLoading = true;
         s.error = null;
       });
 
       try {
-        const res = await api.get("/api/account/supplier");
-        
+        const res = await api.get("/api/warehouse", {
+          params: {
+            pageIndex: 1,
+            pageSize: 100,
+          },
+        });
+
         if (res.data["status-code"] === 200) {
-       
-          const suppliers: Supplier[] = res.data.data.map((item: RawSupplier) => ({
+          // ✅ Sửa: dùng RawWarehouse thay vì Warehouse
+          const warehouses: Warehouse[] = res.data.data.map((item: RawWarehouse) => ({
             id: item.id,
             code: item.code,
             name: item.name,
-            email: item.email,
-            phoneNumber: item["phone-number"], 
+            address: item.address,
+            phoneNumber: item["phone-number"],           
+            branchName: item["branch-name"],             
+            isMainWarehouse: item["is-main-warehouse"],  
             status: item.status,
           }));
 
           set((s) => {
-            s.suppliers = suppliers;
+            s.warehouses = warehouses;
             s.isLoading = false;
           });
           return { success: true, message: res.data.message };
         } else {
           set((s) => { s.isLoading = false; });
-          return { success: false, message: res.data.message || "Không có dữ liệu nhà cung cấp" };
+          return { success: false, message: res.data.message || "Không có dữ liệu kho" };
         }
       } catch (err: unknown) {
         set((s) => {
           s.isLoading = false;
           s.error = err instanceof Error ? err.message : "Fetch error";
         });
-        return { success: false, message: "Không thể tải danh sách nhà cung cấp" };
+        return { success: false, message: "Không thể tải danh sách kho" };
       }
     },
-
-    
 
     clearError: () => {
       set((s) => {
@@ -98,4 +96,4 @@ export const useAccountStore = create<AccountState & AccountActions>()(
   }))
 );
 
-export default useAccountStore;
+export default useWarehouseStore;

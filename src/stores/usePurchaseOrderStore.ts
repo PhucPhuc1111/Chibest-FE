@@ -6,7 +6,8 @@ import type {
   PurchaseOrderSummary, 
   PurchaseOrderStatus, 
   PurchaseOrder, 
-  CreatePurchaseOrderPayload 
+  CreatePurchaseOrderPayload ,
+  ImportedProduct 
 } from "@/types/purchaseOrder"; 
 
 // --- DEFINITIONS & HELPERS ---
@@ -71,6 +72,7 @@ type Actions = {
   getAll: () => Promise<{success: boolean; message?: string}>;
   getById: (id: string) => Promise<{success: boolean; message?: string}>;
   createOrder: (payload: CreatePurchaseOrderPayload) => Promise<{success: boolean; message?: string}>;
+  importFile: (file: File) => Promise<{success: boolean; message?: string; data?: ImportedProduct[]}>;
 };
 
 export const usePurchaseOrderStore = create<State & Actions>()(
@@ -134,7 +136,7 @@ export const usePurchaseOrderStore = create<State & Actions>()(
           set((s) => { s.isLoading = false; });
           return { success: false, message: res.data.message || "Không có dữ liệu" };
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         set((s) => {
           s.isLoading = false;
           s.error = err instanceof Error ? err.message : "Fetch error";
@@ -192,7 +194,7 @@ export const usePurchaseOrderStore = create<State & Actions>()(
           set((s) => { s.isLoading = false; });
           return { success: false, message: res.data.message || "Không tìm thấy dữ liệu" };
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         set((s) => {
           s.isLoading = false;
           s.error = err instanceof Error ? err.message : "Fetch error";
@@ -226,7 +228,7 @@ export const usePurchaseOrderStore = create<State & Actions>()(
           });
           return { success: false, message: res.data.message || "Tạo phiếu nhập thất bại" };
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         set((s) => {
           s.isLoading = false;
           s.error = err instanceof Error ? err.message : "Creation error";
@@ -264,7 +266,7 @@ importFile: async (file: File) => {
       set((s) => { s.isLoading = false; });
       return { success: false, message: res.data.message || "Import file thất bại" };
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     set((s) => {
       s.isLoading = false;
       s.error = err instanceof Error ? err.message : "Import error";

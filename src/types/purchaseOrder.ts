@@ -1,4 +1,5 @@
-export type PurchaseOrderStatus = "Hoàn Thành" | "Đang Xử Lý" | "Đã Hủy";
+// types/purchaseOrder.ts
+export type PurchaseOrderStatus = "Draft" | "Submitted" | "Received" | "Cancelled";
 
 export interface PurchaseOrderSummary {
   id: string;
@@ -39,7 +40,7 @@ export interface PurchaseOrder {
 }
 
 export interface CreatePurchaseOrderPayload {
-  "invoice-code": string;
+  "invoice-code": string | null;
   "order-date": string;
   "pay-method": string;
   "sub-total": number;
@@ -55,6 +56,19 @@ export interface CreatePurchaseOrderPayload {
     "discount": number;
     "re-fee": number;
     "note": string;
-    "product-id": string;
+    "product-id": string | null;
   }>;
+}
+
+// Interface cho API response từ import
+export interface ImportedProduct {
+  id: string;
+  quantity: number;
+  "actual-quantity": number | null;
+  "unit-price": number;
+  discount: number;
+  "re-fee": number;
+  note: string | null;
+  "product-name": string;
+  sku: string;
 }

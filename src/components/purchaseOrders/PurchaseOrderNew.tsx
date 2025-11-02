@@ -21,16 +21,18 @@ import {
   CalendarOutlined,
   SearchOutlined,
   DeleteOutlined,
-  FileExcelOutlined,
+  // FileExcelOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { usePurchaseOrderStore } from "@/stores/usePurchaseOrderStore";
-import useAccountStore from "@/stores/useAccountStore"; // Sửa import
-import useProductStore from "@/stores/useProductStore"; // Sửa import
+import useWarehouseStore from "@/stores/useWarehouseStore";
+import useAccountStore from "@/stores/useAccountStore";
+import useProductStore from "@/stores/useProductStore"; 
 import type { CreatePurchaseOrderPayload } from "@/types/purchaseOrder";
+import type { Product } from "@/types/product";
 import dayjs from "dayjs";
 import type { RcFile } from "antd/es/upload";
-import { log } from "console";
+
 
 interface ProductRow {
   id: string;
@@ -63,7 +65,8 @@ export default function PurchaseOrderNew() {
   
   // Stores - sử dụng đúng cách
   const { createOrder, importFile, isLoading } = usePurchaseOrderStore();
-  const { suppliers, warehouses, getSuppliers, getWarehouses } = useAccountStore();
+  const { suppliers,  getSuppliers } = useAccountStore();
+  const {  warehouses,  getWarehouses } = useWarehouseStore();
   const { products, searchProducts } = useProductStore();
   
   // State
@@ -95,7 +98,7 @@ export default function PurchaseOrderNew() {
     }
   };
 
-  const handleProductChange = (index: number, field: keyof ProductRow, value: any) => {
+  const handleProductChange = (index: number, field: keyof ProductRow, value: string | number) => {
     const newList = [...productsList];
     if (!newList[index]) {
       newList[index] = {
@@ -109,6 +112,12 @@ export default function PurchaseOrderNew() {
         total: 0,
       };
     }
+
+  // Convert string to number nếu field là number
+  // const processedValue = (field === 'quantity' || field === 'unitPrice' || field === 'discount' || field === 'reFee') 
+  //   ? Number(value) 
+  //   : value;
+
     newList[index] = { ...newList[index], [field]: value };
 
     if (["quantity", "unitPrice", "discount", "reFee"].includes(field)) {
@@ -199,7 +208,7 @@ export default function PurchaseOrderNew() {
     }
   };
 
-  const selectProduct = (product: any) => {
+  const selectProduct = (product: Product) => {
     const newProduct: ProductRow = {
       id: product.id,
       sku: product.sku,
@@ -423,14 +432,14 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
           <div className="flex-1 bg-white rounded-md border border-gray-200">
             <div className="border-b px-4 py-2 flex justify-between items-center">
               <Input
-                placeholder="Tìm hàng hóa theo mã hoặc tên (F3)"
+                placeholder="Tìm hàng hóa theo mã hoặc tên "
                 className="w-1/3"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onPressEnter={handleSearch}
                 suffix={<SearchOutlined onClick={handleSearch} className="cursor-pointer" />}
               />
-              <div className="flex gap-2">
+              {/* <div className="flex gap-2">
                 <Button
                   icon={<FileExcelOutlined />}
                   onClick={() => document.getElementById('file-upload')?.click()}
@@ -443,7 +452,7 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
                 <Button type="primary" onClick={() => addProductRow()}>
                   Thêm dòng
                 </Button>
-              </div>
+              </div> */}
             </div>
 
             {productsList.length === 0 ? (
