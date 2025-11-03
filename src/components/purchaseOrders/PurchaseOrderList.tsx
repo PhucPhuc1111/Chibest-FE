@@ -94,7 +94,7 @@ export default function PurchaseOrderList() {
         title: "Thời gian", 
         dataIndex: "time", 
         width: 180,
-        render: (time: string) => time ? new Date(time).toLocaleString('vi-VN') : "—"
+        render: (time: string) => time ? new Date(time).toLocaleDateString('vi-VN') : "—"
       },
       { 
         title: "Nhà cung cấp", 
@@ -218,7 +218,14 @@ export default function PurchaseOrderList() {
                 scroll={{ x: 1200 }}
                 expandable={{
                   expandedRowRender: (record) => (
-                    <PurchaseOrderDetail id={record.id} />
+                    // <PurchaseOrderDetail id={record.id} />
+                     <PurchaseOrderDetail 
+      id={record.id} 
+      onDeleted={() => {
+        // Đơn giản là đóng tất cả expanded rows
+        setExpandedRowKeys([]);
+      }}
+    />
                   ),
                   expandRowByClick: true,
                   expandedRowKeys,

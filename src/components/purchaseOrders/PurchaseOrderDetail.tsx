@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Tabs, Table, Input, Tag, Button, Select, DatePicker, message } from "antd";
+import { Tabs, Table, Input, Tag, Button, Select, DatePicker, Modal } from "antd";
 import type { TabsProps, TableProps } from "antd";
 import type { PurchaseOrderItem } from "@/types/purchaseOrder";
 import { usePurchaseOrderStore } from "@/stores/usePurchaseOrderStore";
@@ -19,11 +19,17 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
-export default function PurchaseOrderDetail({ id }: { id: string }) {
-  const [messageApi, contextHolder] = message.useMessage();
-  const { detail, getById } = usePurchaseOrderStore();
-  const [loading, setLoading] = useState(false);
+interface PurchaseOrderDetailProps {
+  id: string;
+  onDeleted?: (deletedId: string) => void;
+}
 
+export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDetailProps) {
+
+  const { detail, getById, deleteOrder, getAll } = usePurchaseOrderStore();
+  const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   useEffect(() => {
     const loadDetail = async () => {
       if (!detail || detail.id !== id) {
@@ -31,42 +37,64 @@ export default function PurchaseOrderDetail({ id }: { id: string }) {
         const result = await getById(id);
         setLoading(false);
         if (!result.success && result.message) {
-          messageApi.warning(result.message);
-        }
+   }
       }
     };
     loadDetail();
-  }, [id, detail, getById, messageApi]);
+  }, [id, detail, getById]);
 
-  //  lấy màu theo trạng thái
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Draft":
-        return "blue"; 
-      case "Submitted":
-        return "orange"; 
-      case "Received":
-        return "green"; 
-      case "Cancelled":
-        return "red"; 
-      default:
-        return "default"; 
+  // Xử lý hiển thị confirm delete
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  // Xử lý xác nhận xóa
+  const handleConfirmDelete = async () => {
+    if (!detail) return;
+    
+    setDeleteLoading(true);
+    try {
+      const result = await deleteOrder(detail.id);
+      
+      if (result.success) {
+        await getAll();
+        // Gọi callback để thông báo cho parent component
+        if (onDeleted) {
+          onDeleted(detail.id);
+        }
+    // Đóng confirm
+        setShowDeleteConfirm(false);
+      } 
+    } catch  {
+     
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
-  //  lấy tên hiển thị theo trạng thái
+  // Xử lý hủy xóa
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
+  
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Draft": return "blue";
+      case "Submitted": return "orange"; 
+      case "Received": return "green";
+      case "Cancelled": return "red";
+      default: return "default";
+    }
+  };
+
   const getStatusDisplayName = (status: string) => {
     switch (status) {
-      case "Draft":
-        return "Nháp";
-      case "Submitted":
-        return "Đã gửi";
-      case "Received":
-        return "Đã nhận";
-      case "Cancelled":
-        return "Đã hủy";
-      default:
-        return status; 
+      case "Draft": return "Nháp";
+      case "Submitted": return "Đã gửi";
+      case "Received": return "Đã nhận";
+      case "Cancelled": return "Đã hủy";
+      default: return status;
     }
   };
 
@@ -100,17 +128,21 @@ export default function PurchaseOrderDetail({ id }: { id: string }) {
       },
       {
         title: "Giảm giá",
-        dataIndex: "discount",
+        // dataIndex: "discount",
         align: "right",
         width: 120,
-        render: (v: number) => (v || 0).toLocaleString("vi-VN") + " đ",
+        // render: (v: number) => (v || 0).toLocaleString("vi-VN") + " đ",
+        render: (_: unknown, record: PurchaseOrderItem) => {
+          const total = (record.quantity || 0) * (record.reFee || 0) + (record.discount || 0);
+          return total.toLocaleString("vi-VN") + " đ";
+        },
       },
       {
         title: "Thành tiền",
         align: "right",
         width: 160,
         render: (_: unknown, record: PurchaseOrderItem) => {
-          const total = (record.quantity || 0) * (record.unitPrice || 0) - (record.discount || 0);
+          const total = (record.quantity || 0) * ((record.unitPrice || 0)-(record.reFee || 0)) - (record.discount || 0);
           return total.toLocaleString("vi-VN") + " đ";
         },
       },
@@ -131,18 +163,40 @@ export default function PurchaseOrderDetail({ id }: { id: string }) {
   const statusDisplayName = getStatusDisplayName(order.status);
 
   const totalQty = order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) ?? 0;
-  const totalAmount = order.items?.reduce((sum, item) => {
-    const itemTotal = (item.quantity || 0) * (item.unitPrice || 0) - (item.discount || 0);
+  // const totalAmount = order.items?.reduce((sum, item) => {
+  //   const itemTotal = (item.quantity || 0) * ((item.unitPrice || 0) - (item.reFee || 0)) - (item.discount || 0);
+  //   return sum + itemTotal;
+  // }, 0) ?? 0;
+ const totalAmount = order.items?.reduce((sum, item) => {
+    const itemTotal = (item.quantity || 0) * (item.unitPrice || 0);
     return sum + itemTotal;
   }, 0) ?? 0;
-
   const infoTab: TabsProps["items"] = [
     {
       key: "info",
       label: "Thông tin",
       children: (
         <div className="bg-white p-4 rounded-md border">
-          {contextHolder}
+          <Modal
+            title="Xác nhận xóa phiếu nhập"
+            open={showDeleteConfirm}
+            onOk={handleConfirmDelete}
+            onCancel={handleCancelDelete}
+            okText="Xóa"
+            cancelText="Hủy"
+            okType="danger"
+            confirmLoading={deleteLoading}
+            styles={{
+              mask: { zIndex: 1000 },
+              wrapper: { zIndex: 1001 }
+            }}
+          >
+            <p>
+              Bạn có chắc chắn muốn xóa phiếu nhập `<strong>{order.code}</strong>`? 
+              Hành động này không thể hoàn tác.
+            </p>
+          </Modal>
+
           {/* HEADER */}
           <div className="flex justify-between items-center mb-2">
             <div className="text-lg font-semibold flex items-center gap-2">
@@ -280,10 +334,16 @@ export default function PurchaseOrderDetail({ id }: { id: string }) {
           {/* ACTIONS */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex space-x-2">
-              <Button className="flex items-center gap-1" icon={<DeleteOutlined />}>
+              <Button 
+                className="flex items-center gap-1" 
+                icon={<DeleteOutlined />}
+                onClick={handleDeleteClick}
+                loading={deleteLoading}
+                danger
+              >
                 Hủy
               </Button>
-              <Button className="flex items-center gap-1" icon={<CopyOutlined />}>
+              <Button className="flex items-center gap-1"  icon={<CopyOutlined />}>
                 Sao chép
               </Button>
               <Button className="flex items-center gap-1" icon={<ExportOutlined />}>

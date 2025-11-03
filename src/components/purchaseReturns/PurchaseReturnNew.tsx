@@ -21,18 +21,16 @@ import {
   CalendarOutlined,
   SearchOutlined,
   DeleteOutlined,
-  // FileExcelOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import { usePurchaseOrderStore } from "@/stores/usePurchaseOrderStore";
+import { usePurchaseReturnsStore } from "@/stores/usePurchaseReturnStore";
 import useWarehouseStore from "@/stores/useWarehouseStore";
 import useAccountStore from "@/stores/useAccountStore";
 import useProductStore from "@/stores/useProductStore"; 
-import type { CreatePurchaseOrderPayload } from "@/types/purchaseOrder";
+import type { CreatePurchaseReturnPayload } from "@/types/purchaseReturn";
 import type { Product } from "@/types/product";
 import dayjs from "dayjs";
 import type { RcFile } from "antd/es/upload";
-
 
 interface ProductRow {
   id: string;
@@ -40,34 +38,32 @@ interface ProductRow {
   productName: string;
   quantity: number;
   unitPrice: number;
-  discount: number;
-  reFee: number;
+  returnPrice: number;
+  containerCode: string;
   total: number;
   productId?: string;
-  
 }
 
 interface ImportedProduct {
   id: string;
   quantity: number;
-  "actual-quantity": number | null;
   "unit-price": number;
-  discount: number;
-  "re-fee": number;
+  "return-price": number;
   note: string | null;
   "product-name": string;
   sku: string;
+  "container-code": string | null;
 }
 
-export default function PurchaseOrderNew() {
+export default function PurchaseReturnNew() {
   const router = useRouter();
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
   
   // Stores 
-  const { createOrder, importFile, isLoading } = usePurchaseOrderStore();
-  const { suppliers,  getSuppliers } = useAccountStore();
-  const {  warehouses,  getWarehouses } = useWarehouseStore();
+  const { createReturn, importFile, isLoading } = usePurchaseReturnsStore();
+  const { suppliers, getSuppliers } = useAccountStore();
+  const { warehouses, getWarehouses } = useWarehouseStore();
   const { products, searchProducts } = useProductStore();
   
   // State
@@ -107,25 +103,24 @@ export default function PurchaseOrderNew() {
 
     newList[index] = { ...newList[index], [field]: value };
 
-    if (["quantity", "unitPrice", "discount", "reFee"].includes(field)) {
+    if (["quantity", "returnPrice"].includes(field)) {
       const item = newList[index];
       const quantity = item.quantity || 0;
-      const unitPrice = item.unitPrice || 0;
-      const discount = item.discount || 0;
-      const reFee = item.reFee || 0;
-      const itemTotal = (quantity * (unitPrice - reFee)) - discount;
+      const returnPrice = item.returnPrice || 0;
+      const itemTotal = quantity * returnPrice;
       newList[index].total = Math.max(0, itemTotal);
     }
     setProductsList(newList);
   };
+
   const createEmptyProduct = (): ProductRow => ({
     id: `product-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     sku: "",
     productName: "",
     quantity: 0,
     unitPrice: 0,
-    discount: 0,
-    reFee: 0,
+    returnPrice: 0,
+    containerCode: "",
     total: 0,
   });
   
@@ -134,15 +129,11 @@ export default function PurchaseOrderNew() {
     setProductsList([...productsList, newProduct]);
   };
 
-  // const removeProductRow = (index: number) => {
-  //   const newList = [...productsList];
-  //   newList.splice(index, 1);
-  //   setProductsList(newList);
-  // };
- const removeProductRow = (index: number) => {
+  const removeProductRow = (index: number) => {
     const newList = productsList.filter((_, i) => i !== index);
     setProductsList(newList);
   };
+
   // File upload handlers
   const handleFileSelect = (file: RcFile) => {
     setSelectedFile(file);
@@ -158,8 +149,6 @@ export default function PurchaseOrderNew() {
     const result = await importFile(selectedFile);
     if (result.success && result.data) {
       setImportedData(result.data);
-      console.log("dd",result.data);
-      
       setImportModalVisible(true);
     }
   };
@@ -171,16 +160,13 @@ export default function PurchaseOrderNew() {
       productName: item["product-name"] || "",
       quantity: item.quantity || 0,
       unitPrice: item["unit-price"] || 0,
-      discount: item.discount || 0,
-      reFee: item["re-fee"] || 0,
-      total: (item.quantity || 0) * (item["unit-price"] || 0) - (item.discount || 0),
+      returnPrice: item["return-price"] || 0,
+      containerCode: item["container-code"] || "",
+      total: (item.quantity || 0) * (item["return-price"] || 0),
       productId: item.id,
-
     }));
 
     setProductsList([...productsList, ...importedProducts]);
-   
-    
     setImportModalVisible(false);
     setSelectedFile(null);
     setImportedData([]);
@@ -188,7 +174,7 @@ export default function PurchaseOrderNew() {
   };
 
   // Search product handlers
- const handleSearch = async () => {
+  const handleSearch = async () => {
     if (!searchTerm.trim()) {
       messageApi.warning("Vui lòng nhập từ khóa tìm kiếm!");
       return;
@@ -198,7 +184,6 @@ export default function PurchaseOrderNew() {
       setSearchModalVisible(true);
     } else {
       messageApi.error(result.message || "Tìm kiếm thất bại!");
-      console.log("Search failed:", result);
     }
   };
 
@@ -209,8 +194,8 @@ export default function PurchaseOrderNew() {
       productName: product.name,
       quantity: 1,
       unitPrice: product.costPrice || 0,
-      discount: 0,
-      reFee: 0,
+      returnPrice: product.costPrice || 0,
+      containerCode: "",
       total: product.costPrice || 0,
       productId: product.id,
     };
@@ -252,17 +237,14 @@ export default function PurchaseOrderNew() {
       ),
     },
     {
-      title: "Re-fee",
-      dataIndex: "reFee",
-      width: 100,
+      title: "Mã container",
+      dataIndex: "containerCode",
+      width: 120,
       render: (value, _, index) => (
         <Input
-          type="number"
           value={value}
-          placeholder="0"
-          onChange={(e) =>
-            handleProductChange(index, "reFee", Number(e.target.value))
-          }
+          placeholder="Mã container"
+          onChange={(e) => handleProductChange(index, "containerCode", e.target.value)}
         />
       ),
     },
@@ -282,8 +264,8 @@ export default function PurchaseOrderNew() {
       ),
     },
     {
-      title: "Đơn giá",
-      dataIndex: "unitPrice",
+      title: "Giá trả",
+      dataIndex: "returnPrice",
       width: 120,
       render: (value, _, index) => (
         <Input
@@ -291,22 +273,7 @@ export default function PurchaseOrderNew() {
           value={value}
           placeholder="0"
           onChange={(e) =>
-            handleProductChange(index, "unitPrice", Number(e.target.value))
-          }
-        />
-      ),
-    },
-    {
-      title: "Giảm giá",
-      dataIndex: "discount",
-      width: 100,
-      render: (value, _, index) => (
-        <Input
-          type="number"
-          value={value}
-          placeholder="0"
-          onChange={(e) =>
-            handleProductChange(index, "discount", Number(e.target.value))
+            handleProductChange(index, "returnPrice", Number(e.target.value))
           }
         />
       ),
@@ -332,24 +299,17 @@ export default function PurchaseOrderNew() {
       ),
     },
   ];
-// Tổng tiền hàng
-  const totalAmount = productsList.reduce((sum, p) => {
-  const quantity = p.quantity || 0;
-  const unitPrice = p.unitPrice || 0;
-  const reFee = p.reFee || 0;
-  const discount = p.discount || 0;
-  return sum + ((quantity * (unitPrice - reFee)) - discount);
-}, 0);
 
-const totalBeforeDiscount = productsList.reduce((sum, p) => {
-  return sum + ((p.quantity || 0) * (p.unitPrice || 0));
-}, 0);
-// Tổng discount (giảm giá từng sản phẩm)
-const totalDiscount = productsList.reduce((sum, p) => sum + (p.discount || 0), 0);
-// Tổng re-fee (giảm giá đơn vị từng sản phẩm)
-const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.quantity || 0)), 0);
-// Tổng tiền trước giảm giá
-  const handleSave = async (status: "Draft" | "Submitted") => {
+  // Tổng tiền trả
+  const totalAmount = productsList.reduce((sum, p) => {
+    const quantity = p.quantity || 0;
+    const returnPrice = p.returnPrice || 0;
+    return sum + (quantity * returnPrice);
+  }, 0);
+
+  const totalQty = productsList.reduce((sum, p) => sum + (p.quantity || 0), 0);
+
+  const handleSave = async (status: "Chờ Xử Lý" | "Hoàn Thành") => {
     try {
       const values = await form.validateFields();
 
@@ -371,15 +331,15 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
         return;
       }
 
-      const payload: CreatePurchaseOrderPayload = {
+      const payload: CreatePurchaseReturnPayload = {
         "invoice-code": values.invoiceCode || null,
-      "order-date": values.orderDate 
-    ? values.orderDate.format('YYYY-MM-DD') 
-    : dayjs().format('YYYY-MM-DD'),
+        "order-date": values.orderDate 
+          ? values.orderDate.format('YYYY-MM-DD') 
+          : dayjs().format('YYYY-MM-DD'),
         "pay-method": "Bank Transfer",
         "sub-total": totalAmount,
-        "discount-amount": totalDiscount + totalReFee,
-        "paid": totalAmount ,
+        "discount-amount": 0,
+        "paid": totalAmount,
         "note": values.note || "",
         "warehouse-id": values.warehouseId,
         "employee-id": employeeId,
@@ -387,23 +347,23 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
         "purchase-order-details": productsList.map((p) => ({
           "quantity": p.quantity || 0,
           "unit-price": p.unitPrice || 0,
-          "discount": p.discount || 0,
-          "re-fee": p.reFee || 0,
-          "note": "",
+          "discount": 0,
+          "re-fee": 0,
+          "note": p.containerCode ? `Container: ${p.containerCode}` : "",
           "product-id": p.productId || "",
         })),
       };
 
-      const result = await createOrder(payload);
+      const result = await createReturn(payload);
       if (result.success) {
         messageApi.success(
-          `Phiếu nhập đã được ${
-            status === "Draft" ? "lưu tạm" : "tạo thành công"
+          `Phiếu trả đã được ${
+            status === "Chờ Xử Lý" ? "lưu tạm" : "tạo thành công"
           }!`
         );
-        router.push("/purchaseOrder");
+        router.push("/purchaseReturns");
       } else {
-        messageApi.error(result.message || "Tạo phiếu nhập thất bại");
+        messageApi.error(result.message || "Tạo phiếu trả thất bại");
       }
     } catch (error) {
       console.error('Save error:', error);
@@ -433,20 +393,6 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
                 onPressEnter={handleSearch}
                 suffix={<SearchOutlined onClick={handleSearch} className="cursor-pointer" />}
               />
-              {/* <div className="flex gap-2">
-                <Button
-                  icon={<FileExcelOutlined />}
-                  onClick={() => document.getElementById('file-upload')?.click()}
-                >
-                  Import Excel
-                </Button>
-                <Upload {...uploadProps}>
-                  <input id="file-upload" type="file" hidden />
-                </Upload>
-                <Button type="primary" onClick={() => addProductRow()}>
-                  Thêm dòng
-                </Button>
-              </div> */}
             </div>
 
             {productsList.length === 0 ? (
@@ -518,7 +464,7 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
               </Form.Item>
 
               <Form.Item 
-                label="Kho nhập" 
+                label="Kho trả" 
                 name="warehouseId"
                 rules={[{ required: true, message: 'Vui lòng chọn kho' }]}
               >
@@ -532,22 +478,22 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
               </Form.Item>
 
               <Form.Item 
-                label="Mã phiếu nhập" 
+                label="Mã phiếu trả" 
                 name="invoiceCode"
-                rules={[{ required: false, message: 'Mã phiếu nhập' }]}
+                rules={[{ required: false, message: 'Mã phiếu trả' }]}
               >
                 <Input placeholder="Để trống để tự động tạo mã" />
               </Form.Item>
 
-              <Form.Item label="Trạng thái" name="status" initialValue="Phiếu tạm">
-                <Input value="Phiếu tạm" disabled />
+              <Form.Item label="Trạng thái" name="status" initialValue="Chờ Xử Lý">
+                <Input value="Chờ Xử Lý" disabled />
               </Form.Item>
 
               <Form.Item 
-                label="Ngày nhập" 
+                label="Ngày trả" 
                 name="orderDate" 
                 initialValue={dayjs()}
-                rules={[{ required: true, message: 'Vui lòng chọn ngày nhập' }]}
+                rules={[{ required: true, message: 'Vui lòng chọn ngày trả' }]}
               >
                 <DatePicker
                   className="w-full"
@@ -559,24 +505,12 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
 
               <div className="pt-1 text-sm space-y-2">
                 <div className="flex justify-between">
-                  <span>Tổng tiền hàng</span>
-                 <span>{totalBeforeDiscount.toLocaleString("vi-VN")} đ</span>
+                  <span>Tổng số lượng</span>
+                  <span>{totalQty.toLocaleString("vi-VN")}</span>
                 </div>
-                  <div className="flex justify-between ">
-                    <span>Giảm giá mua lại</span>
-                    <span>- {totalReFee.toLocaleString("vi-VN")} đ</span>
-                  </div>
-                 <div className="flex justify-between ">
-                <span>Giảm giá sản phẩm </span>
-                <span>- {totalDiscount.toLocaleString("vi-VN")} đ</span>
-              </div>
-                {/* <div className="flex justify-between">
-                  <span>Chi phí nhập trả NCC</span>
-                  <span>0 đ</span>
-                </div> */}
                 <div className="flex justify-between font-semibold border-t pt-2">
-                  <span>Cần trả nhà cung cấp</span>
-                   <span>{totalAmount.toLocaleString("vi-VN")} đ</span>
+                  <span>Tổng tiền trả</span>
+                  <span>{totalAmount.toLocaleString("vi-VN")} đ</span>
                 </div>
               </div>
 
@@ -589,7 +523,7 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
             <div className="flex gap-2 mt-4">
               <Button
                 icon={<SaveOutlined />}
-                onClick={() => handleSave("Draft")}
+                onClick={() => handleSave("Chờ Xử Lý")}
                 loading={isLoading}
                 className="flex-1"
               >
@@ -598,7 +532,7 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
               <Button
                 type="primary"
                 icon={<CheckOutlined />}
-                onClick={() => handleSave("Submitted")}
+                onClick={() => handleSave("Hoàn Thành")}
                 loading={isLoading}
                 className="flex-1 bg-green-500 hover:bg-green-600"
               >
@@ -625,14 +559,13 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
           dataSource={importedData}
           pagination={false}
           scroll={{ y: 300 }}
-          rowKey={(record, index) => `imported-${index}`} 
+          rowKey={(record, index) => `imported-${index}`}
           columns={[
             { title: "Mã hàng", dataIndex: "sku", width: 120 },
             { title: "Tên hàng", dataIndex: "product-name", width: 200 },
             { title: "Số lượng", dataIndex: "quantity", width: 80 },
-            { title: "Đơn giá", dataIndex: "unit-price", width: 100 },
-            { title: "Giảm giá", dataIndex: "discount", width: 80 },
-            { title: "Re-fee", dataIndex: "re-fee", width: 80 },
+            { title: "Giá trả", dataIndex: "return-price", width: 100 },
+            { title: "Mã container", dataIndex: "container-code", width: 120 },
           ]}
         />
       </Modal>
@@ -660,7 +593,7 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
           loading={isLoading}
           pagination={false}
           scroll={{ y: 400 }}
-          rowKey="id" 
+          rowKey="id"
           onRow={(record) => ({
             onClick: () => selectProduct(record),
             style: { cursor: 'pointer' },
