@@ -1,118 +1,209 @@
+// src/components/purchaseReturns/PurchaseReturnDetail.tsx
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { Tabs, Table, Input, Tag, Button, Select, DatePicker } from "antd";
+import { useEffect, useMemo, useState } from "react";
+import { Tabs, Table, Input, Tag, Button,  Modal } from "antd";
 import type { TabsProps, TableProps } from "antd";
 import type { PurchaseReturnItem } from "@/types/purchaseReturn";
-import { usePurchaseReturnStore } from "@/stores/usePurchaseReturnStore";
+import { usePurchaseReturnsStore } from "@/stores/usePurchaseReturnStore";
 import {
   DeleteOutlined,
   CopyOutlined,
+  ExportOutlined,
   SaveOutlined,
   PrinterOutlined,
-  UserOutlined,
-  CalendarOutlined,
+  // UserOutlined,
+  // CalendarOutlined,
+  // UploadOutlined,
+  MailOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs";
+// import dayjs from "dayjs";
 
-export default function PurchaseReturnDetail({ id }: { id: string }) {
-  const { detail, getById } = usePurchaseReturnStore();
+interface PurchaseReturnDetailProps {
+  id: string;
+  onDeleted?: (deletedId: string) => void;
+}
+
+export default function PurchaseReturnDetail({ id, onDeleted }: PurchaseReturnDetailProps) {
+  const { detail, getById, deleteReturn, getAll } = usePurchaseReturnsStore();
+  const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
-    if (!detail || detail.id !== id) getById(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    const loadDetail = async () => {
+      if (!detail || detail.id !== id) {
+        setLoading(true);
+        const result = await getById(id);
+        setLoading(false);
+        if (!result.success && result.message) {
+          // Handle error if needed
+        }
+      }
+    };
+    loadDetail();
+  }, [id, detail, getById]);
+
+  // Xử lý hiển thị confirm delete
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  // Xử lý xác nhận xóa
+  const handleConfirmDelete = async () => {
+    if (!detail) return;
+    
+    setDeleteLoading(true);
+    try {
+      const result = await deleteReturn(detail.id);
+      
+      if (result.success) {
+        await getAll();
+        // Gọi callback để thông báo cho parent component
+        if (onDeleted) {
+          onDeleted(detail.id);
+        }
+        // Đóng confirm
+        setShowDeleteConfirm(false);
+      } 
+    } catch {
+      // Handle error
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  // Xử lý hủy xóa
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Chờ Xử Lý": return "orange";
+      case "Hoàn Thành": return "green";
+      case "Đã Hủy": return "red";
+      default: return "default";
+    }
+  };
 
   const columns: TableProps<PurchaseReturnItem>["columns"] = useMemo(
     () => [
-      { title: "Mã hàng", dataIndex: "id", width: 150 },
-      { title: "Tên hàng", dataIndex: "name", width: 340 },
-      { title: "Số lượng", dataIndex: "qty", align: "center", width: 120 },
-      {
-        title: "Giá nhập",
-        dataIndex: "buyPrice",
-        align: "right",
-        width: 140,
-        render: (v: number) => v.toLocaleString(),
+      { 
+        title: "Mã hàng", 
+        dataIndex: "sku", 
+        width: 150,
+        render: (sku: string) => sku || "—"
+      },
+      { 
+        title: "Tên hàng", 
+        dataIndex: "productName", 
+        width: 340,
+        render: (name: string) => name || "—"
+      },
+      { 
+        title: "Số lượng", 
+        dataIndex: "quantity", 
+        align: "center", 
+        width: 120,
+        render: (qty: number) => qty || 0
       },
       {
-        title: "Giá trả lại",
+        title: "Đơn giá",
+        dataIndex: "unitPrice",
+        align: "right",
+        width: 140,
+        render: (v: number) => (v || 0).toLocaleString("vi-VN") + " đ",
+      },
+      {
+        title: "Giá trả",
         dataIndex: "returnPrice",
         align: "right",
         width: 140,
-        render: (v: number) => v.toLocaleString(),
+        render: (v: number) => (v || 0).toLocaleString("vi-VN") + " đ",
+      },
+      {
+        title: "Mã container",
+        dataIndex: "containerCode",
+        width: 140,
+        render: (code: string) => code || "—"
       },
       {
         title: "Thành tiền",
         align: "right",
         width: 160,
-        render: (_: unknown, r) => (r.qty * r.returnPrice).toLocaleString(),
+        render: (_: unknown, record: PurchaseReturnItem) => {
+          const total = (record.quantity || 0) * (record.returnPrice || 0);
+          return total.toLocaleString("vi-VN") + " đ";
+        },
       },
     ],
     []
   );
 
+  if (loading) {
+    return <div className="px-3 py-2 text-center">Đang tải chi tiết phiếu trả...</div>;
+  }
+
+  if (!detail) {
+    return <div className="px-3 py-2 text-center text-gray-500">Không tìm thấy thông tin phiếu trả</div>;
+  }
+
   const order = detail;
-  if (!order) return null;
+  const statusColor = getStatusColor(order.status);
 
-  const tagColor =
-    order.status === "Phiếu tạm"
-      ? "orange"
-      : order.status === "Đã trả hàng"
-      ? "green"
-      : "red";
+  const totalQty = order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) ?? 0;
+  const totalAmount = order.items?.reduce((sum, item) => {
+    const itemTotal = (item.quantity || 0) * (item.returnPrice || 0);
+    return sum + itemTotal;
+  }, 0) ?? 0;
 
-  const totalQty = order.items?.reduce((a, b) => a + b.qty, 0) ?? 0;
-  const totalPrice = order.items?.reduce((a, b) => a + b.qty * b.returnPrice, 0) ?? 0;
-
-  const items: TabsProps["items"] = [
+  const infoTab: TabsProps["items"] = [
     {
       key: "info",
       label: "Thông tin",
       children: (
         <div className="bg-white p-4 rounded-md border">
+          <Modal
+            title="Xác nhận xóa phiếu trả"
+            open={showDeleteConfirm}
+            onOk={handleConfirmDelete}
+            onCancel={handleCancelDelete}
+            okText="Xóa"
+            cancelText="Hủy"
+            okType="danger"
+            confirmLoading={deleteLoading}
+            styles={{
+              mask: { zIndex: 1000 },
+              wrapper: { zIndex: 1001 }
+            }}
+          >
+            <p>
+              Bạn có chắc chắn muốn xóa phiếu trả `<strong>{order.code}</strong>`? 
+              Hành động này không thể hoàn tác.
+            </p>
+          </Modal>
+
           {/* HEADER */}
           <div className="flex justify-between items-center mb-2">
             <div className="text-lg font-semibold flex items-center gap-2">
-              {order.id} <Tag color={tagColor}>{order.status}</Tag>
+              {order.code} <Tag color={statusColor}>{order.status}</Tag>
             </div>
-            <div className="text-sm text-gray-500">{order.branch}</div>
+            <div className="text-sm text-gray-500">Kho trả: {order.fromWarehouseName}</div>
           </div>
 
-          {/* meta: người tạo */}
+          {/* Thông tin kho */}
           <div className="text-sm text-gray-600 mb-3">
-            Người tạo: <b>{order.creator}</b>
+            <span>
+              Từ kho: <b>{order.fromWarehouseName}</b> → Đến: <b>{order.toWarehouseName}</b>
+            </span>
           </div>
 
-          {/* NCC + người trả + ngày trả */}
-          <div className="grid grid-cols-3 gap-4 text-sm text-gray-700 mb-4">
-            <div>
-              <label className="block text-gray-600 mb-1">Tên NCC:</label>
-              <Input defaultValue={order.supplierName} />
-            </div>
-            <div>
-              <label className="block text-gray-600 mb-1">Người trả:</label>
-              <Select
-                defaultValue={order.receiver}
-                suffixIcon={<UserOutlined />}
-                className="w-full"
-                options={[
-                  { label: "QUẢN LÝ Q4", value: "QUẢN LÝ Q4" },
-                  { label: "NV_KHO Q4", value: "NV_KHO Q4" },
-                  { label: "ADMIN", value: "ADMIN" },
-                ]}
-              />
-            </div>
-            <div>
-              <label className="block text-gray-600 mb-1">Ngày trả:</label>
-              <DatePicker
-                className="w-full"
-                suffixIcon={<CalendarOutlined />}
-                format="DD/MM/YYYY HH:mm"
-                showTime
-                defaultValue={dayjs(order.time, "DD/MM/YYYY HH:mm")}
-              />
-            </div>
+          {/* Thông gian */}
+          <div className="text-sm text-gray-600 mb-3 flex justify-between items-center">
+            <span>
+              Thời gian: <b>{order.time ? new Date(order.time).toLocaleString('vi-VN') : "—"}</b>
+            </span>
           </div>
 
           {/* TABLE ITEMS */}
@@ -125,22 +216,25 @@ export default function PurchaseReturnDetail({ id }: { id: string }) {
             <Table<PurchaseReturnItem>
               rowKey="id"
               columns={columns}
-              dataSource={order.items ?? []}
+              dataSource={order.items || []}
               pagination={false}
               size="small"
-              scroll={{ x: 1100 }}
+              scroll={{ x: 1200 }}
             />
 
             {/* FOOTER GRID */}
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div>
+                <label className="block text-gray-600 mb-1">Ghi chú:</label>
                 <textarea
                   className="rounded border w-full h-24 p-2 text-sm"
-                  defaultValue={order.note ?? ""}
+                  value={order.note || ""}
                   placeholder="Ghi chú..."
+                  readOnly
                 />
               </div>
 
+              {/* Tổng hợp bên phải */}
               <div className="w-[320px] ml-auto text-sm text-gray-700 mt-1 border-t border-gray-200 pt-3">
                 <div className="space-y-1.5">
                   <div className="flex">
@@ -148,25 +242,16 @@ export default function PurchaseReturnDetail({ id }: { id: string }) {
                       Số lượng mặt hàng:
                     </label>
                     <div className="text-right font-medium text-gray-800 flex-1">
-                      {order.items?.length ?? 0}
+                      {order.items?.length || 0}
                     </div>
                   </div>
 
                   <div className="flex">
                     <label className="text-gray-600 w-[170px] text-right pr-2">
-                      Tổng tiền hàng (1):
+                      Tổng tiền trả:
                     </label>
                     <div className="text-right font-medium text-gray-800 flex-1">
-                      {totalPrice.toLocaleString("vi-VN")}
-                    </div>
-                  </div>
-
-                  <div className="flex">
-                    <label className="text-gray-600 w-[170px] text-right pr-2">
-                      NCC cần trả:
-                    </label>
-                    <div className="text-right font-semibold text-gray-900 flex-1">
-                      {order.supplierPay.toLocaleString("vi-VN")}
+                      {totalAmount.toLocaleString("vi-VN")} đ
                     </div>
                   </div>
 
@@ -186,19 +271,34 @@ export default function PurchaseReturnDetail({ id }: { id: string }) {
           {/* ACTIONS */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex space-x-2">
-              <Button className="flex items-center gap-1" icon={<DeleteOutlined />}>
+              <Button 
+                className="flex items-center gap-1" 
+                icon={<DeleteOutlined />}
+                onClick={handleDeleteClick}
+                loading={deleteLoading}
+                danger
+              >
                 Hủy
               </Button>
               <Button className="flex items-center gap-1" icon={<CopyOutlined />}>
                 Sao chép
               </Button>
+              <Button className="flex items-center gap-1" icon={<ExportOutlined />}>
+                Xuất file
+              </Button>
+              <Button className="flex items-center gap-1" icon={<MailOutlined />}>
+                Gửi mail
+              </Button>
             </div>
             <div className="flex space-x-2">
-              <Button className="flex items-center gap-1" icon={<PrinterOutlined />}>
-                In tem mã
+              <Button type="primary" className="flex items-center gap-1" icon={<ExportOutlined />}>
+                Mở phiếu
               </Button>
-              <Button type="primary" className="flex items-center gap-1" icon={<SaveOutlined />}>
+              <Button className="flex items-center gap-1" icon={<SaveOutlined />}>
                 Lưu
+              </Button>
+              <Button className="flex items-center gap-1" icon={<PrinterOutlined />}>
+                In mã tem
               </Button>
             </div>
           </div>
@@ -209,7 +309,7 @@ export default function PurchaseReturnDetail({ id }: { id: string }) {
 
   return (
     <div className="px-3 py-2">
-      <Tabs defaultActiveKey="info" items={items} />
+      <Tabs defaultActiveKey="info" items={infoTab} />
     </div>
   );
 }

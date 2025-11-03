@@ -41,7 +41,7 @@ export default function SignInForm() {
     setLoading(true);
 
     try {
-      const res = await api.post("/account/login", formData);
+      const res = await api.post("api/account/login", formData);
       const data = res.data.data;
       const accessToken = data["access-token"];
       const refreshToken = data["refresh-token"];

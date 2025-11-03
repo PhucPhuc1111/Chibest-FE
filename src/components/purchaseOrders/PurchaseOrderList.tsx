@@ -1,25 +1,18 @@
-// src/components/purchaseOrders/PurchaseOrderList.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  Table,
-  Tag,
-  Input,
-  Button,
-  Select,
-Checkbox,
-  Spin,
-} from "antd";
+import { Table, Tag, Input, Button, Select, Spin, message } from "antd";
 import type { TableProps } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
+import { useRouter } from "next/navigation";
 import { usePurchaseOrderStore } from "@/stores/usePurchaseOrderStore";
-import type { PurchaseOrder } from "@/types/purchaseOrder";
+import type { PurchaseOrderSummary, PurchaseOrderStatus } from "@/types/purchaseOrder";
 import PurchaseOrderDetail from "./PurchaseOrderDetail";
 import DateFilter from "../ui/DateFilter/DateFilter";
-// const { RangePicker } = DatePicker;
 
 export default function PurchaseOrderList() {
+  const router = useRouter();
+  const [messageApi, contextHolder] = message.useMessage();
   const {
     list,
     isLoading,
@@ -31,11 +24,57 @@ export default function PurchaseOrderList() {
 
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
 
-  useEffect(() => {
-    getAll();
-  }, [filters, getAll]);
+  //  lấy màu theo trạng thái - GIỐNG VỚI DETAIL
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Draft":
+        return "blue"; // Màu xanh dương cho Draft
+      case "Submitted":
+        return "orange"; // Màu cam cho Submitted  
+      case "Received":
+        return "green"; // Màu xanh lá cho Received
+      case "Cancelled":
+        return "red"; // Màu đỏ cho Cancelled
+      default:
+        return "default"; // Màu xám cho các trạng thái khác
+    }
+  };
 
-  const columns: TableProps<PurchaseOrder>["columns"] = useMemo(
+  // Hàm lấy tên hiển thị theo trạng thái - GIỐNG VỚI DETAIL
+  const getStatusDisplayName = (status: string) => {
+    switch (status) {
+      case "Draft":
+        return "Nháp";
+      case "Submitted":
+        return "Đã gửi";
+      case "Received":
+        return "Đã nhận";
+      case "Cancelled":
+        return "Đã hủy";
+      default:
+        return status; // Giữ nguyên nếu không có mapping
+    }
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      const result = await getAll();
+      if (!result.success && result.message) {
+        messageApi.warning(result.message);
+      }
+    };
+    loadData();
+  }, [filters, getAll, messageApi]);
+
+  const handleCreateNew = () => {
+    router.push("/purchaseOrder/new");
+  };
+
+  const handleSearch = (value: string) => {
+    setFilters({ search: value, pageIndex: 1 });
+  };
+
+  const columns: TableProps<PurchaseOrderSummary>["columns"] = useMemo(
     () => [
       {
         title: "",
@@ -44,25 +83,40 @@ export default function PurchaseOrderList() {
         fixed: "left",
         render: () => <input type="checkbox" className="mx-2" />,
       },
-      { title: "Mã nhập hàng", dataIndex: "id", width: 160, fixed: "left" },
-      { title: "Thời gian", dataIndex: "time", width: 180 },
-      { title: "Mã NCC", dataIndex: "supplierCode", width: 120 },
-      { title: "Nhà cung cấp", dataIndex: "supplierName", width: 240 },
+      { 
+        title: "Mã phiếu nhập", 
+        dataIndex: "code", 
+        width: 160, 
+        fixed: "left",
+        render: (code: string) => code || "—"
+      },
+      { 
+        title: "Thời gian", 
+        dataIndex: "time", 
+        width: 180,
+        render: (time: string) => time ? new Date(time).toLocaleDateString('vi-VN') : "—"
+      },
+      { 
+        title: "Nhà cung cấp", 
+        dataIndex: "supplierName", 
+        width: 240,
+        render: (name: string) => name || "—"
+      },
       {
-        title: "Cần trả NCC",
-        dataIndex: "needPayToSupplier",
+        title: "Tổng tiền",
+        dataIndex: "subTotal",
         align: "right",
         width: 160,
-        render: (v: number) => v?.toLocaleString("vi-VN"),
+        render: (v: number) => v?.toLocaleString("vi-VN") + " đ" || "0 đ",
       },
       {
         title: "Trạng thái",
         dataIndex: "status",
         width: 140,
-        render: (v) => {
-          const color =
-            v === "Phiếu tạm" ? "orange" : v === "Đã nhập hàng" ? "green" : "red";
-          return <Tag color={color}>{v}</Tag>;
+        render: (status: PurchaseOrderStatus) => {
+          const color = getStatusColor(status);
+          const displayName = getStatusDisplayName(status);
+          return <Tag color={color}>{displayName}</Tag>;
         },
       },
     ],
@@ -70,172 +124,122 @@ export default function PurchaseOrderList() {
   );
 
   return (
-    <div className="flex gap-4">
-      {/* SIDEBAR FILTER */}
-      <aside className="w-[300px] shrink-0 bg-white rounded-md border border-gray-200 p-3">
-        <div className="mb-3">
-          <Input
-            allowClear
-            prefix={<SearchOutlined />}
-            placeholder="Theo mã phiếu nhập"
-            defaultValue={filters.q}
-            onPressEnter={(e) =>
-              setFilters({ q: (e.target as HTMLInputElement).value })
-            }
-            onBlur={(e) =>
-              setFilters({ q: (e.target as HTMLInputElement).value })
-            }
-          />
-        </div>
-
-        <div className="space-y-4">
-          {/* Trạng thái */}
-          {/* <div>
-            <div className="text-[13px] font-semibold mb-1">Trạng thái</div>
-            <Select<PurchaseOrderStatus[]>
-              mode="multiple"
+    <>
+      {contextHolder}
+      <div className="flex gap-4">
+        {/* SIDEBAR FILTER */}
+        <aside className="w-[300px] min-h-screen shrink-0 bg-white rounded-md border border-gray-200 p-3">
+          <div className="mb-3">
+            <Input
               allowClear
-              className="w-full"
-              placeholder="Chọn trạng thái"
-              value={filters.status}
-              options={[
-                { label: "Phiếu tạm", value: "Phiếu tạm" },
-                { label: "Đã nhập hàng", value: "Đã nhập hàng" },
-                { label: "Đã hủy", value: "Đã hủy" },
-              ]}
-              onChange={(v) => setFilters({ status: v && v.length ? v : undefined })}
-            />
-          </div> */}
-        <div>
-            <div className="text-[13px] font-semibold mb-1">Trạng thái</div>
-            <div className="flex flex-col gap-2 text-[13px]">
-              <Checkbox defaultChecked> Phiếu tạm </Checkbox>
-              <Checkbox defaultChecked> Đã trả hàng </Checkbox>
-              <Checkbox> Đã hủy </Checkbox>
-            </div>
-          </div>
-          {/* Thời gian */}
-          <div>
-            <div className="text-[13px] font-semibold mb-1">Thời gian</div>
-            {/* <RangePicker
-              className="w-full"
-              onChange={(val) =>
-                setFilters({
-                  fromDate: val?.[0]?.toISOString() ?? null,
-                  toDate: val?.[1]?.toISOString() ?? null,
-                })
-              }
-            /> */}
-            <DateFilter 
-                                      onChange={(val) => {
-                                        if (val.mode === "preset") {
-                                          setFilters({ datePreset: val.value }); // string
-                                        } else {
-                                          const [from, to] = val.value;          // [YYYY-MM-DD, YYYY-MM-DD]
-                                          setFilters({ fromDate: from, toDate: to, datePreset: null });
-                                        }
-                                      }}
-                                    />
-          </div>
-
-          {/* Người tạo */}
-          <div>
-            <div className="text-[13px] font-semibold mb-1">Người tạo</div>
-            <Select
-              allowClear
-              className="w-full"
-              placeholder="Chọn người tạo"
-              options={[
-                { label: "QUẢN LÝ Q4", value: "QUẢN LÝ Q4" },
-                { label: "KHO Q4", value: "KHO Q4" },
-              ]}
-              onChange={(v) => setFilters({ creator: v ?? null })}
+              prefix={<SearchOutlined />}
+              placeholder="Theo mã phiếu nhập"
+              defaultValue={filters.search}
+              onPressEnter={(e) => handleSearch((e.target as HTMLInputElement).value)}
+              onBlur={(e) => handleSearch(e.target.value)}
             />
           </div>
 
-          {/* Người nhập */}
-          <div>
-            <div className="text-[13px] font-semibold mb-1">Người nhập</div>
-            <Select
-              allowClear
-              className="w-full"
-              placeholder="Chọn người nhập"
-              options={[
-                { label: "QUẢN LÝ Q4", value: "QUẢN LÝ Q4" },
-                { label: "KHO Q4", value: "KHO Q4" },
-              ]}
-              onChange={(v) => setFilters({ receiver: v ?? null })}
-            />
-          </div>
-
-          {/* Chi phí nhập trả NCC */}
-          <div>
-            <div className="text-[13px] font-semibold mb-1">
-              Chi phí nhập trả NCC
+          <div className="space-y-4">
+            {/* Trạng thái */}
+            <div>
+              <div className="text-[13px] font-semibold mb-1">Trạng thái</div>
+              <Select
+                allowClear
+                className="w-full"
+                placeholder="Chọn trạng thái"
+                value={filters.status}
+                options={[
+                  { label: "Nháp", value: "Draft" },
+                  { label: "Đã gửi", value: "Submitted" },
+                  { label: "Đã nhận", value: "Received" },
+                  { label: "Đã hủy", value: "Cancelled" },
+                ]}
+                onChange={(value) => setFilters({ status: value, pageIndex: 1 })}
+              />
             </div>
-            <Select
-              allowClear
-              className="w-full"
-              placeholder="Chọn loại chi phí"
-              options={[
-                { label: "Tất cả", value: "all" },
-                { label: "Vận chuyển", value: "van-chuyen" },
-                { label: "Phụ phí", value: "phu-phi" },
-              ]}
-              onChange={(v) => setFilters({ extraCostType: v ?? null })}
-            />
-          </div>
 
-          <div className="pt-1">
-            <Button type="link" onClick={resetFilters}>
-              Mặc định
-            </Button>
-          </div>
-        </div>
-      </aside>
-
-      {/* TABLE + EXPAND DETAIL INLINE */}
-      <section className="flex-1">
-        <div className="bg-white rounded-md border border-gray-200">
-          <div className="flex justify-between items-center px-4 py-2 border-b">
-            <div className="text-[13px] text-gray-500">
-              Tổng: <b>{list.length.toLocaleString()}</b> phiếu nhập
+            {/* Thời gian */}
+            <div>
+              <div className="text-[13px] font-semibold mb-1">Thời gian</div>
+              <DateFilter 
+                onChange={(val) => {
+                  const [from, to] = val.value;
+                  setFilters({ fromDate: from, toDate: to, pageIndex: 1 });
+                }}  
+              />
             </div>
-            <div className="flex gap-2">
-              <Button type="primary">+ Nhập hàng</Button>
-              <Button>Xuất file</Button>
-              <Button>⚙️</Button>
+
+            <div className="pt-1">
+              <Button type="link" onClick={resetFilters}>
+                Mặc định
+              </Button>
             </div>
           </div>
+        </aside>
 
-          {isLoading ? (
-            <div className="py-10 flex justify-center">
-              <Spin />
+        {/* TABLE + EXPAND DETAIL INLINE */}
+        <section className="flex-1">
+          <div className="bg-white rounded-md border border-gray-200 min-h-screen">
+            <div className="flex justify-between items-center px-4 py-2 border-b">
+              <div className="text-[13px] text-gray-500">
+                Tổng: <b>{list.length.toLocaleString()}</b> phiếu nhập
+              </div>
+              <div className="flex gap-2">
+                <Button type="primary" onClick={handleCreateNew}>
+                  + Nhập hàng
+                </Button>
+                <Button>Xuất file</Button>
+                <Button>⚙️</Button>
+              </div>
             </div>
-          ) : (
-            <Table<PurchaseOrder>
-              rowKey="id"
-              columns={columns}
-              dataSource={list}
-              size="middle"
-              pagination={{ pageSize: 15, showSizeChanger: false }}
-              scroll={{ x: 1200 }}
-              expandable={{
-                expandedRowRender: (record) => (
-                  <PurchaseOrderDetail id={record.id} />
-                ),
-                expandRowByClick: true,
-                expandedRowKeys,
-                onExpand: (expanded, record) => {
-                  setExpandedRowKeys(expanded ? [record.id] : []);
-                },
-              }}
-              rowClassName="cursor-pointer hover:bg-blue-50"
-              sticky
-            />
-          )}
-        </div>
-      </section>
-    </div>
+
+            {isLoading ? (
+              <div className="py-10 flex justify-center">
+                <Spin />
+              </div>
+            ) : (
+              <Table<PurchaseOrderSummary>
+                rowKey="id"
+                columns={columns}
+                dataSource={list}
+                size="middle"
+                pagination={{ 
+                  pageSize: filters.pageSize, 
+                  showSizeChanger: true,
+                  pageSizeOptions: ['15', '20', '30', '50'],
+                  total: list.length,
+                  current: filters.pageIndex,
+                  onShowSizeChange: (current, size) => {
+                    setFilters({ pageSize: Number(size), pageIndex: 1 });
+                  },
+                  onChange: (page, pageSize) => setFilters({ pageIndex: page, pageSize }),
+                }}
+                scroll={{ x: 1200 }}
+                expandable={{
+                  expandedRowRender: (record) => (
+                    // <PurchaseOrderDetail id={record.id} />
+                     <PurchaseOrderDetail 
+      id={record.id} 
+      onDeleted={() => {
+        // Đơn giản là đóng tất cả expanded rows
+        setExpandedRowKeys([]);
+      }}
+    />
+                  ),
+                  expandRowByClick: true,
+                  expandedRowKeys,
+                  onExpand: (expanded, record) => {
+                    setExpandedRowKeys(expanded ? [record.id] : []);
+                  },
+                }}
+                rowClassName="cursor-pointer hover:bg-blue-50"
+                sticky
+              />
+            )}
+          </div>
+        </section>
+      </div>
+    </>
   );
 }
