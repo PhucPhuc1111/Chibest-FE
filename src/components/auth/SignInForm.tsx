@@ -50,6 +50,7 @@ export default function SignInForm() {
         userName: data["user-name"],
         email: data["email"],
         role: data["role"],
+        branchId: data["branch-id"],
       };
       
       localStorage.setItem("accessToken", accessToken);
