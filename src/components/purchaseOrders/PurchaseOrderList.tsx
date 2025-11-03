@@ -24,7 +24,7 @@ export default function PurchaseOrderList() {
 
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
 
-  // Hàm lấy màu theo trạng thái - GIỐNG VỚI DETAIL
+  //  lấy màu theo trạng thái - GIỐNG VỚI DETAIL
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Draft":
