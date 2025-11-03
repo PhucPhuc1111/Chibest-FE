@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState, useEffect } from "react";
 import { Radio, Dropdown, Button, DatePicker } from "antd";
+import type { RadioChangeEvent } from "antd";
 import type { RangePickerProps } from "antd/es/date-picker";
 import { RightOutlined } from "@ant-design/icons";
 import { Dayjs } from "dayjs";
@@ -109,9 +110,9 @@ export default function DateFilter({
       value: [from, to] 
     });
   };
-
-  const handleModeChange = (e: any) => {
-    const newMode = e.target.value;
+  const handleModeChange = (e: RadioChangeEvent) => {
+    const newMode = e.target.value as "preset" | "custom";
+    // const newMode = e.target.value;
     setMode(newMode);
     
     // Khi chuyển mode, gửi giá trị hiện tại

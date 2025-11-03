@@ -4,7 +4,7 @@
  * Định nghĩa cấu trúc phản hồi API tiêu chuẩn từ Backend
  * @template T Kiểu dữ liệu thực tế (payload) nằm trong trường 'data'
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   // Mã trạng thái nghiệp vụ (Business Logic Status Code)
   "status-code": number; 
   
