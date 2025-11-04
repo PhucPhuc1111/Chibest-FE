@@ -60,7 +60,7 @@ const AppHeader: React.FC = () => {
       title: "Nhập hàng",
       items: [
         { name: "Nhà cung cấp", path: "/suppliers" },
-        { name: "Nhập hàng", path: "/purchaseOrder" },
+        { name: "Nhập hàng", path: "/PurchaseOrder" },
         { name: "Trả hàng nhập", path: "/purchaseReturns" },
       ],
     },
