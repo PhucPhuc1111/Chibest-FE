@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Tabs, Table, Input, Tag, Button, Select, DatePicker, Modal } from "antd";
+import { Tabs, Table, Input, Tag, Button, Select, DatePicker, Modal,Tooltip  } from "antd";
 import type { TabsProps, TableProps } from "antd";
 import type { PurchaseOrderItem } from "@/types/purchaseOrder";
 import { usePurchaseOrderStore } from "@/stores/usePurchaseOrderStore";
@@ -16,6 +16,7 @@ import {
   CalendarOutlined,
   UploadOutlined,
   MailOutlined,
+  QuestionCircleOutlined
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -128,15 +129,42 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
       },
       {
         title: "Giảm giá",
-        // dataIndex: "discount",
+        dataIndex: "discount",
         align: "right",
         width: 120,
-        // render: (v: number) => (v || 0).toLocaleString("vi-VN") + " đ",
-        render: (_: unknown, record: PurchaseOrderItem) => {
-          const total = (record.quantity || 0) * (record.reFee || 0) + (record.discount || 0);
-          return total.toLocaleString("vi-VN") + " đ";
-        },
+        render: (v: number) => (v || 0).toLocaleString("vi-VN") + " đ",
+        // render: (_: unknown, record: PurchaseOrderItem) => {
+        //   const total = (record.quantity || 0) * (record.reFee || 0) + (record.discount || 0);
+        //   return total.toLocaleString("vi-VN") + " đ";
+        // },
       },
+      {
+        title: (
+          <span className="flex items-center justify-end gap-1">
+            Giảm tái mua
+            <Tooltip 
+              title="Phí giảm giá cho từng sản phẩm mua lại" 
+              placement="top"
+            >
+              <span 
+                style={{ 
+                  color: '#1890ff',
+                  cursor: 'help',
+                  fontWeight: 'bold',
+                  fontSize: '14px'
+                }}
+              >
+                <QuestionCircleOutlined />
+              </span>
+            </Tooltip>
+          </span>
+        ),
+        dataIndex: "reFee",
+        align: "right",
+        width: 160,
+        render: (v: number) => (v || 0).toLocaleString("vi-VN") + " đ",
+      },
+      
       {
         title: "Thành tiền",
         align: "right",
@@ -303,6 +331,21 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
                   <div className="flex">
                     <label className="text-gray-600 w-[170px] text-right pr-2">
                       Giảm giá:
+                       <Tooltip 
+                          title="Phí giảm giá = (số lượng x giảm tái mua + giá giảm)" 
+                          placement="top"
+                        >
+                          <span 
+                            style={{ 
+                              color: '#2c2f31',
+                              cursor: 'help',
+                              fontWeight: 'bold',
+                              fontSize: '14px'
+                            }}
+                          >
+                            <QuestionCircleOutlined />
+                          </span>
+                        </Tooltip>
                     </label>
                     <div className="text-right font-medium text-gray-800 flex-1">
                       {order.discountAmount?.toLocaleString("vi-VN") || "0"} đ

@@ -127,7 +127,7 @@ const AppHeader: React.FC = () => {
     // CHỈ SỬA Ở ĐÂY: sticky -> fixed, thêm inset-x-0 left-0 right-0 w-screen
     <div
       id="app-header"
-      className="fixed top-0 inset-x-0 left-0 right-0 w-screen bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 z-[60] lg:border-b"
+      className="sticky  top-0 inset-x-0 left-0 right-0 w-screen bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 z-[60] lg:border-b"
     >
       {/* Header top row */}
       <header className="flex flex-col lg:flex-row w-full bg-white dark:bg-gray-900">
