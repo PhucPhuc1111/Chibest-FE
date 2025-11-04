@@ -1,7 +1,7 @@
 import api from './axiosInstance';
-import { Warehouse } from '@/types/warehouse';
+import { WarehouseFormData  } from '@/types/warehouse';
 
-export const createWarehouse = async (data: Warehouse) => {
+export const createWarehouse = async (data: WarehouseFormData ) => {
   const response = await api.post('/warehouse', data);
   return response.data;
 };
@@ -11,7 +11,7 @@ export const getBranches = async () => {
   return response.data;
 };
 
-export const updateWarehouse = async (id: string, data: Warehouse) => {
+export const updateWarehouse = async (id: string, data: WarehouseFormData ) => {
   const response = await api.put(`/warehouse/${id}`, data);
   return response.data;
 };
