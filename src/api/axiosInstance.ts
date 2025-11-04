@@ -84,6 +84,7 @@ api.interceptors.response.use(
           userName: data['user-name'],
           email: data['email'],
           role: data['role'],
+          branchId: data['branch-id'],
         };
         localStorage.setItem('userInfo', JSON.stringify(userInfo));
 
