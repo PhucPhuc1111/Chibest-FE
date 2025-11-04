@@ -3,69 +3,44 @@ import { ThemeToggleButton } from "@/components/common/ThemeToggleButton";
 import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
-import { BoxCubeIcon, CalenderIcon, GridIcon, PieChartIcon,DollarLineIcon } from "@/icons";
+import { BoxCubeIcon, CalenderIcon, GridIcon, PieChartIcon, DollarLineIcon } from "@/icons";
 import Image from "next/image";
 import Link from "next/link";
-import React, { useState ,useEffect,useRef} from "react";
-
+import React, { useState, useEffect, useRef } from "react";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
- const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const {  toggleSidebar, toggleMobileSidebar } = useSidebar();
- const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const { toggleSidebar, toggleMobileSidebar } = useSidebar();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleToggle = () => {
-    if (window.innerWidth >= 1024) {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
       toggleSidebar();
     } else {
       toggleMobileSidebar();
     }
   };
-type NavItem = {
+
+  type NavItem = {
     name: string;
     icon: React.ReactNode;
     path?: string;
     subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
     megaMenu?: boolean;
   };
-    // ======== MAIN NAV ITEMS =========
-const navItems: NavItem[] = [
-  {
-    icon: <DollarLineIcon />,
-    name: "Tổng quan",
- 
-     path: "/",
-  },
-  {
-      icon: <GridIcon />,
-      name: "Quản trị hệ thống",
-      megaMenu: true, // Change this to true
-    },
-  {
-    icon: <CalenderIcon />,
-    name: "Hàng hóa",
-      megaMenu: true,
 
-  
-  },
-   {
-      icon: <PieChartIcon />,
-      name: "Đơn hàng",
-      path: "/order/demo",
-    },
-    {
-      icon: <BoxCubeIcon />,
-      name: "Khách hàng",
-      path: "/customer/demo",
-    },
-    
- 
-
-];
+  // ======== MAIN NAV ITEMS =========
+  const navItems: NavItem[] = [
+    { icon: <DollarLineIcon />, name: "Tổng quan", path: "/" },
+    { icon: <GridIcon />, name: "Quản trị hệ thống", megaMenu: true },
+    { icon: <CalenderIcon />, name: "Hàng hóa", megaMenu: true },
+    { icon: <PieChartIcon />, name: "Đơn hàng", path: "/order/demo" },
+    { icon: <BoxCubeIcon />, name: "Khách hàng", path: "/customer/demo" },
+  ];
 
   // ======== HÀNG HÓA MEGA MENU DATA =========
- const hangHoaMegaMenu = [
+  const hangHoaMegaMenu = [
     {
       title: "Hàng hóa",
       items: [
@@ -90,16 +65,17 @@ const navItems: NavItem[] = [
       ],
     },
   ];
-const quanTriMegaMenu = [
-  {
-    title: "Quản lý hệ thống",
-    items: [
-      { name: "Chi nhánh", path: "/branch" },
-      { name: "Kho", path: "/warehouse" },
-      { name: "Tài khoản", path: "/account" },
-    ],
-  }
-];
+
+  const quanTriMegaMenu = [
+    {
+      title: "Quản lý hệ thống",
+      items: [
+        { name: "Chi nhánh", path: "/branch" },
+        { name: "Kho", path: "/warehouse" },
+        { name: "Tài khoản", path: "/account" },
+      ],
+    },
+  ];
 
   // ======== MEGA MENU COMPONENT =========
   const renderMegaMenu = (menuData: typeof hangHoaMegaMenu | typeof quanTriMegaMenu) => (
@@ -145,9 +121,14 @@ const quanTriMegaMenu = [
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
-  // ======== HEADER ========
+
+  // ======== HEADER (FULL-WIDTH, FIXED) ========
   return (
-     <div className="sticky top-0 w-full bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 z-[50] lg:border-b">
+    // CHỈ SỬA Ở ĐÂY: sticky -> fixed, thêm inset-x-0 left-0 right-0 w-screen
+    <div
+      id="app-header"
+      className="fixed top-0 inset-x-0 left-0 right-0 w-screen bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 z-[60] lg:border-b"
+    >
       {/* Header top row */}
       <header className="flex flex-col lg:flex-row w-full bg-white dark:bg-gray-900">
         <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 lg:justify-normal lg:border-b-0 lg:px-6 lg:py-4">
@@ -162,13 +143,7 @@ const quanTriMegaMenu = [
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <Image
-              width={60}
-              height={60}
-              src="/images/logo/logo.jpg"
-              alt="Logo"
-              className="rounded-lg"
-            />
+            <Image width={60} height={60} src="/images/logo/logo.jpg" alt="Logo" className="rounded-lg" />
           </Link>
 
           {/* Application Menu (3 dots mobile) */}
@@ -196,7 +171,6 @@ const quanTriMegaMenu = [
                       fillRule="evenodd"
                       clipRule="evenodd"
                       d="M3.04175 9.37363C3.04175 5.87693 5.87711 3.04199 9.37508 3.04199C12.8731 3.04199 15.7084 5.87693 15.7084 9.37363C15.7084 12.8703 12.8731 15.7053 9.37508 15.7053C5.87711 15.7053 3.04175 12.8703 3.04175 9.37363ZM9.37508 1.54199C5.04902 1.54199 1.54175 5.04817 1.54175 9.37363C1.54175 13.6991 5.04902 17.2053 9.37508 17.2053C11.2674 17.2053 13.003 16.5344 14.357 15.4176L17.177 18.238C17.4699 18.5309 17.9448 18.5309 18.2377 18.238C18.5306 17.9451 18.5306 17.4703 18.2377 17.1774L15.418 14.3573C16.5365 13.0033 17.2084 11.2669 17.2084 9.37363C17.2084 5.04817 13.7011 1.54199 9.37508 1.54199Z"
-                      fill=""
                     />
                   </svg>
                 </span>
@@ -213,9 +187,7 @@ const quanTriMegaMenu = [
 
         {/* Right side (Theme, Notif, User) */}
         <div
-          className={`${
-            isApplicationMenuOpen ? "flex" : "hidden"
-          } items-center justify-between w-full gap-4 px-5 py-4 lg:flex lg:justify-end lg:px-6`}
+          className={`${isApplicationMenuOpen ? "flex" : "hidden"} items-center justify-between w-full gap-4 px-5 py-4 lg:flex lg:justify-end lg:px-6`}
         >
           <div className="flex items-center gap-3">
             <ThemeToggleButton />
@@ -226,7 +198,7 @@ const quanTriMegaMenu = [
       </header>
 
       {/* ======== NAVBAR ======== */}
-      <nav className="hidden lg:flex items-center  bg-amber-100 dark:text-brand-500 dark:bg-gray-900  text-sm">
+      <nav className="hidden lg:flex items-center bg-amber-100 dark:text-brand-500 dark:bg-gray-900 text-sm w-full">
         {navItems.map((nav) => (
           <div
             key={nav.name}
@@ -241,37 +213,27 @@ const quanTriMegaMenu = [
           >
             {/* Main nav item */}
             <button
-              className={`flex items-center  gap-2 px-4 py-2 rounded-lg  hover:bg-amber-200 dark:hover:bg-gray-800 transition ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-amber-200 dark:hover:bg-gray-800 transition ${
                 activeMenu === nav.name ? "text-black-600 bg-amber-200 rounded-lg dark:bg-gray-800" : ""
               }`}
             >
               {nav.icon}
               <span>{nav.name}</span>
               {nav.megaMenu && (
-                <svg
-                  className="w-4 h-4 ml-1"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  stroke="currentColor"
-                >
+                <svg className="w-4 h-4 ml-1" viewBox="0 0 20 20" fill="none" stroke="currentColor">
                   <path d="M5.5 8l4.5 4 4.5-4" />
                 </svg>
               )}
             </button>
 
             {/* Render mega menu */}
-            {nav.megaMenu && activeMenu === nav.name && 
-              renderMegaMenu(nav.name === "Hàng hóa" ? hangHoaMegaMenu : quanTriMegaMenu)}
+            {nav.megaMenu && activeMenu === nav.name && renderMegaMenu(nav.name === "Hàng hóa" ? hangHoaMegaMenu : quanTriMegaMenu)}
 
             {/* Normal submenu */}
             {nav.subItems && (
               <div className="absolute left-0 top-full mt-2 bg-white dark:bg-gray-900 shadow-lg rounded-md invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all">
                 {nav.subItems.map((sub) => (
-                  <Link
-                    key={sub.name}
-                    href={sub.path}
-                    className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
+                  <Link key={sub.name} href={sub.path} className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800">
                     {sub.name}
                   </Link>
                 ))}

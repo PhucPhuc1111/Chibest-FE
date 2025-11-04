@@ -1,7 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
-import { Tabs, Table, Button, Select, Tag, Input } from "antd";
+import { useEffect, useState } from "react";
+import {
+  Tabs,
+  Table,
+  Button,
+  Select,
+  Tag,
+  Input,
+  Modal,
+  Form,
+  DatePicker,
+  InputNumber,
+  message,
+  Popconfirm,
+} from "antd";
 import type { TabsProps } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
@@ -12,72 +25,255 @@ import {
   FileSearchOutlined,
   DollarOutlined,
   ToolOutlined,
-  PercentageOutlined,
 } from "@ant-design/icons";
-import type { Supplier, SupplierDebt } from "@/types/supplier";
+import type { Supplier, SupplierDebtHistory } from "@/types/supplier";
 import { useSupplierStore } from "@/stores/useSupplierStore";
+import dayjs from "dayjs";
+import type { Dayjs } from "dayjs";
 
 /* -------------------- Helper format number -------------------- */
 const formatNumber = (v?: number) => (v ?? 0).toLocaleString("vi-VN");
+const formatDateForApi = (value: Dayjs | Date) => dayjs(value).format("YYYY-MM-DDTHH:mm:ss.SSS");
 
 /* -------------------- Component chính -------------------- */
 export default function SupplierDetail({ supplier }: { supplier: Supplier }) {
-  const { detail, getById } = useSupplierStore();
+  const {
+    detail,
+    getById,
+    isLoadingDetail,
+    createTransaction,
+    isSubmittingTransaction,
+    deleteHistory,
+    isDeletingHistory,
+  } = useSupplierStore();
+  const [transactionType, setTransactionType] = useState<string>("all");
+  const [modalType, setModalType] = useState<"Custom" | "Payment" | null>(null);
+  const [form] = Form.useForm();
+  const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
+
+  const transactionTypeLabels: Record<string, string> = {
+    Custom: "Điều chỉnh",
+    Purchase: "Nhập hàng",
+    Return: "Trả hàng",
+    Payment: "Thanh toán",
+  };
+
+  const handleOpenModal = (type: "Custom" | "Payment") => {
+    setModalType(type);
+    form.setFieldsValue({
+      transactionDate: dayjs(),
+      amount: undefined,
+      note: "",
+    });
+  };
+
+  const handleCloseModal = () => {
+    setModalType(null);
+    form.resetFields();
+  };
+
+  const currentSupplier = detail ?? supplier;
+  const supplierDebtId = currentSupplier.id ?? supplier.id;
+  const disableActions =
+    isLoadingDetail || !supplierDebtId || isDeletingHistory || isSubmittingTransaction;
+
+  const handleDeleteHistory = async (history: SupplierDebtHistory) => {
+    const historyId = history.id;
+    if (!historyId) {
+      message.error("Không xác định được mã giao dịch");
+      return;
+    }
+    setDeletingHistoryId(historyId);
+    try {
+      await deleteHistory({
+        supplierDebtId,
+        historyId,
+        filterType: transactionType,
+      });
+      message.success("Đã xoá giao dịch công nợ");
+    } catch (error) {
+      if (error instanceof Error) {
+        message.error(error.message);
+      } else {
+        message.error("Không thể xoá giao dịch");
+      }
+    } finally {
+      setDeletingHistoryId(null);
+    }
+  };
+
+  const handleFormSubmit = async (values: {
+    transactionDate: Dayjs;
+    amount: string;
+    note?: string;
+  }) => {
+    if (!modalType) return;
+    if (!supplierDebtId) {
+      message.error("Không xác định được nhà cung cấp");
+      return;
+    }
+
+    const transactionDate = values.transactionDate
+      ? formatDateForApi(values.transactionDate)
+      : undefined;
+
+    if (!transactionDate) {
+      message.error("Vui lòng chọn thời gian giao dịch");
+      return;
+    }
+
+    try {
+      await createTransaction({
+        supplierDebtId,
+        transactions: [
+          {
+            transactionType: modalType,
+            transactionDate,
+            amount: Number(values.amount || 0),
+            note: values.note,
+            createdAt: formatDateForApi(new Date()),
+          },
+        ],
+        filterType: transactionType,
+      });
+
+      message.success("Cập nhật công nợ thành công");
+      handleCloseModal();
+    } catch (error) {
+      if (error instanceof Error) {
+        message.error(error.message);
+      } else {
+        message.error("Không thể cập nhật công nợ");
+      }
+    }
+  };
+
+  const status = currentSupplier.status ?? "Đang hoạt động";
+  const isInactive = status === "Ngừng hoạt động";
+  const creator =
+    currentSupplier.creator && currentSupplier.creator.trim().length > 0
+      ? currentSupplier.creator
+      : "—";
+  const createdAt = currentSupplier.createdAt
+    ? new Date(currentSupplier.createdAt).toLocaleString("vi-VN")
+    : "—";
 
   useEffect(() => {
-    getById(supplier.id);
-  }, [supplier.id, getById]);
+    const type = transactionType === "all" ? undefined : transactionType;
+    getById(supplier.id, type);
+  }, [supplier.id, transactionType, getById]);
+
+  const formatDateTime = (value?: string) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleString("vi-VN");
+  };
 
   /* -------------------- Cấu hình bảng nợ -------------------- */
-  const debtColumns: ColumnsType<SupplierDebt> = [
+  const debtColumns: ColumnsType<SupplierDebtHistory> = [
     {
-      title: "Mã phiếu",
-      dataIndex: "id",
-      width: 140,
-      render: (v: string) => (
-        <span className="text-blue-600 hover:underline cursor-pointer">{v}</span>
-      ),
+      title: "Ngày giao dịch",
+      dataIndex: "transactionDate",
+      width: 180,
+      render: (v?: string) => formatDateTime(v),
     },
-    { title: "Thời gian", dataIndex: "time", width: 160 },
-    { title: "Loại", dataIndex: "type", width: 160 },
+    {
+      title: "Loại giao dịch",
+      dataIndex: "transactionType",
+      width: 160,
+      render: (v?: string) => {
+        if (!v) return "—";
+        return transactionTypeLabels[v] ?? v;
+      },
+    },
+    {
+      title: "Ghi chú",
+      dataIndex: "note",
+      ellipsis: true,
+      render: (v?: string) => v ?? "—",
+    },
     {
       title: "Giá trị",
       dataIndex: "amount",
+      align: "right",
+      width: 140,
+      render: (v?: number) => formatNumber(v),
+    },
+    {
+      title: "Số dư trước",
+      dataIndex: "balanceBefore",
       align: "right",
       width: 160,
       render: (v?: number) => formatNumber(v),
     },
     {
-      title: "Nợ cần trả nhà cung cấp",
-      dataIndex: "debt",
+      title: "Số dư sau",
+      dataIndex: "balanceAfter",
       align: "right",
-      width: 200,
-      render: (v?: number) => (
-        <span className={v && v < 0 ? "text-red-600" : "text-green-600"}>
-          {formatNumber(v)}
-        </span>
-      ),
+      width: 160,
+      render: (v?: number) => {
+        const amount = v ?? 0;
+        const isNegative = amount < 0;
+        return (
+          <span className={isNegative ? "text-red-600" : "text-green-600"}>
+            {formatNumber(amount)}
+          </span>
+        );
+      },
+    },
+    {
+      title: "",
+      dataIndex: "actions",
+      width: 100,
+      align: "center",
+      render: (_: unknown, record) => {
+        const historyId = record.id;
+        const isDeleting = deletingHistoryId === historyId && isDeletingHistory;
+        const disabled = !historyId || isDeletingHistory;
+
+        return (
+          <Popconfirm
+            title="Xoá giao dịch?"
+            description="Thao tác này không thể hoàn tác."
+            okText="Xoá"
+            cancelText="Hủy"
+            okButtonProps={{ loading: isDeleting }}
+            onConfirm={() => handleDeleteHistory(record)}
+            disabled={disabled}
+          >
+            <Button
+              danger
+              size="small"
+              icon={<DeleteOutlined />}
+              disabled={disabled}
+              loading={isDeleting}
+            />
+          </Popconfirm>
+        );
+      },
     },
   ];
 
   /* -------------------- Tab Thông tin -------------------- */
+  const currentDebt = currentSupplier.currentDebt ?? currentSupplier.remainingDebt ?? 0;
+
   const infoTab = (
     <div className="bg-white rounded-md border border-gray-200 p-4">
       {/* Header */}
       <div className="flex justify-between items-center border-b pb-3 mb-3">
-        <div className="text-lg font-semibold flex items-center gap-2">
-          {supplier.name}
-          <span className="text-gray-500 text-sm">({supplier.id})</span>
+        <div className="text-lg font-bold flex items-center gap-2">
+          {currentSupplier.name}
           <Tag
-            color={supplier.status === "Ngừng hoạt động" ? "red" : "green"}
+            color={isInactive ? "red" : "green"}
             className="rounded"
           >
-            {supplier.status}
+            {status}
           </Tag>
         </div>
         <div className="text-sm text-gray-500">
-          Người tạo: <b>{supplier.creator}</b> | Ngày tạo:{" "}
-          <b>{supplier.createdAt}</b>
+          Người tạo: <b>{creator}</b> | Ngày tạo:{" "}
+          <b>{createdAt}</b>
         </div>
       </div>
 
@@ -88,38 +284,33 @@ export default function SupplierDetail({ supplier }: { supplier: Supplier }) {
             <label className="text-gray-600 w-[150px] inline-block">
               Điện thoại:
             </label>
-            <span className="font-medium">{supplier.phone || "—"}</span>
-          </div>
-          <div>
-            <label className="text-gray-600 w-[150px] inline-block">Email:</label>
-            <span className="font-medium">{supplier.email || "Chưa có"}</span>
+            <span className="font-medium">{currentSupplier.phone || "—"}</span>
           </div>
           <div>
             <label className="text-gray-600 w-[150px] inline-block">Địa chỉ:</label>
             <span className="font-medium italic text-gray-700">
-              {supplier.address || "Chưa có"}
+              {currentSupplier.address || "Chưa có"}
             </span>
-          </div>
-          <div className="text-blue-600 text-sm mt-1 cursor-pointer hover:underline">
-            Thêm thông tin xuất hoá đơn
           </div>
         </div>
 
         <div className="space-y-2">
           <div>
-            <label className="text-gray-600 w-[180px] inline-block">
-              Nhóm nhà cung cấp:
-            </label>
-            <span className="font-medium">{supplier.group || "Chưa có"}</span>
-          </div>
-          <div>
-            <label className="text-gray-600 w-[180px] inline-block">Chi nhánh:</label>
-            <span className="font-medium">{supplier.branch || "—"}</span>
-          </div>
-          <div>
             <label className="text-gray-600 w-[180px] inline-block">Tổng mua:</label>
             <span className="font-semibold text-blue-600">
-              {formatNumber(supplier.totalPurchase)} ₫
+              {formatNumber(currentSupplier.totalPurchase)} ₫
+            </span>
+          </div>
+          <div>
+            <label className="text-gray-600 w-[180px] inline-block">Hàng lỗi:</label>
+            <span className="font-semibold text-black">
+              - {formatNumber(currentSupplier.returnAmount)} ₫
+            </span>
+          </div>
+          <div>
+            <label className="text-gray-600 w-[180px] inline-block">Đã trả nợ:</label>
+            <span className="font-semibold text-black">
+              - {formatNumber(currentSupplier.payAmount)} ₫
             </span>
           </div>
           <div>
@@ -128,12 +319,12 @@ export default function SupplierDetail({ supplier }: { supplier: Supplier }) {
             </label>
             <span
               className={
-                supplier.currentDebt < 0
+                currentDebt > 0
                   ? "font-semibold text-red-600"
                   : "font-semibold text-green-600"
               }
             >
-              {formatNumber(supplier.currentDebt)} ₫
+              {formatNumber(currentDebt)} ₫
             </span>
           </div>
         </div>
@@ -173,34 +364,52 @@ export default function SupplierDetail({ supplier }: { supplier: Supplier }) {
     <div className="bg-white rounded-md border border-gray-200 p-4">
       <div className="flex justify-between items-center mb-3">
         <div className="text-sm text-gray-600">
-          Tất cả các giao dịch ({detail?.debts?.length || 0})
+          Tất cả các giao dịch ({detail?.debtHistories?.length || 0})
         </div>
         <Select
-          defaultValue="all"
+          value={transactionType}
           className="w-[200px]"
           options={[
             { label: "Tất cả giao dịch", value: "all" },
-            { label: "Điều chỉnh", value: "adjust" },
-            { label: "Phiếu nhập", value: "purchase" },
+            { label: transactionTypeLabels.Custom, value: "Custom" },
+            { label: transactionTypeLabels.Purchase, value: "Purchase" },
+            { label: transactionTypeLabels.Return, value: "Return" },
+            { label: transactionTypeLabels.Payment, value: "Payment" },
           ]}
+          onChange={(value) => setTransactionType(value)}
         />
       </div>
 
       <Table
-        rowKey="id"
         columns={debtColumns}
-        dataSource={detail?.debts || []}
+        dataSource={detail?.debtHistories || []}
         pagination={{ pageSize: 10, showSizeChanger: false }}
         size="small"
         rowClassName="hover:bg-blue-50"
         scroll={{ x: 900 }}
         locale={{ emptyText: "Chưa có giao dịch nào" }}
+        loading={isLoadingDetail}
+        rowKey={(record) =>
+          record.id || `${record.transactionDate ?? "unknown"}-${record.createdAt ?? "created"}`
+        }
       />
 
       <div className="flex justify-end gap-2 mt-4">
-        <Button icon={<ToolOutlined />}>Điều chỉnh</Button>
-        <Button icon={<DollarOutlined />}>Thanh toán</Button>
-        <Button icon={<PercentageOutlined />}>Chiết khấu thanh toán</Button>
+        <Button
+          icon={<ToolOutlined />}
+          onClick={() => handleOpenModal("Custom")}
+          disabled={disableActions}
+        >
+          Điều chỉnh
+        </Button>
+        <Button
+          icon={<DollarOutlined />}
+          type="primary"
+          onClick={() => handleOpenModal("Payment")}
+          disabled={disableActions}
+        >
+          Thanh toán
+        </Button>
       </div>
     </div>
   );
@@ -213,6 +422,51 @@ export default function SupplierDetail({ supplier }: { supplier: Supplier }) {
   return (
     <div className="mt-2">
       <Tabs defaultActiveKey="info" items={items} />
+
+      <Modal
+        open={modalType !== null}
+        title={modalType ? `${transactionTypeLabels[modalType]} công nợ` : ""}
+        onCancel={handleCloseModal}
+        onOk={() => form.submit()}
+        confirmLoading={isSubmittingTransaction}
+        destroyOnClose
+      >
+        <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
+          <Form.Item
+            name="transactionDate"
+            label="Thời gian giao dịch"
+            rules={[{ required: true, message: "Vui lòng chọn thời gian" }]}
+          >
+            <DatePicker showTime className="w-full" format="DD/MM/YYYY HH:mm" />
+          </Form.Item>
+
+          <Form.Item
+            name="amount"
+            label="Giá trị"
+            className="w-full"
+            rules={[{ required: true, message: "Vui lòng nhập giá trị" }]}
+          >
+            <InputNumber<string>
+              min="0"
+              className="!w-full"
+              controls={false}
+              stringMode
+              placeholder="Nhập số tiền"
+              formatter={value => {
+                if (!value) return "";
+                const numeric = value.replace(/[^\d]/g, "");
+                if (!numeric) return "";
+                return `${numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ",")} ₫`;
+              }}
+              parser={value => (value ? value.replace(/[^\d]/g, "") : "")}
+            />
+          </Form.Item>
+
+          <Form.Item name="note" label="Ghi chú">
+            <Input.TextArea rows={3} placeholder="Nhập ghi chú" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
