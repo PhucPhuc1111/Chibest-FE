@@ -1,5 +1,5 @@
 import api from './axiosInstance';
-import { WarehouseFormData  } from '@/types/temp';
+import { WarehouseFormData  } from '@/types/warehouse';
 
 export const createWarehouse = async (data: WarehouseFormData ) => {
   const response = await api.post('/warehouse', data);
