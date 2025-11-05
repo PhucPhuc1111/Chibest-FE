@@ -1,6 +1,6 @@
 import { Modal, Form, Input, Select, Switch, message } from 'antd';
 import { useState, useEffect } from 'react';
-import { WarehouseFormData, Branch } from '@/types/warehouse';
+import { WarehouseFormData, Branch } from '@/types/temp';
 import { createWarehouse, getBranches, updateWarehouse } from '@/api/warehouseApi';
 
 interface CreateWarehouseModalProps {
