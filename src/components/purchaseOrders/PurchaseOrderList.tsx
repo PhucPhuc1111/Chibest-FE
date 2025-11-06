@@ -24,23 +24,21 @@ export default function PurchaseOrderList() {
 
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
 
-  //  lấy màu theo trạng thái - GIỐNG VỚI DETAIL
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Draft":
-        return "blue"; // Màu xanh dương cho Draft
+        return "blue"; 
       case "Submitted":
-        return "orange"; // Màu cam cho Submitted  
+        return "orange"; 
       case "Received":
-        return "green"; // Màu xanh lá cho Received
+        return "green"; 
       case "Cancelled":
-        return "red"; // Màu đỏ cho Cancelled
+        return "red"; 
       default:
-        return "default"; // Màu xám cho các trạng thái khác
+        return "default"; 
     }
   };
 
-  // Hàm lấy tên hiển thị theo trạng thái - GIỐNG VỚI DETAIL
   const getStatusDisplayName = (status: string) => {
     switch (status) {
       case "Draft":
@@ -52,7 +50,7 @@ export default function PurchaseOrderList() {
       case "Cancelled":
         return "Đã hủy";
       default:
-        return status; // Giữ nguyên nếu không có mapping
+        return status; 
     }
   };
 

@@ -71,10 +71,10 @@ export default function StockTakeList() {
     []
   );
 
-  return (
-    <div className="flex gap-4">
+return (
+    <div className="flex gap-4 flex-col lg:flex-row"> {/* ← THÊM responsive */}
       {/* Sidebar */}
-      <aside className="w-[300px] bg-white border rounded-md p-3">
+      <aside className="w-full lg:w-[300px] xl:w-[320px] bg-white border rounded-md p-3 shrink-0">
         <div className="mb-3">
           <Input
             prefix={<SearchOutlined />}
@@ -88,23 +88,12 @@ export default function StockTakeList() {
 
         <div className="space-y-4">
           <div>
-            {/* <div className="text-[13px] font-semibold mb-1">Ngày tạo</div> */}
-            {/* <RangePicker
-              className="w-full"
-              onChange={(val) =>
-                setFilters({
-                  fromDate: val?.[0]?.toISOString() ?? null,
-                  toDate: val?.[1]?.toISOString() ?? null,
-                })
-              }
-            /> */}
-           
             <StockDateFilter
               onChange={(val) => {
                 if (val.mode === "preset") {
-                  setFilters({ datePreset: val.value }); // string
+                  setFilters({ datePreset: val.value });
                 } else {
-                  const [from, to] = val.value;          // [YYYY-MM-DD, YYYY-MM-DD]
+                  const [from, to] = val.value;
                   setFilters({ fromDate: from, toDate: to, datePreset: null });
                 }
               }}
@@ -149,17 +138,16 @@ export default function StockTakeList() {
       </aside>
 
       {/* Table */}
-      <section className="flex-1">
-        <div className="bg-white border rounded-md">
-          <div className="flex justify-between items-center px-4 py-2 border-b">
-            <div className="text-[13px] text-gray-500">
+      <section className="flex-1 min-w-0"> {/* ← THÊM min-w-0 */}
+        <div className="bg-white border rounded-md overflow-x-auto"> {/* ← THÊM overflow-x-auto */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 px-4 py-2 border-b">
+            <div className="text-[13px] text-gray-500 whitespace-nowrap">
               Tổng: <b>{stockTakes.length}</b> phiếu kiểm kho
             </div>
-            <div className="space-x-2">
-              <Button type="primary">+ Kiểm kho</Button>
-              <Button type="default" > Xuất file</Button>
+            <div className="flex gap-2 shrink-0">
+              <Button type="primary" >+ Kiểm kho</Button>
+              <Button type="default" >Xuất file</Button>
             </div>
-
           </div>
 
           {isLoading ? (
@@ -171,12 +159,12 @@ export default function StockTakeList() {
               rowKey="id"
               columns={columns}
               dataSource={stockTakes}
-              size="middle"
+              size="middle" 
               pagination={{
                 pageSize: 15,
                 showTotal: (t) => `1 - ${Math.min(15, t)} trong ${t} phiếu`,
               }}
-              scroll={{ x: 1100 }}
+              scroll={{ x: 800 }} 
               expandable={{
                 expandedRowRender: (record) =>
                   details[record.id] ? (

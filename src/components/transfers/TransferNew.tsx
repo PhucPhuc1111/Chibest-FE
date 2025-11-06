@@ -25,7 +25,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useTransferStore } from "@/stores/useTransferStore";
 import useWarehouseStore from "@/stores/useWarehouseStore";
-import useProductStore from "@/stores/useProductStore"; 
+import {useProductStore} from "@/stores/useProductStore"; 
 import type { CreateTransferPayload } from "@/types/transfer";
 import type { Product } from "@/types/product";
 import dayjs from "dayjs";
@@ -181,19 +181,22 @@ export default function TransferNew() {
     messageApi.success(`Đã thêm ${importedProducts.length} sản phẩm từ file import!`);
   };
 
-  // Search product handlers
-  const handleSearch = async () => {
-    if (!searchTerm.trim()) {
-      messageApi.warning("Vui lòng nhập từ khóa tìm kiếm!");
-      return;
-    }
-    const result = await searchProducts(searchTerm);
-    if (result.success) {
-      setSearchModalVisible(true);
-    } else {
-      messageApi.error(result.message || "Tìm kiếm thất bại!");
-    }
-  };
+ // Search product handlers
+const handleSearch = async () => {
+  if (!searchTerm.trim()) {
+    messageApi.warning("Vui lòng nhập từ khóa tìm kiếm!");
+    return;
+  }
+  
+  try {
+
+    await searchProducts(searchTerm);
+    setSearchModalVisible(true);
+  } catch (error) {
+
+    console.log("Search failed:", error);
+  }
+};
 
   const selectProduct = (product: Product) => {
     const newProduct: ProductRow = {

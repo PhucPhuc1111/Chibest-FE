@@ -1,4 +1,3 @@
-// types/product.ts
 export interface Product {
   id: string;
   avartarUrl: string | null;
@@ -20,15 +19,27 @@ export interface Product {
   stockQuantity: number;
 }
 
-export interface ProductListResponse {
-  pageIndex: number;
-  pageSize: number;
-  totalCount: number;
-  totalPage: number;
-  dataList: Product[];
+export interface ProductCreateRequest {
+  sku: string;
+  name: string;
+  description: string;
+  "avatar-url"?: string;
+  color: string;
+  size: string;
+  style?: string;
+  brand: string;
+  material?: string;
+  weight: number;
+  "is-master": boolean;
+  status: string;
+  "category-id": string;
+  "parent-sku"?: string;
+  "selling-price": number;
+  "cost-price": number;
+  "branch-id": string;
 }
 
-export interface ProductSearchParams {
+export interface ProductQueryParams {
   SearchTerm?: string;
   Status?: string;
   CategoryId?: string;

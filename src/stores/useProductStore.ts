@@ -1,10 +1,8 @@
 import { create } from "zustand";
-import { immer } from "zustand/middleware/immer";
 import api from "@/api/axiosInstance";
 import { message } from "antd";
-import type { Product } from "@/types/product";
+import type { Product,ProductQueryParams ,ProductCreateRequest} from "@/types/product";
 
-// ✅ Định nghĩa interface cho API response item
 interface RawProduct {
   id: string;
   "avartar-url": string | null;
@@ -25,9 +23,7 @@ interface RawProduct {
   "selling-price": number;
   "stock-quantity": number;
 }
-
-// ✅ Định nghĩa API response structure
-interface ProductApiResponse {
+interface ApiResponse {
   "status-code": number;
   message: string;
   data: {
@@ -35,207 +31,245 @@ interface ProductApiResponse {
     "total-count": number;
   };
 }
-
 interface ProductState {
   products: Product[];
-  isLoading: boolean;
+  loading: boolean;
   error: string | null;
   totalCount: number;
 }
 
 interface ProductActions {
-  searchProducts: (searchTerm?: string) => Promise<{ success: boolean; message?: string }>;
+  getProducts: (params?: ProductQueryParams) => Promise<void>;
+  createProduct: (product: ProductCreateRequest) => Promise<boolean>;
+  searchProducts: (searchTerm: string) => Promise<void>;
+  updateProduct: (product: Record<string, unknown>) => Promise<boolean>;
+  deleteProduct: (id: string) => Promise<boolean>;
+  updateProductStatus: (id: string, status: string) => Promise<boolean>;
   clearError: () => void;
 }
 
-// Config để control message cho từng API
-interface ApiConfig {
-  showSuccessMessage?: boolean;
-  showErrorMessage?: boolean;
-  customSuccessMessage?: string;
-  customErrorMessage?: string;
-}
-
-// ✅ Type cho set function từ Zustand
-type SetState<T> = (fn: (state: T) => void) => void;
-
-// ✅ Type cho API call function
-type ApiCallFunction = () => Promise<{ data: ProductApiResponse }>;
-
-// ✅ Type cho success callback
-type SuccessCallback = (data: ProductApiResponse['data']) => void;
-
-// ✅ Type cho kết quả trả về
-interface ApiResult {
-  success: boolean;
-  message?: string;
-  data?: ProductApiResponse['data'];
-}
-
-// Helper function để xử lý API call với config
-const handleApiCall = async (
-  set: SetState<ProductState>,
-  apiCall: ApiCallFunction,
-  successCallback?: SuccessCallback,
-  config: ApiConfig = {}
-): Promise<ApiResult> => {
-  const { 
-    showSuccessMessage = false,
-    showErrorMessage = true,
-    customSuccessMessage,
-    customErrorMessage 
-  } = config;
-
-  // Set loading state
-  set((s: ProductState) => {
-    s.isLoading = true;
-    s.error = null;
-  });
-
-  try {
-    const res = await apiCall();
-    
-    // Check status code từ API
-    if (res.data["status-code"] === 200) {
-      // Success - gọi callback để update state
-      if (successCallback) {
-        successCallback(res.data.data);
-      }
-      
-      // Set loading false
-      set((s: ProductState) => {
-        s.isLoading = false;
-      });
-      
-      // Hiển thị message thành công nếu được enable
-      if (showSuccessMessage) {
-        const successMsg = customSuccessMessage || res.data.message;
-        message.success(successMsg);
-      }
-      
-      return { 
-        success: true, 
-        message: res.data.message,
-        data: res.data.data 
-      };
-    } else {
-      // API trả về status code không phải 200
-      set((s: ProductState) => {
-        s.isLoading = false;
-      });
-      
-      // Hiển thị message lỗi nếu được enable
-      if (showErrorMessage) {
-        const errorMsg = customErrorMessage || res.data.message || "Thao tác thất bại";
-        message.error(errorMsg);
-      }
-      
-      return { 
-        success: false, 
-        message: res.data.message 
-      };
-    }
-  } catch (err: unknown) {
-    // Lỗi network hoặc server
-    set((s: ProductState) => {
-      s.isLoading = false;
-      s.error = err instanceof Error ? err.message : "Unknown error";
-    });
-    
-    // Hiển thị message lỗi nếu được enable
-    if (showErrorMessage) {
-      let errorMessage = "Có lỗi xảy ra ";
-      
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as { response?: { data?: { message?: string;Message?: string  } } };
-      
-        errorMessage = axiosError.response?.data?.message || axiosError.response?.data?.Message || errorMessage;
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-      
-      const finalErrorMessage = customErrorMessage || errorMessage;
-      message.error(finalErrorMessage);
-    }
-    
-    let errorMessage = "Có lỗi xảy ra";
-    if (err && typeof err === 'object' && 'response' in err) {
-      const axiosError = err as { response?: { data?: { message?: string } } };
-      errorMessage = axiosError.response?.data?.message || errorMessage;
-    } else if (err instanceof Error) {
-      errorMessage = err.message;
-    }
-    
-    return { 
-      success: false, 
-      message: errorMessage 
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
     };
-  }
-};
+  };
+}
 
-// Helper để transform product data
-const transformProductData = (data: RawProduct[]): Product[] => {
-  return data.map(item => ({
-    id: item.id,
-    avartarUrl: item["avartar-url"],
-    sku: item.sku,
-    name: item.name,
-    description: item.description,
-    color: item.color,
-    size: item.size,
-    style: item.style,
-    brand: item.brand,
-    material: item.material,
-    weight: item.weight,
-    isMaster: item["is-master"],
-    status: item.status,
-    categoryName: item["category-name"],
-    parentSku: item["parent-sku"],
-    costPrice: item["cost-price"],
-    sellingPrice: item["selling-price"],
-    stockQuantity: item["stock-quantity"],
-  }));
-};
+function isApiError(error: unknown): error is ApiError {
+  return typeof error === 'object' && error !== null && 'response' in error;
+}
 
-export const useProductStore = create<ProductState & ProductActions>()(
-  immer((set) => ({
-    // INITIAL STATE
-    products: [],
-    isLoading: false,
-    error: null,
-    totalCount: 0,
+export const useProductStore = create<ProductState & ProductActions>((set, get) => ({
+  // INIT STATE
+  products: [],
+  loading: false,
+  error: null,
+  totalCount: 0,
+   searchProducts: async (searchTerm: string) => {
+    const params: ProductQueryParams = {
+      SearchTerm: searchTerm,
+      PageNumber: 1,
+      PageSize: 50, // Default tốt cho search
+      SortBy: "name", // Sort by name khi search
+      SortDescending: false,
+    };
+    
+    return get().getProducts(params);
+  },
 
-    // ACTIONS
-    searchProducts: async (searchTerm = "") => {
-      return handleApiCall(
-        set as SetState<ProductState>,
-        () => api.get("/api/product", {
-          params: {
-            SearchTerm: searchTerm,
-            PageNumber: 1,
-            PageSize: 50,
-          },
-        }) as Promise<{ data: ProductApiResponse }>,
-        (data) => {
-          const products = transformProductData(data["data-list"]);
-          set((s: ProductState) => {
-            s.products = products;
-            s.totalCount = data["total-count"];
-          });
+  // LẤY DANH SÁCH SẢN PHẨM
+  getProducts: async (params?: ProductQueryParams) => {
+    set({ loading: true, error: null });
+    
+    try {
+      const response = await api.get<ApiResponse>("/api/product", { params });
+      
+      if (response.data["status-code"] === 200) {
+        // Transform data từ API format sang frontend format
+        const products: Product[] = response.data.data["data-list"].map((item: RawProduct) => ({
+          id: item.id,
+          avartarUrl: item["avartar-url"],
+          sku: item.sku,
+          name: item.name,
+          description: item.description,
+          color: item.color,
+          size: item.size,
+          style: item.style,
+          brand: item.brand,
+          material: item.material,
+          weight: item.weight,
+          isMaster: item["is-master"],
+          status: item.status,
+          categoryName: item["category-name"],
+          parentSku: item["parent-sku"],
+          costPrice: item["cost-price"],
+          sellingPrice: item["selling-price"],
+          stockQuantity: item["stock-quantity"],
+        }));
+        
+        set({ 
+          products: products,
+          totalCount: response.data.data["total-count"],
+          loading: false 
+        });
+      }
+    } catch (error: unknown) {
+      let errorMsg = "Lỗi tải danh sách sản phẩm";
+      
+      if (isApiError(error)) {
+        errorMsg = error.response?.data?.message || errorMsg;
+      }
+      
+      set({ loading: false, error: errorMsg });
+      message.error(errorMsg);
+    }
+  },
+
+  // TẠO SẢN PHẨM MỚI
+  createProduct: async (product: ProductCreateRequest) => {
+    set({ loading: true, error: null });
+    
+    try {
+      const response = await api.post("/api/product", product, {
+        headers: {
+          'Content-Type': 'application/json-patch+json',
         },
-        { 
-          showSuccessMessage: false,
-          showErrorMessage: true
-        }
-      );
-    },
-
-    clearError: () => {
-      set((s) => {
-        s.error = null;
       });
-    },
-  }))
-);
+      
+      if (response.data["status-code"] === 201) {
+        set({ loading: false });
+        message.success("Tạo sản phẩm thành công!");
+        
+        // Load lại danh sách sau khi tạo
+        get().getProducts();
+        return true;
+      }
+      
+      throw new Error(response.data.message);
+    } catch (error: unknown) {
+      let errorMsg = "Lỗi tạo sản phẩm";
+      
+      if (isApiError(error)) {
+        errorMsg = error.response?.data?.message || errorMsg;
+      } else if (error instanceof Error) {
+        errorMsg = error.message;
+      }
+      
+      set({ loading: false, error: errorMsg });
+      message.error(errorMsg);
+      return false;
+    }
+  },
 
-export default useProductStore;
+  // CẬP NHẬT SẢN PHẨM
+  updateProduct: async (product: Record<string, unknown>) => {
+    set({ loading: true, error: null });
+    
+    try {
+      const response = await api.put("/api/product", product, {
+        headers: {
+          'Content-Type': 'application/json-patch+json',
+        },
+      });
+      
+      if (response.data["status-code"] === 200) {
+        set({ loading: false });
+        message.success("Cập nhật sản phẩm thành công!");
+        
+        // Load lại danh sách sau khi cập nhật
+        get().getProducts();
+        return true;
+      }
+      
+      throw new Error(response.data.message);
+    } catch (error: unknown) {
+      let errorMsg = "Lỗi cập nhật sản phẩm";
+      
+      if (isApiError(error)) {
+        errorMsg = error.response?.data?.message || errorMsg;
+      } else if (error instanceof Error) {
+        errorMsg = error.message;
+      }
+      
+      set({ loading: false, error: errorMsg });
+      message.error(errorMsg);
+      return false;
+    }
+  },
+
+  // XÓA SẢN PHẨM
+  deleteProduct: async (id: string) => {
+    set({ loading: true, error: null });
+    
+    try {
+      const response = await api.delete(`/api/product/${id}`);
+      
+      if (response.data["status-code"] === 200) {
+        set({ loading: false });
+        message.success("Xóa sản phẩm thành công!");
+        
+        // Cập nhật danh sách hiện tại
+        const currentProducts = get().products;
+        set({ products: currentProducts.filter(product => product.id !== id) });
+        return true;
+      }
+      
+      throw new Error(response.data.message);
+    } catch (error: unknown) {
+      let errorMsg = "Lỗi xóa sản phẩm";
+      
+      if (isApiError(error)) {
+        errorMsg = error.response?.data?.message || errorMsg;
+      } else if (error instanceof Error) {
+        errorMsg = error.message;
+      }
+      
+      set({ loading: false, error: errorMsg });
+      message.error(errorMsg);
+      return false;
+    }
+  },
+
+  // CẬP NHẬT TRẠNG THÁI SẢN PHẨM
+  updateProductStatus: async (id: string, status: string) => {
+    set({ loading: true, error: null });
+    
+    try {
+      const response = await api.patch(`/api/product/${id}/status`, status, {
+        headers: {
+          'Content-Type': 'application/json-patch+json',
+        },
+      });
+      
+      if (response.data["status-code"] === 200) {
+        set({ loading: false });
+        message.success("Cập nhật trạng thái thành công!");
+        
+        // Cập nhật trạng thái trong danh sách hiện tại
+        const currentProducts = get().products;
+        const updatedProducts = currentProducts.map(product =>
+          product.id === id ? { ...product, status } : product
+        );
+        set({ products: updatedProducts });
+        return true;
+      }
+      
+      throw new Error(response.data.message);
+    } catch (error: unknown) {
+      let errorMsg = "Lỗi cập nhật trạng thái";
+      
+      if (isApiError(error)) {
+        errorMsg = error.response?.data?.message || errorMsg;
+      } else if (error instanceof Error) {
+        errorMsg = error.message;
+      }
+      
+      set({ loading: false, error: errorMsg });
+      message.error(errorMsg);
+      return false;
+    }
+  },
+
+  clearError: () => set({ error: null }),
+}));
