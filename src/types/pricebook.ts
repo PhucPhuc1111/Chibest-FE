@@ -1,16 +1,20 @@
+// types/pricebook.ts
 export interface PriceBookItem {
   id: string;
-  name: string;
-  group: string;
-  costPrice: number;     // Giá vốn
-  lastImport: number;    // Giá nhập cuối
-  commonPrice: number;   // Bảng giá chung
+  "product-id": string;
+  "selling-price": number;
+  "effective-date": string;
+  "expiry-date": string | null;
+  note: string | null;
+  "created-at": string;
+  "created-by": string;
+  "branch-id": string | null;
 }
 
-export interface PriceBookFilters {
-  priceList?: string;
-  groups?: string[];
-  stockFilter?: string;
-  compareCondition?: string;
-  compareTarget?: string;
+export interface PriceBookResponse {
+  "page-index": number;
+  "page-size": number;
+  "total-count": number;
+  "total-page": number;
+  "data-list": PriceBookItem[];
 }

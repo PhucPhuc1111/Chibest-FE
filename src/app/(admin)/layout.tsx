@@ -24,7 +24,7 @@ export default function AdminLayout({
 
       {/* Scrollable page area */}
       <main className="flex-1 overflow-auto bg-gray-50">
-        <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6 ">
+         <div className="p-4 mx-auto w-full max-w-screen-2xl md:p-6">
           {children}
         </div>
       </main>

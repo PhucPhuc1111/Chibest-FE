@@ -144,9 +144,8 @@ const handleApiCall = async <T>(
       set((s: State) => {
         s.isLoading = false;
       });
-      
-      // Hiển thị message lỗi nếu được enable
-      if (showErrorMessage) {
+     
+        if (showErrorMessage) {
         const errorMsg = customErrorMessage || res.data.message || "Thao tác thất bại";
         message.error(errorMsg);
       }
@@ -157,13 +156,13 @@ const handleApiCall = async <T>(
       };
     }
   } catch (err: unknown) {
-    // Lỗi network hoặc server
+  
     set((s: State) => {
       s.isLoading = false;
       s.error = err instanceof Error ? err.message : "Unknown error";
     });
     
-    // Hiển thị message lỗi nếu được enable
+ 
     if (showErrorMessage) {
       let errorMessage = "Có lỗi xảy ra";
       

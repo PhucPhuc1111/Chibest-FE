@@ -1,77 +1,118 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Table, Input, Button, Select, Spin, Divider } from "antd";
+import { useEffect } from "react";
+import { Table, Input, Button, Select, Spin, Divider, Tag } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { usePriceBookStore } from "@/stores/usePriceBookStore";
 import type { PriceBookItem } from "@/types/pricebook";
 
 export default function PriceBookList() {
-  const { items, isLoading, getAll, resetFilters, updatePrice } =
+  const { items, isLoading, getAll, resetFilters, filters, setFilters } =
     usePriceBookStore();
-  const [editing, setEditing] = useState<Record<string, number>>({});
 
   useEffect(() => {
     getAll();
-  }, [getAll]);
+  }, [getAll, filters.pageIndex, filters.pageSize]);
 
-  const handlePriceChange = (id: string, value: string) => {
-    const num = parseInt(value.replace(/\D/g, ""), 10) || 0;
-    setEditing((prev) => ({ ...prev, [id]: num }));
+  const handleSearch = (value: string) => {
+    setFilters({ search: value, pageIndex: 1 });
   };
 
-  const handlePriceBlur = (id: string) => {
-    if (editing[id] !== undefined) {
-      updatePrice(id, editing[id]);
-    }
+  const handleCategoryChange = (value: string[]) => {
+    setFilters({ category: value, pageIndex: 1 });
+  };
+
+  const handleStockStatusChange = (value: string) => {
+    setFilters({ stockStatus: value, pageIndex: 1 });
+  };
+
+  const handlePriceConditionChange = (value: string) => {
+    setFilters({ priceCondition: value, pageIndex: 1 });
+  };
+
+  const handlePriceTypeChange = (value: string) => {
+    setFilters({ priceType: value, pageIndex: 1 });
   };
 
   const columns: ColumnsType<PriceBookItem> = [
-    { title: "Mã hàng", dataIndex: "id", width: 160, fixed: "left" },
-    { title: "Tên hàng", dataIndex: "name", width: 340 },
-    {
-      title: "Giá vốn",
-      dataIndex: "costPrice",
-      align: "right",
+    // { 
+    //   title: "ID", 
+    //   dataIndex: "id", 
+    //   width: 120, 
+    //   fixed: "left",
+    //   render: (id: string) => id.substring(0, 8) + "..."
+    // },
+    { 
+      title: "Product ID", 
+      dataIndex: "product-id", 
       width: 120,
-      render: (v: number) => v.toLocaleString("vi-VN"),
+      render: (id: string) => id.substring(0, 30) + "..."
     },
     {
-      title: "Giá nhập cuối",
-      dataIndex: "lastImport",
-      align: "right",
-      width: 140,
-      render: (v: number) => v.toLocaleString("vi-VN"),
+      title: "Giá bán",
+      dataIndex: "selling-price",
+      // align: "right",
+      width: 80,
+      render: (v: number) => v?.toLocaleString("vi-VN") + " đ" || "0 đ",
     },
     {
-      title: "Bảng giá chung",
-      dataIndex: "commonPrice",
-      align: "right",
-      width: 180,
-      render: (_, record) => (
-        <Input
-          value={
-            editing[record.id]?.toLocaleString("vi-VN") ??
-            record.commonPrice.toLocaleString("vi-VN")
-          }
-          onChange={(e) => handlePriceChange(record.id, e.target.value)}
-          onBlur={() => handlePriceBlur(record.id)}
-          className="w-[120px] text-right"
-        />
-      ),
+      title: "Hiệu lực từ",
+      dataIndex: "effective-date",
+      width: 80,
+      render: (date: string) => date ? new Date(date).toLocaleDateString('vi-VN') : "—"
+    },
+    {
+      title: "Hết hiệu lực",
+      dataIndex: "expiry-date",
+      width: 80,
+      render: (date: string | null) => date ? new Date(date).toLocaleDateString('vi-VN') : "—"
+    },
+
+    // {
+    //   title: "Ngày tạo",
+    //   dataIndex: "created-at",
+    //   width: 80,
+    //   render: (date: string) => date ? new Date(date).toLocaleDateString('vi-VN') : "—"
+    // },
+  
+    // {
+    //   title: "Branch ID",
+    //   dataIndex: "branch-id",
+    //   width: 120,
+    //   render: (id: string | null) => id ? id.substring(0, 8) + "..." : "—"
+    // },
+    {
+      title: "Trạng thái",
+      dataIndex: "expiry-date",
+      width: 120,
+      render: (expiryDate: string | null) => {
+        const now = new Date();
+        const expiry = expiryDate ? new Date(expiryDate) : null;
+        
+        if (!expiry) {
+          return <Tag color="green">Đang hiệu lực</Tag>;
+        } else if (expiry > now) {
+          return <Tag color="blue">Sắp hết hạn</Tag>;
+        } else {
+          return <Tag color="red">Hết hiệu lực</Tag>;
+        }
+      },
     },
   ];
 
   return (
-    <div className="flex gap-4">
+    <div className="flex gap-4 ">
       {/* ==== Sidebar Filter ==== */}
       <aside className="w-[300px] shrink-0 bg-white rounded-md border border-gray-200 p-3">
         <div className="mb-3">
           <Input
             allowClear
             prefix={<SearchOutlined />}
-            placeholder="Theo mã, tên hàng"
+            placeholder="Tìm kiếm..."
+            defaultValue={filters.search}
+            onPressEnter={(e) => handleSearch((e.target as HTMLInputElement).value)}
+            onBlur={(e) => handleSearch(e.target.value)}
           />
         </div>
 
@@ -93,15 +134,16 @@ export default function PriceBookList() {
           </div>
 
           {/* Nhóm hàng */}
-          <div >
-            <div className="w-full font-semibold mb-1">Nhóm hàng</div>
-       
-              <Select
+          <div>
+            <div className="text-[13px] font-semibold mb-1">Nhóm hàng</div>
+            <Select
               mode="multiple"
               showSearch
               allowClear
               className="w-full"
               placeholder="Chọn nhóm hàng"
+              value={filters.category}
+              onChange={handleCategoryChange}
               options={[
                 { label: "ÁO DÀI", value: "ÁO DÀI" },
                 { label: "ÁO THUN", value: "ÁO THUN" },
@@ -111,16 +153,15 @@ export default function PriceBookList() {
                 { label: "HÀNG LEN", value: "HÀNG LEN" },
               ]}
             />
-           
-            
           </div>
 
           {/* Tồn kho */}
           <div>
             <div className="text-[13px] font-semibold mb-1">Tồn kho</div>
             <Select
-              defaultValue="Tất cả"
+              value={filters.stockStatus}
               className="w-full"
+              onChange={handleStockStatusChange}
               options={[
                 { label: "Tất cả", value: "Tất cả" },
                 { label: "Dưới định mức tồn", value: "Dưới định mức tồn" },
@@ -132,33 +173,34 @@ export default function PriceBookList() {
           </div>
 
           {/* Giá bán */}
-          <Divider className="my-2 " />
-          <div className="space-y-2 ">
-            <div className="text-[13px] font-semibold ">Giá bán</div>
-            <div >
+          <Divider className="my-2" />
+          <div className="space-y-2">
+            <div className="text-[13px] font-semibold">Giá bán</div>
+            <div>
               <Select
-              defaultValue="Chọn điều kiện"
-              className="w-full "
-              options={[
-                { label: "Chọn điều kiện", value: "none" },
-                { label: "Nhỏ hơn", value: "<" },
-                { label: "Nhỏ hơn hoặc bằng", value: "<=" },
-                { label: "Bằng", value: "=" },
-                { label: "Lớn hơn", value: ">" },
-              ]}
-            />
-           
+                value={filters.priceCondition}
+                className="w-full"
+                onChange={handlePriceConditionChange}
+                options={[
+                  { label: "Chọn điều kiện", value: "none" },
+                  { label: "Nhỏ hơn", value: "<" },
+                  { label: "Nhỏ hơn hoặc bằng", value: "<=" },
+                  { label: "Bằng", value: "=" },
+                  { label: "Lớn hơn", value: ">" },
+                ]}
+              />
             </div>
             <div>
-               <Select
-              defaultValue="Chọn giá so sánh"
-              className="w-full"
-              options={[
-                { label: "Chọn giá so sánh", value: "none" },
-                { label: "Giá vốn", value: "cost" },
-                { label: "Giá nhập cuối", value: "import" },
-              ]}
-            />
+              <Select
+                value={filters.priceType}
+                className="w-full"
+                onChange={handlePriceTypeChange}
+                options={[
+                  { label: "Chọn giá so sánh", value: "none" },
+                  { label: "Giá vốn", value: "cost" },
+                  { label: "Giá nhập cuối", value: "import" },
+                ]}
+              />
             </div>
           </div>
 
@@ -175,18 +217,18 @@ export default function PriceBookList() {
         <div className="bg-white rounded-md border border-gray-200">
           <div className="flex justify-between items-center px-4 py-2 border-b">
             <div className="text-[13px] text-gray-500">
-              Tổng: <b>{items.length.toLocaleString()}</b> hàng hóa
+              Tổng: <b>{items.length.toLocaleString()}</b> bản ghi giá
             </div>
             <div className="flex gap-2">
-              <Button type="primary">+ Bảng giá</Button>
+              <Button type="primary">+ Thiết lập giá</Button>
               <Button>Import</Button>
               <Button>Xuất file</Button>
-              <Button>⚙️</Button>
+              {/* <Button>⚙️</Button> */}
             </div>
           </div>
 
           {isLoading ? (
-            <div className="py-10 flex justify-center">
+            <div className="py-0 flex justify-center">
               <Spin />
             </div>
           ) : (
@@ -195,8 +237,16 @@ export default function PriceBookList() {
               columns={columns}
               dataSource={items}
               size="middle"
-              pagination={{ pageSize: 20, showSizeChanger: false }}
-              scroll={{ x: 1200 }}
+              pagination={{ 
+                pageSize: filters.pageSize,
+                current: filters.pageIndex,
+                total: items.length,
+                showSizeChanger: true,
+                pageSizeOptions: ['20', '50', '100'],
+                onChange: (page, pageSize) => setFilters({ pageIndex: page, pageSize: pageSize || 20 }),
+              }}
+              scroll={{ x: 480 }}
+              //  scroll={{ x: 'max-content' }}
               rowClassName="hover:bg-blue-50"
               sticky
             />
