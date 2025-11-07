@@ -364,17 +364,23 @@ export default function TransferDetail({ id, onDeleted }: TransferDetailProps) {
         render: (v: number) => (v || 0).toLocaleString("vi-VN") + " đ",
       },
       {
-        title: "Mã container",
-        dataIndex: "containerCode",
+        title: "Giảm giá",
+        dataIndex: "discount",
+        align: "right",
         width: 120,
-        render: (code: string) => code || "—"
+        render: (v: number) => (v || 0).toLocaleString("vi-VN") + " đ",
       },
       {
         title: "Thành tiền",
         align: "right",
         width: 160,
         render: (_: unknown, record: TransferItem) => {
-          const total = (record.quantity || 0) * (record.unitPrice || 0);
+          const quantity = record.quantity || 0;
+          const subtotal = record.unitPrice || 0;
+          const extraFee = record.extraFee || 0;
+          const commissionFee = record.commissionFee || 0;
+          const discount = record.discount || 0;
+          const total = quantity * (subtotal + extraFee + commissionFee) - discount;
           return total.toLocaleString("vi-VN") + " đ";
         },
       },
@@ -396,7 +402,7 @@ export default function TransferDetail({ id, onDeleted }: TransferDetailProps) {
 
   const totalQty = order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) ?? 0;
   const totalAmount = order.items?.reduce((sum, item) => {
-    const itemTotal = (item.quantity || 0) * (item.unitPrice || 0);
+    const itemTotal = ((item.unitPrice || 0) + (item.extraFee || 0) + (item.commissionFee || 0))  * (item.quantity || 0);
     return sum + itemTotal;
   }, 0) ?? 0;
   const totalExtraFee = order.items?.reduce((sum, item) => sum + (item.extraFee || 0), 0) ?? 0;
