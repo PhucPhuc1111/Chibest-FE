@@ -2,13 +2,14 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import api from "@/api/axiosInstance";
 import { message } from "antd";
-import type { 
-  TransferSummary, 
-  TransferStatus, 
-  Transfer, 
+import type {
+  TransferSummary,
+  TransferStatus,
+  Transfer,
   CreateTransferPayload,
   UpdateTransferPayload,
-  ImportedTransferProduct 
+  ImportedTransferProduct,
+  CreateMultiTransferPayload,
 } from "@/types/transfer";
 
 // --- DEFINITIONS & HELPERS ---
@@ -75,6 +76,7 @@ type Actions = {
   getAll: () => Promise<{success: boolean; message?: string}>;
   getById: (id: string) => Promise<{success: boolean; message?: string}>;
   createTransfer: (payload: CreateTransferPayload) => Promise<{success: boolean; message?: string}>;
+  createMultiTransfer: (payload: CreateMultiTransferPayload) => Promise<{success: boolean; message?: string}>;
   updateTransfer: (id: string, payload: UpdateTransferPayload) => Promise<{success: boolean; message?: string}>;
   importFile: (file: File) => Promise<{success: boolean; message?: string; data?: ImportedTransferProduct[]}>;
   deleteTransfer: (id: string) => Promise<{success: boolean; message?: string}>;
@@ -322,6 +324,23 @@ export const useTransferStore = create<State & Actions>()(
           showSuccessMessage: true, 
           showErrorMessage: true,
           customSuccessMessage: "Tạo phiếu chuyển kho thành công!" 
+        }
+      );
+    },
+
+    createMultiTransfer: async (payload: CreateMultiTransferPayload) => {
+      return handleApiCall(
+        set,
+        () => api.post("/api/transfer-order/multiple", payload, {
+          headers: {
+            "Content-Type": "application/json-patch+json",
+          },
+        }),
+        undefined,
+        {
+          showSuccessMessage: true,
+          showErrorMessage: true,
+          customSuccessMessage: "Tạo phiếu chuyển kho nhiều kho thành công!",
         }
       );
     },

@@ -214,7 +214,7 @@ export default function Page() {
 
   return (
     <div className="space-y-3">
-      <PageBreadcrumb pageTitle="Kho" />
+      <PageBreadcrumb pageTitle="Kho hàng" />
       
       <div className="flex justify-between items-center mb-4">
         <Input
