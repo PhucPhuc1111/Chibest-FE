@@ -181,7 +181,7 @@ export const useSupplierStore = create<State & Actions>()(
       });
 
       try {
-        const res = await api.get<SupplierDebtApiResponse>("/supplier-debt", { params });
+        const res = await api.get<SupplierDebtApiResponse>("/api/supplier-debt", { params });
         const list = res.data?.data ?? [];
         set((s) => {
           s.data = list.map(adaptSupplierDebtItem);
@@ -207,7 +207,7 @@ export const useSupplierStore = create<State & Actions>()(
         s.error = null;
       });
       try {
-        const basePath = `/supplier-debt/${encodeURIComponent(id)}`;
+        const basePath = `/api/supplier-debt/${encodeURIComponent(id)}`;
         const params =
           transactionType !== "all"
             ? { transactionType }
@@ -274,7 +274,7 @@ export const useSupplierStore = create<State & Actions>()(
       });
 
       try {
-        await api.delete("/supplier-debt", {
+        await api.delete("/api/supplier-debt", {
           params: {
             supplierdebtId: supplierDebtId,
             historyId,

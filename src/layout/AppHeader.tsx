@@ -46,6 +46,7 @@ const AppHeader: React.FC = () => {
       items: [
         { name: "Danh sách hàng hóa", path: "/products" },
         { name: "Thiết lập giá", path: "/pricebook" },
+        { name: "Nhập hàng", path: "/purchaseOrder" },
       ],
     },
     {
@@ -53,15 +54,13 @@ const AppHeader: React.FC = () => {
       items: [
         { name: "Chuyển hàng", path: "/transfers" },
         { name: "Kiểm kho", path: "/stocktakes" },
-        { name: "Xuất hủy", path: "/damageitems" },
+        { name: "Trả hàng nhập", path: "/purchaseReturns" },
       ],
     },
     {
-      title: "Nhập hàng",
+      title: "Công nợ",
       items: [
         { name: "Nhà cung cấp", path: "/suppliers" },
-        { name: "Nhập hàng", path: "/purchaseOrder" },
-        { name: "Trả hàng nhập", path: "/purchaseReturns" },
         { name: "Công nợ chi nhánh", path: "/branchDebt" },
       ],
     },
@@ -79,35 +78,43 @@ const AppHeader: React.FC = () => {
   ];
 
   // ======== MEGA MENU COMPONENT =========
-  const renderMegaMenu = (menuData: typeof hangHoaMegaMenu | typeof quanTriMegaMenu) => (
-    <div
-      className="absolute left-0 top-full mt-2 bg-white dark:bg-gray-900 shadow-lg rounded-xl p-5 grid grid-cols-3 gap-8 w-[760px] z-50 border border-gray-200 dark:border-gray-700 transition-all"
-      onMouseEnter={() => {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      }}
-      onMouseLeave={() => setActiveMenu(null)}
-    >
-      {menuData.map((group, idx) => (
-        <div key={idx}>
-          <h4 className="font-semibold text-gray-700 dark:text-gray-300 text-sm mb-3 uppercase tracking-wide">
-            {group.title}
-          </h4>
-          <ul className="space-y-2">
-            {group.items.map((item, i) => (
-              <li key={i}>
-                <Link
-                  href={item.path}
-                  className="block text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm transition"
-                >
-                  {item.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
-  );
+  const renderMegaMenu = (menuData: typeof hangHoaMegaMenu | typeof quanTriMegaMenu) => {
+    const groupCount = menuData.length;
+    const columnClass =
+      groupCount <= 1 ? "grid-cols-1" : groupCount === 2 ? "grid-cols-2" : "grid-cols-3";
+    const widthClass =
+      groupCount <= 1 ? "w-auto min-w-[240px]" : groupCount === 2 ? "w-[520px]" : "w-[760px]";
+
+    return (
+      <div
+        className={`absolute left-0 top-full mt-2 bg-white dark:bg-gray-900 shadow-lg rounded-xl p-5 grid ${columnClass} gap-8 ${widthClass} z-50 border border-gray-200 dark:border-gray-700 transition-all`}
+        onMouseEnter={() => {
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        }}
+        onMouseLeave={() => setActiveMenu(null)}
+      >
+        {menuData.map((group, idx) => (
+          <div key={idx}>
+            <h4 className="font-semibold text-gray-700 dark:text-gray-300 text-sm mb-3 uppercase tracking-wide">
+              {group.title}
+            </h4>
+            <ul className="space-y-2">
+              {group.items.map((item, i) => (
+                <li key={i}>
+                  <Link
+                    href={item.path}
+                    className="block text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm transition"
+                  >
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const toggleApplicationMenu = () => setApplicationMenuOpen(!isApplicationMenuOpen);
   const inputRef = useRef<HTMLInputElement>(null);

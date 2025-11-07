@@ -7,7 +7,7 @@ export const createWarehouse = async (data: WarehouseFormData ) => {
 };
 
 export const getBranches = async () => {
-  const response = await api.get('/api/branch');
+  const response = await api.get('/api/warehouse');
   return response.data;
 };
 
