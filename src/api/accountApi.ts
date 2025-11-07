@@ -28,7 +28,7 @@ const normalizeRoleItem = (rawRole: Record<string, unknown>): RoleItem | null =>
 };
 
 export const createAccount = (payload: CreateAccountPayload) => {
-  return api.post('/account', payload, {
+  return api.post('/api/account', payload, {
     headers: {
       'Content-Type': 'application/json-patch+json',
     },
@@ -36,7 +36,7 @@ export const createAccount = (payload: CreateAccountPayload) => {
 };
 
 export const deleteAccount = (accountId: string) => {
-  return api.delete(`/account/${accountId}`);
+  return api.delete(`/api/account/${accountId}`);
 };
 
 export const getRoles = async (): Promise<RoleItem[]> => {
