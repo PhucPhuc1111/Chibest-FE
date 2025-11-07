@@ -48,3 +48,34 @@ export interface BranchApiResponse<T> {
   message: string;
   data: T;
 }
+export type BranchDebtTransactionType =
+  | 'TransferIn'
+  | 'TransferOut'
+  | 'Return'
+  | 'Custom';
+
+export interface BranchDebtHistory {
+  id?: string;
+  transactionType?: BranchDebtTransactionType | string;
+  transactionDate?: string;
+  amount?: number;
+  balanceBefore?: number;
+  balanceAfter?: number;
+  note?: string;
+  createdAt?: string;
+}
+
+export interface BranchDebtSummary {
+  id: string;
+  name: string;
+  email?: string | null;
+  totalDebt?: number;
+  paidAmount?: number;
+  returnAmount?: number;
+  remainingDebt?: number;
+  lastTransactionDate?: string;
+  lastUpdated?: string;
+  debtHistories?: BranchDebtHistory[];
+}
+
+export type BranchDebtListItem = BranchDebtSummary;

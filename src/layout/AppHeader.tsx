@@ -1,6 +1,6 @@
 "use client";
 import { ThemeToggleButton } from "@/components/common/ThemeToggleButton";
-import NotificationDropdown from "@/components/header/NotificationDropdown";
+//import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
 import { BoxCubeIcon, CalenderIcon, GridIcon, PieChartIcon, DollarLineIcon } from "@/icons";
@@ -62,6 +62,7 @@ const AppHeader: React.FC = () => {
         { name: "Nhà cung cấp", path: "/suppliers" },
         { name: "Nhập hàng", path: "/purchaseOrder" },
         { name: "Trả hàng nhập", path: "/purchaseReturns" },
+        { name: "Công nợ chi nhánh", path: "/branchDebt" },
       ],
     },
   ];
@@ -191,7 +192,7 @@ const AppHeader: React.FC = () => {
         >
           <div className="flex items-center gap-3">
             <ThemeToggleButton />
-            <NotificationDropdown />
+            {/* <NotificationDropdown /> */}
           </div>
           <UserDropdown />
         </div>

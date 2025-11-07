@@ -40,7 +40,7 @@ export const deleteAccount = (accountId: string) => {
 };
 
 export const getRoles = async (): Promise<RoleItem[]> => {
-  const response = await api.get('/role/all');
+  const response = await api.get('/api/role/all');
   const rawData = response.data?.data ?? response.data;
 
   if (!Array.isArray(rawData)) {

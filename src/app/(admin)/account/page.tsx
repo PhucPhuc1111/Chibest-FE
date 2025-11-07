@@ -56,7 +56,7 @@ export default function AccountPage() {
     setLoading(true);
     try {
       const response = await api.get<AccountListResponse>(
-        `/account/list?pageNumber=${pageNumber}&pageSize=${pageSize}${search ? `&search=${encodeURIComponent(search)}` : ''}`
+        `/api/account/list?pageNumber=${pageNumber}&pageSize=${pageSize}${search ? `&search=${encodeURIComponent(search)}` : ''}`
       );
 
       const payload = response.data.data;

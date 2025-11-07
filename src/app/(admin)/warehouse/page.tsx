@@ -52,7 +52,7 @@ export default function Page() {
     setLoading(true);
     try {
       const response = await api.get<WarehouseResponse>(
-        `/warehouse?pageIndex=${page}&pageSize=${pageSize}${search ? `&search=${encodeURIComponent(search)}` : ''}`
+        `/api/warehouse?pageIndex=${page}&pageSize=${pageSize}${search ? `&search=${encodeURIComponent(search)}` : ''}`
       );
       setData(response.data.data || []);
       setLoading(false);
