@@ -244,7 +244,7 @@ export const useSupplierStore = create<State & Actions>()(
       }));
 
       try {
-        await api.post("/supplier-debt", payload, {
+        await api.post("/api/supplier-debt", payload, {
           params: { supplierDebtId },
         });
 
