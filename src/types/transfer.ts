@@ -63,6 +63,29 @@ export interface CreateTransferPayload {
   }>;
 }
 
+export interface CreateMultiTransferPayload {
+  "from-warehouse-id": string;
+  "employee-id": string;
+  "order-date": string;
+  "note": string;
+  "pay-method": string;
+  "discount-amount": number;
+  "sub-total": number;
+  "paid": number;
+  destinations: Array<{
+    "to-warehouse-id": string;
+    products: Array<{
+      "product-id": string;
+      quantity: number;
+      "unit-price": number;
+      "extra-fee": number;
+      "commission-fee": number;
+      discount: number;
+      note: string;
+    }>;
+  }>;
+}
+
 export interface UpdateTransferPayload {
   "pay-method": string;
   "sub-total": number;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Table,
   Input,
@@ -21,12 +21,13 @@ import {
   CalendarOutlined,
   SearchOutlined,
   DeleteOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { useTransferStore } from "@/stores/useTransferStore";
 import useWarehouseStore from "@/stores/useWarehouseStore";
 import {useProductStore} from "@/stores/useProductStore"; 
-import type { CreateTransferPayload } from "@/types/transfer";
+import type { CreateMultiTransferPayload } from "@/types/transfer";
 import type { Product } from "@/types/product";
 import dayjs from "dayjs";
 import type { RcFile } from "antd/es/upload";
@@ -58,23 +59,75 @@ interface ImportedProduct {
   "container-code": string | null;
 }
 
+interface DestinationState {
+  id: string;
+  toWarehouseId?: string;
+  products: ProductRow[];
+}
+
+function createEmptyProduct(): ProductRow {
+  return {
+    id: `product-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    sku: "",
+    productName: "",
+    quantity: 0,
+    unitPrice: 0,
+    extraFee: 0,
+    commissionFee: 0,
+    discount: 0,
+    containerCode: "",
+    total: 0,
+  };
+}
+
+function createEmptyDestination(): DestinationState {
+  return {
+    id: `destination-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    toWarehouseId: undefined,
+    products: [],
+  };
+}
+
+function cloneProductRow(product: ProductRow): ProductRow {
+  return {
+    ...product,
+    id: `product-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+  };
+}
+
+function calculateProductTotal(item: ProductRow): number {
+  const quantity = item.quantity || 0;
+  const unitPrice = item.unitPrice || 0;
+  const extraFee = item.extraFee || 0;
+  const commissionFee = item.commissionFee || 0;
+  const discount = item.discount || 0;
+  return quantity * unitPrice + extraFee + commissionFee - discount;
+}
+
 export default function TransferNew() {
   const router = useRouter();
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
   
   // Stores 
-  const { createTransfer, importFile, isLoading } = useTransferStore();
+  const { createMultiTransfer, importFile, isLoading } = useTransferStore();
   const { warehouses, getWarehouses } = useWarehouseStore();
   const { products, searchProducts } = useProductStore();
+
+  const initialDestination = useMemo(() => createEmptyDestination(), []);
   
   // State
-  const [productsList, setProductsList] = useState<ProductRow[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [importModalVisible, setImportModalVisible] = useState(false);
-  const [importedData, setImportedData] = useState<ImportedProduct[]>([]);
-  const [searchModalVisible, setSearchModalVisible] = useState(false);
+  const [destinations, setDestinations] = useState<DestinationState[]>([initialDestination]);
+  const [activeDestinationId, setActiveDestinationId] = useState<string>(initialDestination.id);
+  const [searchTerms, setSearchTerms] = useState<Record<string, string>>({});
+  const [selectedFiles, setSelectedFiles] = useState<Record<string, File | null>>({});
+  const [pendingImport, setPendingImport] = useState<{ destinationId: string; data: ImportedProduct[] } | null>(
+    null
+  );
+  const [searchModalState, setSearchModalState] = useState<{ destinationId: string | null; visible: boolean }>(
+    { destinationId: null, visible: false }
+  );
+  const fromWarehouseId = Form.useWatch("fromWarehouseId", form);
 
   // Load warehouses on component mount
   useEffect(() => {
@@ -96,71 +149,144 @@ export default function TransferNew() {
     }
   };
 
-  const handleProductChange = (index: number, field: keyof ProductRow, value: string | number) => {
-    const newList = [...productsList];
-    if (!newList[index]) {
-      newList[index] = createEmptyProduct();
-    }
-
-    newList[index] = { ...newList[index], [field]: value };
-
-    if (["quantity", "unitPrice", "extraFee", "commissionFee", "discount"].includes(field)) {
-      const item = newList[index];
-      const quantity = item.quantity || 0;
-      const unitPrice = item.unitPrice || 0;
-      const extraFee = item.extraFee || 0;
-      const commissionFee = item.commissionFee || 0;
-      const discount = item.discount || 0;
-      const itemTotal = (quantity * unitPrice) + extraFee + commissionFee - discount;
-      newList[index].total = Math.max(0, itemTotal);
-    }
-    setProductsList(newList);
+  const updateDestinationProducts = (
+    destinationId: string,
+    updater: (products: ProductRow[]) => ProductRow[]
+  ) => {
+    setDestinations((prev) =>
+      prev.map((destination) =>
+        destination.id === destinationId
+          ? { ...destination, products: updater(destination.products) }
+          : destination
+      )
+    );
   };
 
-  const createEmptyProduct = (): ProductRow => ({
-    id: `product-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    sku: "",
-    productName: "",
-    quantity: 0,
-    unitPrice: 0,
-    extraFee: 0,
-    commissionFee: 0,
-    discount: 0,
-    containerCode: "",
-    total: 0,
-  });
-  
-  const addProductRow = (product?: ProductRow) => {
+  const handleProductChange = (
+    destinationId: string,
+    index: number,
+    field: keyof ProductRow,
+    value: string | number
+  ) => {
+    updateDestinationProducts(destinationId, (products) => {
+      const list = [...products];
+      if (!list[index]) {
+        list[index] = createEmptyProduct();
+      }
+
+      list[index] = { ...list[index], [field]: value };
+
+      if (
+        field === "quantity" ||
+        field === "unitPrice" ||
+        field === "extraFee" ||
+        field === "commissionFee" ||
+        field === "discount"
+      ) {
+        const total = Math.max(0, calculateProductTotal(list[index]));
+        list[index].total = total;
+      }
+
+      return list;
+    });
+  };
+
+  const addProductRow = (destinationId: string, product?: ProductRow) => {
     const newProduct: ProductRow = product || createEmptyProduct();
-    setProductsList([...productsList, newProduct]);
+    updateDestinationProducts(destinationId, (products) => [...products, newProduct]);
   };
 
-  const removeProductRow = (index: number) => {
-    const newList = productsList.filter((_, i) => i !== index);
-    setProductsList(newList);
+  const removeProductRow = (destinationId: string, index: number) => {
+    updateDestinationProducts(destinationId, (products) =>
+      products.filter((_, i) => i !== index)
+    );
+  };
+
+  const handleDestinationWarehouseChange = (destinationId: string, warehouseId?: string) => {
+    setDestinations((prev) =>
+      prev.map((destination) =>
+        destination.id === destinationId ? { ...destination, toWarehouseId: warehouseId } : destination
+      )
+    );
+  };
+
+  const addDestination = () => {
+    let createdDestination: DestinationState | undefined;
+
+    setDestinations((prev) => {
+      const newDestination = createEmptyDestination();
+
+      if (prev.length > 0) {
+        const template = prev[0];
+        newDestination.products = template.products.map((product) => cloneProductRow(product));
+      }
+
+      createdDestination = newDestination;
+      return [...prev, newDestination];
+    });
+
+    if (createdDestination) {
+      const destinationId = createdDestination.id;
+      setActiveDestinationId(destinationId);
+      setSearchTerms((prev) => ({ ...prev, [destinationId]: "" }));
+      setSelectedFiles((prev) => ({ ...prev, [destinationId]: null }));
+    }
+  };
+
+  const removeDestination = (destinationId: string) => {
+    if (destinations.length === 1) {
+      messageApi.warning("Cần ít nhất một kho nhận");
+      return;
+    }
+
+    setDestinations((prev) => {
+      const next = prev.filter((destination) => destination.id !== destinationId);
+      if (activeDestinationId === destinationId) {
+        setActiveDestinationId(next[0]?.id ?? "");
+      }
+      return next;
+    });
+    setSelectedFiles((prev) => {
+      const next = { ...prev };
+      delete next[destinationId];
+      return next;
+    });
+    setSearchTerms((prev) => {
+      const next = { ...prev };
+      delete next[destinationId];
+      return next;
+    });
   };
 
   // File upload handlers
-  const handleFileSelect = (file: RcFile) => {
-    setSelectedFile(file);
+  const handleFileSelect = (destinationId: string, file: RcFile) => {
+    setSelectedFiles((prev) => ({ ...prev, [destinationId]: file }));
+    setActiveDestinationId(destinationId);
     return false; // Prevent automatic upload
   };
 
-  const handleImport = async () => {
-    if (!selectedFile) {
+  const clearSelectedFile = (destinationId: string) => {
+    setSelectedFiles((prev) => ({ ...prev, [destinationId]: null }));
+  };
+
+  const handleImport = async (destinationId: string) => {
+    const file = selectedFiles[destinationId];
+    if (!file) {
       messageApi.warning("Vui lòng chọn file để import!");
       return;
     }
 
-    const result = await importFile(selectedFile);
+    const result = await importFile(file as File);
     if (result.success && result.data) {
-      setImportedData(result.data);
-      setImportModalVisible(true);
+      setPendingImport({ destinationId, data: result.data });
     }
   };
 
   const confirmImport = () => {
-    const importedProducts: ProductRow[] = importedData.map((item, index) => ({
+    if (!pendingImport) return;
+
+    const { destinationId, data } = pendingImport;
+    const importedProducts: ProductRow[] = data.map((item, index) => ({
       id: `imported-${index}-${Date.now()}`,
       sku: item.sku || "",
       productName: item["product-name"] || "",
@@ -170,37 +296,42 @@ export default function TransferNew() {
       commissionFee: item["commission-fee"] || 0,
       discount: item.discount || 0,
       containerCode: item["container-code"] || "",
-      total: (item.quantity || 0) * (item["unit-price"] || 0) + (item["extra-fee"] || 0) + (item["commission-fee"] || 0) - (item.discount || 0),
+      total: Math.max(
+        0,
+        (item.quantity || 0) * (item["unit-price"] || 0) +
+          (item["extra-fee"] || 0) +
+          (item["commission-fee"] || 0) -
+          (item.discount || 0)
+      ),
       productId: item.id,
     }));
 
-    setProductsList([...productsList, ...importedProducts]);
-    setImportModalVisible(false);
-    setSelectedFile(null);
-    setImportedData([]);
+    updateDestinationProducts(destinationId, (products) => [...products, ...importedProducts]);
+    setPendingImport(null);
+    clearSelectedFile(destinationId);
     messageApi.success(`Đã thêm ${importedProducts.length} sản phẩm từ file import!`);
   };
 
- // Search product handlers
-const handleSearch = async () => {
-  if (!searchTerm.trim()) {
-    messageApi.warning("Vui lòng nhập từ khóa tìm kiếm!");
-    return;
-  }
-  
-  try {
+  // Search product handlers
+  const handleSearch = async (destinationId: string) => {
+    const keyword = (searchTerms[destinationId] || "").trim();
+    if (!keyword) {
+      messageApi.warning("Vui lòng nhập từ khóa tìm kiếm!");
+      return;
+    }
 
-    await searchProducts(searchTerm);
-    setSearchModalVisible(true);
-  } catch (error) {
+    try {
+      setActiveDestinationId(destinationId);
+      await searchProducts(keyword);
+      setSearchModalState({ destinationId, visible: true });
+    } catch (error) {
+      console.log("Search failed:", error);
+    }
+  };
 
-    console.log("Search failed:", error);
-  }
-};
-
-  const selectProduct = (product: Product) => {
+  const selectProduct = (destinationId: string, product: Product) => {
     const newProduct: ProductRow = {
-      id: product.id,
+      id: `${product.id}-${Date.now()}`,
       sku: product.sku,
       productName: product.name,
       quantity: 1,
@@ -212,12 +343,12 @@ const handleSearch = async () => {
       total: product.costPrice || 0,
       productId: product.id,
     };
-    addProductRow(newProduct);
-    setSearchModalVisible(false);
-    setSearchTerm("");
+    addProductRow(destinationId, newProduct);
+    setSearchModalState({ destinationId: null, visible: false });
+    setSearchTerms((prev) => ({ ...prev, [destinationId]: "" }));
   };
 
-  const columns: TableProps<ProductRow>["columns"] = [
+  const buildColumns = (destinationId: string): TableProps<ProductRow>["columns"] => [
     {
       title: "STT",
       width: 60,
@@ -231,7 +362,7 @@ const handleSearch = async () => {
         <Input
           value={value}
           placeholder="Nhập mã hàng"
-          onChange={(e) => handleProductChange(index, "sku", e.target.value)}
+          onChange={(e) => handleProductChange(destinationId, index, "sku", e.target.value)}
         />
       ),
     },
@@ -243,21 +374,7 @@ const handleSearch = async () => {
         <Input
           value={value}
           placeholder="Nhập tên hàng"
-          onChange={(e) =>
-            handleProductChange(index, "productName", e.target.value)
-          }
-        />
-      ),
-    },
-    {
-      title: "Mã container",
-      dataIndex: "containerCode",
-      width: 120,
-      render: (value, _, index) => (
-        <Input
-          value={value}
-          placeholder="Mã container"
-          onChange={(e) => handleProductChange(index, "containerCode", e.target.value)}
+          onChange={(e) => handleProductChange(destinationId, index, "productName", e.target.value)}
         />
       ),
     },
@@ -271,7 +388,7 @@ const handleSearch = async () => {
           value={value}
           placeholder="0"
           onChange={(e) =>
-            handleProductChange(index, "quantity", Number(e.target.value))
+            handleProductChange(destinationId, index, "quantity", Number(e.target.value))
           }
         />
       ),
@@ -286,7 +403,7 @@ const handleSearch = async () => {
           value={value}
           placeholder="0"
           onChange={(e) =>
-            handleProductChange(index, "unitPrice", Number(e.target.value))
+            handleProductChange(destinationId, index, "unitPrice", Number(e.target.value))
           }
         />
       ),
@@ -301,7 +418,7 @@ const handleSearch = async () => {
           value={value}
           placeholder="0"
           onChange={(e) =>
-            handleProductChange(index, "extraFee", Number(e.target.value))
+            handleProductChange(destinationId, index, "extraFee", Number(e.target.value))
           }
         />
       ),
@@ -316,7 +433,7 @@ const handleSearch = async () => {
           value={value}
           placeholder="0"
           onChange={(e) =>
-            handleProductChange(index, "commissionFee", Number(e.target.value))
+            handleProductChange(destinationId, index, "commissionFee", Number(e.target.value))
           }
         />
       ),
@@ -331,7 +448,7 @@ const handleSearch = async () => {
           value={value}
           placeholder="0"
           onChange={(e) =>
-            handleProductChange(index, "discount", Number(e.target.value))
+            handleProductChange(destinationId, index, "discount", Number(e.target.value))
           }
         />
       ),
@@ -340,9 +457,7 @@ const handleSearch = async () => {
       title: "Thành tiền",
       dataIndex: "total",
       width: 140,
-      render: (total) => (
-        <span>{(total || 0).toLocaleString("vi-VN")} đ</span>
-      ),
+      render: (total) => <span>{(total || 0).toLocaleString("vi-VN")} đ</span>,
     },
     {
       title: "Thao tác",
@@ -352,38 +467,96 @@ const handleSearch = async () => {
           type="text"
           danger
           icon={<DeleteOutlined />}
-          onClick={() => removeProductRow(index)}
+          onClick={() => removeProductRow(destinationId, index)}
         />
       ),
     },
   ];
 
   // Tổng tiền
-  const totalAmount = productsList.reduce((sum, p) => {
-    const quantity = p.quantity || 0;
-    const unitPrice = p.unitPrice || 0;
-    const extraFee = p.extraFee || 0;
-    const commissionFee = p.commissionFee || 0;
-    const discount = p.discount || 0;
-    return sum + ((quantity * unitPrice) + extraFee + commissionFee - discount);
-  }, 0);
+  const destinationSummaries = useMemo(() => {
+    return destinations.map((destination) => {
+      const summary = destination.products.reduce(
+        (acc, item) => {
+          const qty = item.quantity || 0;
+          const unit = item.unitPrice || 0;
+          const extra = item.extraFee || 0;
+          const commission = item.commissionFee || 0;
+          const discount = item.discount || 0;
+          const total = qty * (unit + extra + commission) - discount;
 
-  const totalQty = productsList.reduce((sum, p) => sum + (p.quantity || 0), 0);
-  const totalExtraFee = productsList.reduce((sum, p) => sum + (p.extraFee || 0), 0);
-  const totalCommissionFee = productsList.reduce((sum, p) => sum + (p.commissionFee || 0), 0);
-  const totalDiscount = productsList.reduce((sum, p) => sum + (p.discount || 0), 0);
+          return {
+            totalQty: acc.totalQty + qty,
+            totalExtraFee: acc.totalExtraFee + extra,
+            totalCommissionFee: acc.totalCommissionFee + commission,
+            totalDiscount: acc.totalDiscount + discount,
+            totalAmount: acc.totalAmount + total,
+          };
+        },
+        {
+          totalQty: 0,
+          totalExtraFee: 0,
+          totalCommissionFee: 0,
+          totalDiscount: 0,
+          totalAmount: 0,
+        }
+      );
+
+      return { id: destination.id, ...summary };
+    });
+  }, [destinations]);
+
+  const aggregateTotals = useMemo(() => {
+    return destinationSummaries.reduce(
+      (acc, summary) => ({
+        totalQty: acc.totalQty + summary.totalQty,
+        totalExtraFee: acc.totalExtraFee + summary.totalExtraFee,
+        totalCommissionFee: acc.totalCommissionFee + summary.totalCommissionFee,
+        totalDiscount: acc.totalDiscount + summary.totalDiscount,
+        totalAmount: acc.totalAmount + summary.totalAmount,
+      }),
+      {
+        totalQty: 0,
+        totalExtraFee: 0,
+        totalCommissionFee: 0,
+        totalDiscount: 0,
+        totalAmount: 0,
+      }
+    );
+  }, [destinationSummaries]);
 
   const handleSave = async (status: "Draft" | "Hoàn Thành") => {
     try {
       const values = await form.validateFields();
 
-      if (productsList.length === 0) {
-        messageApi.warning("Vui lòng thêm ít nhất một sản phẩm!");
+      if (!destinations.length) {
+        messageApi.warning("Vui lòng thêm ít nhất một kho nhận!");
         return;
       }
 
-      if (!values.fromWarehouseId || !values.toWarehouseId) {
-        messageApi.warning("Vui lòng chọn kho đi và kho đến!");
+      const invalidDestination = destinations.find((destination) => !destination.toWarehouseId);
+      if (invalidDestination) {
+        messageApi.warning("Vui lòng chọn kho nhận cho tất cả điểm đến!");
+        return;
+      }
+
+      const emptyDestination = destinations.find((destination) => destination.products.length === 0);
+      if (emptyDestination) {
+        messageApi.warning("Mỗi kho nhận cần có ít nhất một sản phẩm!");
+        return;
+      }
+
+      const missingProduct = destinations.some((destination) =>
+        destination.products.some((product) => !product.productId)
+      );
+
+      if (missingProduct) {
+        messageApi.warning("Một số sản phẩm chưa có thông tin hợp lệ. Vui lòng chọn từ danh sách hệ thống.");
+        return;
+      }
+
+      if (!values.fromWarehouseId) {
+        messageApi.warning("Vui lòng chọn kho đi!");
         return;
       }
 
@@ -395,170 +568,247 @@ const handleSearch = async () => {
         return;
       }
 
-      const payload: CreateTransferPayload = {
-        "invoice-code": values.invoiceCode || null,
-        "order-date": values.orderDate 
-          ? values.orderDate.format('YYYY-MM-DD') 
-          : dayjs().format('YYYY-MM-DD'),
-        "pay-method": "Bank Transfer",
-        "sub-total": totalAmount,
-        "discount-amount": totalDiscount,
-        "paid": 0,
-        "note": values.note || "",
+      const payload: CreateMultiTransferPayload = {
         "from-warehouse-id": values.fromWarehouseId,
-        "to-warehouse-id": values.toWarehouseId,
         "employee-id": employeeId,
-        "transfer-order-details": productsList.map((p) => ({
-          "quantity": p.quantity || 0,
-          "unit-price": p.unitPrice || 0,
-          "extra-fee": p.extraFee || 0,
-          "commission-fee": p.commissionFee || 0,
-          "discount": p.discount || 0,
-          "note": p.containerCode ? `Container: ${p.containerCode}` : "",
-          "product-id": p.productId || "",
+        "order-date": values.orderDate ? values.orderDate.toISOString() : dayjs().toISOString(),
+        "note": values.note || "",
+        "pay-method": values.payMethod || "Bank Transfer",
+        "discount-amount": aggregateTotals.totalDiscount,
+        "sub-total": aggregateTotals.totalAmount,
+        "paid": 0,
+        destinations: destinations.map((destination) => ({
+          "to-warehouse-id": destination.toWarehouseId as string,
+          products: destination.products.map((product) => ({
+            "product-id": product.productId as string,
+            quantity: product.quantity || 0,
+            "unit-price": product.unitPrice || 0,
+            "extra-fee": product.extraFee || 0,
+            "commission-fee": product.commissionFee || 0,
+            discount: product.discount || 0,
+            note: product.containerCode ? `Container: ${product.containerCode}` : "",
+          })),
         })),
       };
 
-      const result = await createTransfer(payload);
+      const result = await createMultiTransfer(payload);
       if (result.success) {
         messageApi.success(
-          `Phiếu chuyển đã được ${
-            status === "Draft" ? "lưu tạm" : "tạo thành công"
-          }!`
+          `Phiếu chuyển ${status === "Draft" ? "đã được lưu tạm" : "tạo thành công"}!`
         );
         router.push("/transfers");
       } else {
         messageApi.error(result.message || "Tạo phiếu chuyển thất bại");
       }
     } catch (error) {
-      console.error('Save error:', error);
+      console.error("Save error:", error);
       messageApi.error("Vui lòng kiểm tra lại thông tin!");
     }
-  };
-
-  const uploadProps: UploadProps = {
-    beforeUpload: handleFileSelect,
-    accept: ".xlsx,.xls",
-    showUploadList: false,
   };
 
   return (
     <>
       {contextHolder}
       <div className="bg-gray-50 p-4 min-h-screen">
-        <div className="flex gap-4">
-          {/* Left Table */}
-          <div className="flex-1 bg-white rounded-md border border-gray-200">
-            <div className="border-b px-4 py-2 flex justify-between items-center">
-              <Input
-                placeholder="Tìm hàng hóa theo mã hoặc tên "
-                className="w-1/3"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onPressEnter={handleSearch}
-                suffix={<SearchOutlined onClick={handleSearch} className="cursor-pointer" />}
-              />
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex-1 space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">Chuyển hàng</h2>
+                <p className="text-sm text-gray-500">
+                  Phân bổ sản phẩm cho từng kho.
+                </p>
+              </div>
+              <Button type="primary" icon={<PlusOutlined />} onClick={addDestination}>
+                Thêm kho nhận
+              </Button>
             </div>
 
-            {productsList.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[450px]">
-                <p className="text-gray-700 font-medium mb-1">
-                  Thêm sản phẩm từ file excel
-                </p>
-                <p className="text-sm text-gray-500 mb-3">
-                  (Tải về file mẫu:
-                  <a href="#" className="text-blue-500 ml-1">
-                    Excel file
-                  </a>
-                  )
-                </p>
-                <div className="flex gap-2">
-                  <Upload {...uploadProps}>
-                    <Button type="primary" icon={<UploadOutlined />}>
-                      Chọn file dữ liệu
-                    </Button>
-                  </Upload>
-                  {selectedFile && (
-                    <div className="flex items-center gap-2">
-                      <Tag color="blue">{selectedFile.name}</Tag>
-                      <Button 
-                        type="primary" 
-                        onClick={handleImport}
-                        loading={isLoading}
-                      >
-                        Thực hiện
-                      </Button>
-                      <Button 
-                        onClick={() => setSelectedFile(null)}
-                        icon={<DeleteOutlined />}
-                      />
+            <div className="space-y-4">
+              {destinations.map((destination, index) => {
+                const summary =
+                  destinationSummaries.find((item) => item.id === destination.id) ?? {
+                    totalQty: 0,
+                    totalExtraFee: 0,
+                    totalCommissionFee: 0,
+                    totalDiscount: 0,
+                    totalAmount: 0,
+                  };
+                const selectedFile = selectedFiles[destination.id];
+                const searchValue = searchTerms[destination.id] ?? "";
+                const columns = buildColumns(destination.id);
+                const hasProducts = destination.products.length > 0;
+                const uploadProps: UploadProps = {
+                  beforeUpload: (file) => handleFileSelect(destination.id, file),
+                  accept: ".xlsx,.xls",
+                  showUploadList: false,
+                };
+
+                return (
+                  <div
+                    key={destination.id}
+                    className="bg-white border border-gray-200 rounded-md shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3 border-b px-4 py-3">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-3">
+                          <span className="font-semibold text-gray-700">Kho nhận {index + 1}</span>
+                          <Tag color="blue">{destination.products.length} SP</Tag>
+                        </div>
+                        <Select
+                          placeholder="Chọn kho nhận"
+                          value={destination.toWarehouseId}
+                          onChange={(value) => handleDestinationWarehouseChange(destination.id, value)}
+                          onClear={() => handleDestinationWarehouseChange(destination.id, undefined)}
+                          allowClear
+                          className="w-full"
+                          options={warehouses
+                            .filter((warehouse) => warehouse.id !== fromWarehouseId)
+                            .map((warehouse) => ({
+                              value: warehouse.id,
+                              label: `${warehouse.name} (${warehouse.code})`,
+                            }))}
+                        />
+                      </div>
+                      {destinations.length > 1 && (
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => removeDestination(destination.id)}
+                        />
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="p-3">
-                <Table
-                  bordered
-                  size="small"
-                  rowKey="id"
-                  columns={columns}
-                  dataSource={productsList}
-                  pagination={false}
-                  scroll={{ x: 1400 }}
-                />
-              </div>
-            )}
+
+                    <div className="px-4 py-4 space-y-4">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <Input
+                          placeholder="Tìm hàng hóa theo mã hoặc tên"
+                          value={searchValue}
+                          onFocus={() => setActiveDestinationId(destination.id)}
+                          onChange={(e) =>
+                            setSearchTerms((prev) => ({ ...prev, [destination.id]: e.target.value }))
+                          }
+                          onPressEnter={() => handleSearch(destination.id)}
+                          suffix={
+                            <SearchOutlined
+                              onClick={() => handleSearch(destination.id)}
+                              className="cursor-pointer text-gray-500"
+                            />
+                          }
+                        />
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Upload {...uploadProps}>
+                            <Button icon={<UploadOutlined />}>Chọn file</Button>
+                          </Upload>
+                          {selectedFile && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Tag color="blue">{selectedFile.name}</Tag>
+                              <Button
+                                size="small"
+                                type="primary"
+                                onClick={() => handleImport(destination.id)}
+                                loading={isLoading}
+                              >
+                                Thực hiện
+                              </Button>
+                              <Button
+                                size="small"
+                                icon={<DeleteOutlined />}
+                                onClick={() => clearSelectedFile(destination.id)}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {hasProducts ? (
+                        <div className="space-y-3">
+                          <Table
+                            bordered
+                            size="small"
+                            rowKey="id"
+                            columns={columns}
+                            dataSource={destination.products}
+                            pagination={false}
+                            scroll={{ x: 1200 }}
+                          />
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-600">
+                            <div className="flex justify-between">
+                              <span>Tổng số lượng</span>
+                              <span>{summary.totalQty.toLocaleString("vi-VN")}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Phí phụ thu</span>
+                              <span>{summary.totalExtraFee.toLocaleString("vi-VN")} đ</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Phí hoa hồng</span>
+                              <span>{summary.totalCommissionFee.toLocaleString("vi-VN")} đ</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Giảm giá</span>
+                              <span>-{summary.totalDiscount.toLocaleString("vi-VN")} đ</span>
+                            </div>
+                            <div className="flex justify-between col-span-2 md:col-span-4 font-semibold text-gray-700 border-t pt-2">
+                              <span>Tổng tiền</span>
+                              <span>{summary.totalAmount.toLocaleString("vi-VN")} đ</span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center border border-dashed border-gray-200 rounded-md py-10 text-sm text-gray-500 text-center">
+                          <p>Chưa có sản phẩm trong kho nhận này.</p>
+                          <div className="mt-2 flex items-center gap-2">
+                            <Button type="link" onClick={() => handleSearch(destination.id)}>
+                              Tìm sản phẩm
+                            </Button>
+                            <Button type="link" onClick={() => addProductRow(destination.id)}>
+                              Thêm dòng trống
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end">
+                        <Button
+                          type="dashed"
+                          icon={<PlusOutlined />}
+                          size="small"
+                          onClick={() => addProductRow(destination.id)}
+                        >
+                          Thêm dòng sản phẩm
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Right Panel */}
-          <div className="w-[340px] bg-white border border-gray-200 rounded-md p-4 flex flex-col justify-between">
-            <Form form={form} layout="vertical" className="space-y-2">
-              <Form.Item 
-                label="Kho đi" 
+          <div className="w-full lg:w-[340px] bg-white border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <Form form={form} layout="vertical" className="space-y-3">
+              <Form.Item
+                label="Kho đi"
                 name="fromWarehouseId"
-                rules={[{ required: true, message: 'Vui lòng chọn kho đi' }]}
+                rules={[{ required: true, message: "Vui lòng chọn kho đi" }]}
               >
-                <Select placeholder="Chọn kho đi" loading={isLoading}>
-                  {warehouses.map(warehouse => (
-                    <Select.Option key={warehouse.id} value={warehouse.id}>
-                      {warehouse.name} ({warehouse.code})
-                    </Select.Option>
-                  ))}
-                </Select>
+                <Select
+                  placeholder="Chọn kho đi"
+                  loading={isLoading}
+                  options={warehouses.map((warehouse) => ({
+                    value: warehouse.id,
+                    label: `${warehouse.name} (${warehouse.code})`,
+                  }))}
+                />
               </Form.Item>
 
-              <Form.Item 
-                label="Kho đến" 
-                name="toWarehouseId"
-                rules={[{ required: true, message: 'Vui lòng chọn kho đến' }]}
-              >
-                <Select placeholder="Chọn kho đến" loading={isLoading}>
-                  {warehouses.map(warehouse => (
-                    <Select.Option key={warehouse.id} value={warehouse.id}>
-                      {warehouse.name} ({warehouse.code})
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-
-              <Form.Item 
-                label="Mã phiếu chuyển" 
-                name="invoiceCode"
-                rules={[{ required: false, message: 'Mã phiếu chuyển' }]}
-              >
-                <Input placeholder="Để trống để tự động tạo mã" />
-              </Form.Item>
-
-              <Form.Item label="Trạng thái" name="status" initialValue="Draft">
-                <Input value="Nháp" disabled />
-              </Form.Item>
-
-              <Form.Item 
-                label="Ngày chuyển" 
-                name="orderDate" 
+              <Form.Item
+                label="Ngày chuyển"
+                name="orderDate"
                 initialValue={dayjs()}
-                rules={[{ required: true, message: 'Vui lòng chọn ngày chuyển' }]}
+                rules={[{ required: true, message: "Vui lòng chọn ngày chuyển" }]}
               >
                 <DatePicker
                   className="w-full"
@@ -568,35 +818,51 @@ const handleSearch = async () => {
                 />
               </Form.Item>
 
-              <div className="pt-1 text-sm space-y-2">
-                <div className="flex justify-between">
-                  <span>Tổng số lượng</span>
-                  <span>{totalQty.toLocaleString("vi-VN")}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tổng phí phụ thu</span>
-                  <span>{totalExtraFee.toLocaleString("vi-VN")} đ</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tổng phí hoa hồng</span>
-                  <span>{totalCommissionFee.toLocaleString("vi-VN")} đ</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tổng giảm giá</span>
-                  <span>- {totalDiscount.toLocaleString("vi-VN")} đ</span>
-                </div>
-                <div className="flex justify-between font-semibold border-t pt-2">
-                  <span>Tổng tiền</span>
-                  <span>{totalAmount.toLocaleString("vi-VN")} đ</span>
-                </div>
-              </div>
+              <Form.Item
+                label="Phương thức thanh toán"
+                name="payMethod"
+                initialValue="Bank Transfer"
+              >
+                <Select
+                  options={[
+                    { value: "Bank Transfer", label: "Chuyển khoản" },
+                    { value: "Cash", label: "Tiền mặt" },
+                  ]}
+                />
+              </Form.Item>
 
               <Form.Item label="Ghi chú" name="note">
-                <Input.TextArea rows={2} placeholder="Ghi chú" />
+                <Input.TextArea rows={3} placeholder="Ghi chú" />
               </Form.Item>
             </Form>
 
-            {/* Buttons */}
+            <div className="mt-4 text-sm space-y-2 border-t pt-3">
+              <div className="flex justify-between">
+                <span>Số kho nhận</span>
+                <span>{destinations.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tổng số lượng</span>
+                <span>{aggregateTotals.totalQty.toLocaleString("vi-VN")}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Phí phụ thu</span>
+                <span>{aggregateTotals.totalExtraFee.toLocaleString("vi-VN")} đ</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Phí hoa hồng</span>
+                <span>{aggregateTotals.totalCommissionFee.toLocaleString("vi-VN")} đ</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Giảm giá</span>
+                <span>-{aggregateTotals.totalDiscount.toLocaleString("vi-VN")} đ</span>
+              </div>
+              <div className="flex justify-between text-base font-semibold">
+                <span>Tổng tiền</span>
+                <span>{aggregateTotals.totalAmount.toLocaleString("vi-VN")} đ</span>
+              </div>
+            </div>
+
             <div className="flex gap-2 mt-4">
               <Button
                 icon={<SaveOutlined />}
@@ -620,20 +886,21 @@ const handleSearch = async () => {
         </div>
       </div>
 
-      {/* Import Confirmation Modal */}
       <Modal
         title="Xác nhận Import"
-        open={importModalVisible}
+        open={Boolean(pendingImport)}
         onOk={confirmImport}
-        onCancel={() => setImportModalVisible(false)}
+        onCancel={() => setPendingImport(null)}
         okText="Thêm vào danh sách"
         cancelText="Hủy"
         width={800}
       >
-        <p>Bạn có muốn thêm {importedData.length} sản phẩm từ file import vào danh sách?</p>
+        <p>
+          Bạn có muốn thêm {pendingImport?.data.length ?? 0} sản phẩm từ file import vào kho nhận này?
+        </p>
         <Table
           size="small"
-          dataSource={importedData}
+          dataSource={pendingImport?.data || []}
           pagination={false}
           scroll={{ y: 300 }}
           rowKey={(record, index) => `imported-${index}`}
@@ -644,26 +911,47 @@ const handleSearch = async () => {
             { title: "Đơn giá", dataIndex: "unit-price", width: 100 },
             { title: "Phí phụ thu", dataIndex: "extra-fee", width: 100 },
             { title: "Phí hoa hồng", dataIndex: "commission-fee", width: 100 },
-            { title: "Mã container", dataIndex: "container-code", width: 120 },
           ]}
         />
       </Modal>
 
-      {/* Search Product Modal */}
       <Modal
         title="Tìm kiếm sản phẩm"
-        open={searchModalVisible}
-        onCancel={() => setSearchModalVisible(false)}
+        open={searchModalState.visible}
+        onCancel={() => setSearchModalState({ destinationId: null, visible: false })}
         footer={null}
         width={800}
       >
         <div className="mb-4">
           <Input
             placeholder="Nhập mã hoặc tên sản phẩm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onPressEnter={handleSearch}
-            suffix={<SearchOutlined onClick={handleSearch} className="cursor-pointer" />}
+            value={
+              searchModalState.destinationId
+                ? searchTerms[searchModalState.destinationId] ?? ""
+                : ""
+            }
+            onChange={(e) => {
+              const destinationId = searchModalState.destinationId;
+              if (destinationId) {
+                const value = e.target.value;
+                setSearchTerms((prev) => ({ ...prev, [destinationId]: value }));
+              }
+            }}
+            onPressEnter={() => {
+              if (searchModalState.destinationId) {
+                handleSearch(searchModalState.destinationId);
+              }
+            }}
+            suffix={
+              <SearchOutlined
+                onClick={() => {
+                  if (searchModalState.destinationId) {
+                    handleSearch(searchModalState.destinationId);
+                  }
+                }}
+                className="cursor-pointer"
+              />
+            }
           />
         </div>
         <Table
@@ -674,19 +962,23 @@ const handleSearch = async () => {
           scroll={{ y: 400 }}
           rowKey="id"
           onRow={(record) => ({
-            onClick: () => selectProduct(record),
-            style: { cursor: 'pointer' },
+            onClick: () => {
+              if (searchModalState.destinationId) {
+                selectProduct(searchModalState.destinationId, record);
+              }
+            },
+            style: { cursor: "pointer" },
           })}
           columns={[
             { title: "Mã hàng", dataIndex: "sku", width: 120 },
             { title: "Tên hàng", dataIndex: "name", width: 200 },
             { title: "Màu", dataIndex: "color", width: 80 },
             { title: "Size", dataIndex: "size", width: 80 },
-            { 
-              title: "Giá cost", 
-              dataIndex: "costPrice", 
+            {
+              title: "Giá cost",
+              dataIndex: "costPrice",
               width: 100,
-              render: (price) => price?.toLocaleString("vi-VN") 
+              render: (price) => price?.toLocaleString("vi-VN"),
             },
             { title: "Tồn kho", dataIndex: "stockQuantity", width: 80 },
           ]}
