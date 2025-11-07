@@ -568,10 +568,14 @@ export default function TransferNew() {
         return;
       }
 
+      const orderDateValue = values.orderDate
+        ? values.orderDate.format("YYYY-MM-DD")
+        : dayjs().format("YYYY-MM-DD");
+
       const payload: CreateMultiTransferPayload = {
         "from-warehouse-id": values.fromWarehouseId,
         "employee-id": employeeId,
-        "order-date": values.orderDate ? values.orderDate.toISOString() : dayjs().toISOString(),
+        "order-date": orderDateValue,
         "note": values.note || "",
         "pay-method": values.payMethod || "Bank Transfer",
         "discount-amount": aggregateTotals.totalDiscount,
@@ -812,8 +816,7 @@ export default function TransferNew() {
               >
                 <DatePicker
                   className="w-full"
-                  format="DD/MM/YYYY HH:mm"
-                  showTime
+                  format="DD/MM/YYYY"
                   suffixIcon={<CalendarOutlined />}
                 />
               </Form.Item>
