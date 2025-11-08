@@ -2,7 +2,10 @@
 export interface PriceBookItem {
   id: string;
   "product-id": string;
+  sku: string;
+  name: string;
   "selling-price": number;
+  "cost-price": number;
   "effective-date": string;
   "expiry-date": string | null;
   note: string | null;

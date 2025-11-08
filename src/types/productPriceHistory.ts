@@ -45,8 +45,8 @@ export interface CreateProductPriceHistoryRequest {
   "selling-price": number;
   "cost-price": number;
   "effective-date": string;
-  "expiry-date"?: string;
+  "expiry-date"?: string | null;
   note?: string;
   "product-id": string;
-  "branch-id"?: string;
+  "branch-id"?: string | null;
 }
