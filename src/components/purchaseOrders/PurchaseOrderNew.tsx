@@ -12,6 +12,7 @@ import {
   Modal,
   Upload,
   Tag,
+  // InputNumber 
 } from "antd";
 import type { TableProps, UploadProps } from "antd";
 import {
@@ -297,6 +298,24 @@ const handleSearch = async () => {
         />
       ),
     },
+  //     {
+  //   title: "Đơn giá",
+  //   dataIndex: "unitPrice",
+  //   width: 120,
+  //   render: (value, _, index) => (
+  //     <InputNumber
+  //       min={0}
+  //        precision={0}
+  //       style={{ width: '100%' }}
+  //       value={value}
+  //       placeholder="0"
+  //       formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+  //       onChange={(value) =>
+  //         handleProductChange(index, "unitPrice", Number(value || 0))
+  //       }
+  //     />
+  //   ),
+  // },
     {
       title: "Giảm giá",
       dataIndex: "discount",
