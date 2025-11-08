@@ -6,14 +6,16 @@ import type {
   PriceBookItem,
   PriceBookResponse
 } from "@/types/pricebook";
+import type { CreateProductPriceHistoryRequest } from "@/types/productPriceHistory";
 
 // --- DEFINITIONS & HELPERS ---
 
 type Filters = {
   pageIndex: number;
   pageSize: number;
-  search?: string;
-  category?: string[];
+  productName?: string;
+  categoryIds?: string[];
+  branchId?: string | null;
   stockStatus?: string;
   priceCondition?: string;
   priceOperator?: string;
@@ -34,6 +36,9 @@ type Actions = {
   setFilters: (p: Partial<Filters>) => void;
   resetFilters: () => void;
   getAll: () => Promise<{success: boolean; message?: string}>;
+  createPrice: (
+    payload: CreateProductPriceHistoryRequest
+  ) => Promise<{ success: boolean; message?: string }>;
   // updatePrice: (productId: string, price: number) => Promise<{success: boolean; message?: string}>; // TODO: Implement later
   // bulkUpdatePrices: (updates: Array<{productId: string; price: number}>) => Promise<{success: boolean; message?: string}>; // TODO: Implement later
 };
@@ -137,7 +142,8 @@ export const usePriceBookStore = create<State & Actions>()(
     filters: { 
       pageIndex: 1, 
       pageSize: 20,
-      category: [],
+      branchId: null,
+      categoryIds: [],
       stockStatus: "Tất cả",
       priceCondition: "none",
       priceOperator: "none", 
@@ -157,7 +163,8 @@ export const usePriceBookStore = create<State & Actions>()(
         s.filters = { 
           pageIndex: 1, 
           pageSize: 20,
-          category: [],
+          branchId: null,
+          categoryIds: [],
           stockStatus: "Tất cả",
           priceCondition: "none",
           priceOperator: "none",
@@ -175,7 +182,11 @@ export const usePriceBookStore = create<State & Actions>()(
           params: {
             PageNumber: filters.pageIndex,
             PageSize: filters.pageSize,
-            SearchTerm: filters.search ?? "",
+            ProductName: filters.productName || undefined,
+            ListCategory: filters.categoryIds?.length
+              ? filters.categoryIds.join(",")
+              : undefined,
+            BranchId: filters.branchId ?? null,
           },
         }),
         (data) => {
@@ -195,6 +206,31 @@ export const usePriceBookStore = create<State & Actions>()(
           showErrorMessage: true
         }
       );
+    },
+
+    createPrice: async (payload) => {
+      const result = await handleApiCall<{ id: string }>(
+        set,
+        () =>
+          api.post("/api/product-price-history", payload, {
+            headers: {
+              "Content-Type": "application/json-patch+json",
+            },
+          }),
+        undefined,
+        {
+          customSuccessMessage: "Thiết lập giá thành công!",
+        }
+      );
+
+      if (result.success) {
+        await get().getAll();
+      }
+
+      return {
+        success: result.success,
+        message: result.message,
+      };
     },
 
     // TODO: Implement when have update price API

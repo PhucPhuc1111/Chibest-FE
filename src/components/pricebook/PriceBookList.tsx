@@ -1,53 +1,215 @@
 "use client";
 
-import { useEffect } from "react";
-import { Table, Input, Button, Select, Spin, Divider, Tag } from "antd";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Table,
+  Input,
+  Button,
+  Select,
+  Spin,
+  Tag,
+  Modal,
+  Form,
+  InputNumber,
+  DatePicker,
+} from "antd";
+import type { SelectProps } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { usePriceBookStore } from "@/stores/usePriceBookStore";
 import type { PriceBookItem } from "@/types/pricebook";
+import { useBranchStore } from "@/stores/useBranchStore";
+import { useCategoryStore } from "@/stores/useCategoryStore";
+import { useProductStore } from "@/stores/useProductStore";
+import dayjs, { type Dayjs } from "dayjs";
 
 export default function PriceBookList() {
-  const { items, isLoading, getAll, resetFilters, filters, setFilters } =
-    usePriceBookStore();
+  const {
+    items,
+    isLoading,
+    getAll,
+    resetFilters,
+    filters,
+    setFilters,
+    totalRecords,
+    createPrice,
+  } = usePriceBookStore();
+
+  const categoryKey = useMemo(
+    () => (filters.categoryIds ?? []).join("|"),
+    [filters.categoryIds]
+  );
+
+  const branches = useBranchStore((state) => state.branches);
+  const getBranches = useBranchStore((state) => state.getBranches);
+  const branchLoading = useBranchStore((state) => state.loading);
+
+  const categories = useCategoryStore((state) => state.categories);
+  const getCategories = useCategoryStore((state) => state.getCategories);
+  const categoryLoading = useCategoryStore((state) => state.loading);
+
+  const products = useProductStore((state) => state.products);
+  const getProducts = useProductStore((state) => state.getProducts);
+  const searchProducts = useProductStore((state) => state.searchProducts);
+  const productLoading = useProductStore((state) => state.loading);
+
+  const [searchValue, setSearchValue] = useState(filters.productName ?? "");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [form] = Form.useForm();
+
+  useEffect(() => {
+    setSearchValue(filters.productName ?? "");
+  }, [filters.productName]);
 
   useEffect(() => {
     getAll();
-  }, [getAll, filters.pageIndex, filters.pageSize]);
+  }, [
+    getAll,
+    filters.pageIndex,
+    filters.pageSize,
+    filters.branchId,
+    filters.productName,
+    filters.stockStatus,
+    filters.priceCondition,
+    filters.priceType,
+    filters.priceOperator,
+    filters.priceValue,
+    categoryKey,
+  ]);
+
+  useEffect(() => {
+    getBranches({ pageIndex: 1, pageSize: 100 });
+  }, [getBranches]);
+
+  useEffect(() => {
+    getCategories({ PageNumber: 1, PageSize: 200 });
+  }, [getCategories]);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      getProducts({ PageNumber: 1, PageSize: 50 });
+    }
+  }, [isModalOpen, getProducts]);
 
   const handleSearch = (value: string) => {
-    setFilters({ search: value, pageIndex: 1 });
+    const trimmed = value.trim();
+    setFilters({
+      productName: trimmed.length ? trimmed : undefined,
+      pageIndex: 1,
+    });
   };
 
   const handleCategoryChange = (value: string[]) => {
-    setFilters({ category: value, pageIndex: 1 });
+    setFilters({ categoryIds: value, pageIndex: 1 });
   };
 
-  const handleStockStatusChange = (value: string) => {
-    setFilters({ stockStatus: value, pageIndex: 1 });
+  const handleBranchChange = (value: string | null) => {
+    setFilters({ branchId: value ?? null, pageIndex: 1 });
   };
 
-  const handlePriceConditionChange = (value: string) => {
-    setFilters({ priceCondition: value, pageIndex: 1 });
+  const branchOptions = useMemo<SelectProps<string | null>["options"]>(
+    () => [
+      { label: "Toàn hệ thống", value: null },
+      ...branches.map((branch) => ({
+        label: branch.name,
+        value: branch.id,
+      })),
+    ],
+    [branches]
+  );
+
+  const categoryOptions = useMemo(
+    () =>
+      categories.map((category) => ({
+        label: category.name,
+        value: category.id,
+      })),
+    [categories]
+  );
+
+  const productOptions = useMemo(
+    () =>
+      products.map((product) => ({
+        label: `${product.name} (${product.sku})`,
+        value: product.id,
+      })),
+    [products]
+  );
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
   };
 
-  const handlePriceTypeChange = (value: string) => {
-    setFilters({ priceType: value, pageIndex: 1 });
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setIsSubmitting(false);
+    form.resetFields();
+  };
+
+  const handleSubmitModal = async () => {
+    let values: {
+      productId: string;
+      branchId?: string | null;
+      sellingPrice: string;
+      costPrice: string;
+      effectiveDate: Dayjs;
+      expiryDate?: Dayjs;
+      note?: string;
+    };
+
+    try {
+      values = await form.validateFields();
+    } catch {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const formatDate = (date: Dayjs) =>
+        dayjs(date).format("YYYY-MM-DDTHH:mm:ss.SSS");
+
+      const result = await createPrice({
+        "product-id": values.productId,
+        "branch-id": values.branchId ?? null,
+        "selling-price": Number(values.sellingPrice),
+        "cost-price": Number(values.costPrice),
+        "effective-date": formatDate(values.effectiveDate),
+        "expiry-date": values.expiryDate ? formatDate(values.expiryDate) : null,
+        note: values.note?.trim() || undefined,
+      });
+
+      if (result.success) {
+        handleCloseModal();
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const columns: ColumnsType<PriceBookItem> = [
-    // { 
-    //   title: "ID", 
-    //   dataIndex: "id", 
-    //   width: 120, 
-    //   fixed: "left",
-    //   render: (id: string) => id.substring(0, 8) + "..."
-    // },
-    { 
-      title: "Product ID", 
-      dataIndex: "product-id", 
-      width: 120,
-      render: (id: string) => id.substring(0, 30) + "..."
+    {
+      title: "Tên sản phẩm",
+      dataIndex: "name",
+      width: 220,
+      render: (_: string, record) => (
+        <div className="max-w-[240px]">
+          <div className="font-medium text-gray-900">
+            {record.name || "—"}
+          </div>
+          {record.sku ? (
+            <div className="text-xs text-gray-500 truncate">{record.sku}</div>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      title: "Giá vốn",
+      dataIndex: "cost-price",
+      // align: "right",
+      width: 80,
+      render: (v: number) => v?.toLocaleString("vi-VN") + " đ" || "0 đ",
     },
     {
       title: "Giá bán",
@@ -110,9 +272,16 @@ export default function PriceBookList() {
             allowClear
             prefix={<SearchOutlined />}
             placeholder="Tìm kiếm..."
-            defaultValue={filters.search}
-            onPressEnter={(e) => handleSearch((e.target as HTMLInputElement).value)}
-            onBlur={(e) => handleSearch(e.target.value)}
+            value={searchValue}
+            onChange={(e) => {
+              const nextValue = e.target.value;
+              setSearchValue(nextValue);
+              if (!nextValue.trim().length) {
+                setFilters({ productName: undefined, pageIndex: 1 });
+              }
+            }}
+            onPressEnter={() => handleSearch(searchValue)}
+            onBlur={() => handleSearch(searchValue)}
           />
         </div>
 
@@ -142,68 +311,12 @@ export default function PriceBookList() {
               allowClear
               className="w-full"
               placeholder="Chọn nhóm hàng"
-              value={filters.category}
+              value={filters.categoryIds}
               onChange={handleCategoryChange}
-              options={[
-                { label: "ÁO DÀI", value: "ÁO DÀI" },
-                { label: "ÁO THUN", value: "ÁO THUN" },
-                { label: "ĐẦM", value: "ĐẦM" },
-                { label: "CHÂN VÁY", value: "CHÂN VÁY" },
-                { label: "ĐỒ NGỦ", value: "ĐỒ NGỦ" },
-                { label: "HÀNG LEN", value: "HÀNG LEN" },
-              ]}
+              options={categoryOptions}
+              loading={categoryLoading}
             />
           </div>
-
-          {/* Tồn kho */}
-          <div>
-            <div className="text-[13px] font-semibold mb-1">Tồn kho</div>
-            <Select
-              value={filters.stockStatus}
-              className="w-full"
-              onChange={handleStockStatusChange}
-              options={[
-                { label: "Tất cả", value: "Tất cả" },
-                { label: "Dưới định mức tồn", value: "Dưới định mức tồn" },
-                { label: "Vượt định mức tồn", value: "Vượt định mức tồn" },
-                { label: "Còn hàng trong kho", value: "Còn hàng trong kho" },
-                { label: "Hết hàng trong kho", value: "Hết hàng trong kho" },
-              ]}
-            />
-          </div>
-
-          {/* Giá bán */}
-          <Divider className="my-2" />
-          <div className="space-y-2">
-            <div className="text-[13px] font-semibold">Giá bán</div>
-            <div>
-              <Select
-                value={filters.priceCondition}
-                className="w-full"
-                onChange={handlePriceConditionChange}
-                options={[
-                  { label: "Chọn điều kiện", value: "none" },
-                  { label: "Nhỏ hơn", value: "<" },
-                  { label: "Nhỏ hơn hoặc bằng", value: "<=" },
-                  { label: "Bằng", value: "=" },
-                  { label: "Lớn hơn", value: ">" },
-                ]}
-              />
-            </div>
-            <div>
-              <Select
-                value={filters.priceType}
-                className="w-full"
-                onChange={handlePriceTypeChange}
-                options={[
-                  { label: "Chọn giá so sánh", value: "none" },
-                  { label: "Giá vốn", value: "cost" },
-                  { label: "Giá nhập cuối", value: "import" },
-                ]}
-              />
-            </div>
-          </div>
-
           <div className="pt-1">
             <Button type="link" onClick={resetFilters}>
               Mặc định
@@ -217,13 +330,28 @@ export default function PriceBookList() {
         <div className="bg-white rounded-md border border-gray-200">
           <div className="flex justify-between items-center px-4 py-2 border-b">
             <div className="text-[13px] text-gray-500">
-              Tổng: <b>{items.length.toLocaleString()}</b> bản ghi giá
+              Tổng: <b>{totalRecords.toLocaleString()}</b> bản ghi giá
             </div>
-            <div className="flex gap-2">
-              <Button type="primary">+ Thiết lập giá</Button>
-              <Button>Import</Button>
-              <Button>Xuất file</Button>
-              {/* <Button>⚙️</Button> */}
+            <div className="flex items-center gap-3">
+              <Select<string | null>
+                className="w-[220px]"
+                placeholder="Lọc theo chi nhánh"
+                options={branchOptions}
+                value={filters.branchId ?? null}
+                onChange={(value) => handleBranchChange(value ?? null)}
+                loading={branchLoading}
+                allowClear
+                showSearch
+                optionFilterProp="label"
+              />
+              <div className="flex gap-2">
+                <Button type="primary" onClick={handleOpenModal}>
+                  + Thiết lập giá
+                </Button>
+                <Button>Import</Button>
+                <Button>Xuất file</Button>
+                {/* <Button>⚙️</Button> */}
+              </div>
             </div>
           </div>
 
@@ -237,13 +365,24 @@ export default function PriceBookList() {
               columns={columns}
               dataSource={items}
               size="middle"
-              pagination={{ 
+              pagination={{
                 pageSize: filters.pageSize,
                 current: filters.pageIndex,
-                total: items.length,
+                total: totalRecords,
                 showSizeChanger: true,
                 pageSizeOptions: ['20', '50', '100'],
-                onChange: (page, pageSize) => setFilters({ pageIndex: page, pageSize: pageSize || 20 }),
+                onChange: (page, pageSize) =>
+                  setFilters({
+                    pageIndex: page,
+                    pageSize: pageSize || filters.pageSize,
+                  }),
+                onShowSizeChange: (page, pageSize) =>
+                  setFilters({
+                    pageIndex: page,
+                    pageSize: pageSize || filters.pageSize,
+                  }),
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} trong ${total.toLocaleString()} bản ghi`,
               }}
               scroll={{ x: 480 }}
               //  scroll={{ x: 'max-content' }}
@@ -253,6 +392,111 @@ export default function PriceBookList() {
           )}
         </div>
       </section>
+
+      <Modal
+        open={isModalOpen}
+        title="Thiết lập giá mới"
+        onCancel={handleCloseModal}
+        onOk={handleSubmitModal}
+        okText="Lưu"
+        cancelText="Hủy"
+        confirmLoading={isSubmitting}
+        destroyOnClose
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{
+            sellingPrice: undefined,
+            costPrice: undefined,
+          }}
+        >
+          <Form.Item
+            label="Sản phẩm"
+            name="productId"
+            rules={[{ required: true, message: "Vui lòng chọn sản phẩm" }]}
+          >
+            <Select<string>
+              showSearch
+              placeholder="Chọn sản phẩm"
+              options={productOptions}
+              optionFilterProp="label"
+              filterOption={false}
+              onSearch={(value) => searchProducts(value)}
+              loading={productLoading}
+              allowClear
+            />
+          </Form.Item>
+
+          <Form.Item label="Chi nhánh" name="branchId">
+            <Select<string | null>
+              allowClear
+              placeholder="Chọn chi nhánh (hoặc bỏ trống cho toàn hệ thống)"
+              options={branchOptions}
+              optionFilterProp="label"
+              showSearch
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Giá bán"
+            name="sellingPrice"
+            rules={[{ required: true, message: "Vui lòng nhập giá bán" }]}
+          >
+            <InputNumber<string>
+              min="0"
+              className="!w-full"
+              controls={false}
+              stringMode
+              placeholder="Nhập giá bán"
+              formatter={(value) => {
+                if (!value) return "";
+                const numeric = value.replace(/[^\d]/g, "");
+                if (!numeric) return "";
+                return `${numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ",")} ₫`;
+              }}
+              parser={(value) => (value ? value.replace(/[^\d]/g, "") : "")}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Giá vốn"
+            name="costPrice"
+            rules={[{ required: true, message: "Vui lòng nhập giá vốn" }]}
+          >
+            <InputNumber<string>
+              min="0"
+              className="!w-full"
+              controls={false}
+              stringMode
+              placeholder="Nhập giá vốn"
+              formatter={(value) => {
+                if (!value) return "";
+                const numeric = value.replace(/[^\d]/g, "");
+                if (!numeric) return "";
+                return `${numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ",")} ₫`;
+              }}
+              parser={(value) => (value ? value.replace(/[^\d]/g, "") : "")}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Ngày hiệu lực"
+            name="effectiveDate"
+            rules={[{ required: true, message: "Vui lòng chọn ngày hiệu lực" }]}
+          >
+            <DatePicker className="w-full" showTime />
+          </Form.Item>
+
+          <Form.Item label="Ngày hết hiệu lực" name="expiryDate">
+            <DatePicker className="w-full" showTime />
+          </Form.Item>
+
+          <Form.Item label="Ghi chú" name="note">
+            <Input.TextArea rows={3} placeholder="Nhập ghi chú (không bắt buộc)" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
