@@ -10,12 +10,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useSessionStore } from "@/stores/useSessionStore";
 
 export default function SignInForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
+  const initializeSession = useSessionStore((state) => state.initializeSession);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -50,8 +52,9 @@ export default function SignInForm() {
         userName: data["user-name"],
         email: data["email"],
         role: data["role"],
-        branchId: data["branch-id"],
       };
+
+      initializeSession(data["branch-id"] ?? null);
       
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);

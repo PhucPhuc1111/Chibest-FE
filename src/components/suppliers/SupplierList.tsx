@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Table,
   Input,
@@ -8,13 +8,47 @@ import {
   InputNumber,
   Spin,
   Drawer,
+  message,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { SearchOutlined, FilterOutlined } from "@ant-design/icons";
-import { useSupplierStore } from "@/stores/useSupplierStore";
+import { isAxiosError } from "axios";
+import {
+  useSupplierStore,
+  type SupplierFilters,
+} from "@/stores/useSupplierStore";
 import type { SupplierDebtListItem } from "@/types/supplier";
 import SupplierDetail from "./SupplierDetail";
-import DateFilter from "./components/DateFilter";
+import DateFilter, {
+  type DateFilterValue,
+  DEFAULT_DATE_PRESET,
+} from "./components/DateFilter";
+import api from "@/api/axiosInstance";
+
+function getFileNameFromContentDisposition(
+  contentDisposition?: string
+): string | null {
+  if (!contentDisposition) {
+    return null;
+  }
+
+  const fileNameStarMatch = contentDisposition.match(
+    /filename\*=(?:UTF-8'')?([^;]+)/i
+  );
+  if (fileNameStarMatch?.[1]) {
+    return decodeURIComponent(fileNameStarMatch[1].replace(/['"]/g, "").trim());
+  }
+
+  const fileNameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  if (fileNameMatch?.[1]) {
+    return fileNameMatch[1].trim();
+  }
+
+  return null;
+}
+
+type SetFiltersFn = (params: Partial<SupplierFilters>) => void;
+type ResetFiltersFn = () => void;
 
 export default function SupplierList() {
   const { data, isLoading, getAll, setFilters, resetFilters, filters, total } =
@@ -23,6 +57,7 @@ export default function SupplierList() {
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Check mobile screen
   useEffect(() => {
@@ -42,6 +77,21 @@ export default function SupplierList() {
 
   const pageIndex = filters.pageIndex ?? 1;
   const pageSize = filters.pageSize ?? 15;
+
+  const dateFilterValue = useMemo<DateFilterValue>(() => {
+    if (filters.datePreset) {
+      return { mode: "preset", preset: filters.datePreset };
+    }
+
+    if (filters.fromDate && filters.toDate) {
+      return {
+        mode: "custom",
+        range: [filters.fromDate, filters.toDate],
+      };
+    }
+
+    return { mode: "preset", preset: DEFAULT_DATE_PRESET };
+  }, [filters.datePreset, filters.fromDate, filters.toDate]);
 
   const mobileColumns: ColumnsType<SupplierDebtListItem> = useMemo(() => [
     {
@@ -134,123 +184,65 @@ export default function SupplierList() {
     },
   ], [pageIndex, pageSize]);
 
-  const FilterContent = () => (
-    <div className="space-y-4">
-      <div className="mb-3">
-        <Input
-          allowClear
-          prefix={<SearchOutlined />}
-          placeholder="Theo mã, tên, số điện thoại"
-          defaultValue={filters.q}
-          onPressEnter={(e) =>
-            setFilters({
-              q: (e.target as HTMLInputElement).value,
-              pageIndex: 1,
-            })
-          }
-          onBlur={(e) =>
-            setFilters({
-              q: (e.target as HTMLInputElement).value,
-              pageIndex: 1,
-            })
-          }
-        />
-      </div>
+  const handleExport = useCallback(async () => {
+    try {
+      setIsExporting(true);
 
-      <div className="space-y-4">
-        <div>
-          <div className="text-[13px] font-semibold mb-1">Tổng mua</div>
-          <div className="flex flex-col space-y-2">
-            <div className="w-full">
-              <InputNumber
-                className="w-full"
-                placeholder="Từ"
-                onBlur={(e) =>
-                  setFilters({
-                    totalFrom:
-                      Number((e.target as HTMLInputElement).value) || null,
-                    pageIndex: 1,
-                  })
-                }
-              />
-            </div>
-            <div className="w-full">
-              <InputNumber
-                className="w-full"
-                placeholder="Tới"
-                onBlur={(e) =>
-                  setFilters({
-                    totalTo:
-                      Number((e.target as HTMLInputElement).value) || null,
-                    pageIndex: 1,
-                  })
-                }
-              />
-            </div>
-          </div>
-        </div>
+      const params: Record<string, unknown> = {};
+      Object.entries(filters).forEach(([key, value]) => {
+        if (
+          value === undefined ||
+          value === null ||
+          value === "" ||
+          value === "all" ||
+          key === "pageIndex" ||
+          key === "pageSize"
+        ) {
+          return;
+        }
+        params[key] = value;
+      });
 
-        {/* Thời gian */}
-        <div className="">
-          <div className="text-[13px] font-semibold mb-1">Thời gian</div>
-          <DateFilter 
-            onChange={(val) => {
-              if (val.mode === "preset") {
-                setFilters({ datePreset: val.value, pageIndex: 1 });
-              } else {
-                const [from, to] = val.value;
-                setFilters({
-                  fromDate: from,
-                  toDate: to,
-                  datePreset: null,
-                  pageIndex: 1,
-                });
-              }
-            }}
-          />
-        </div>
+      const response = await api.get<Blob>("/api/supplier-debt/export", {
+        params,
+        responseType: "blob",
+      });
 
-        {/* Nợ hiện tại */}
-        <div>
-          <div className="text-[13px] font-semibold mb-1">Nợ hiện tại</div>
-          <div className="flex flex-col space-y-2">
-            <div className="w-full">
-              <InputNumber
-                className="w-full"
-                placeholder="Từ"
-                onBlur={(e) =>
-                  setFilters({
-                    debtFrom:
-                      Number((e.target as HTMLInputElement).value) || null,
-                    pageIndex: 1,
-                  })
-                }
-              />
-            </div>
-            <div className="w-full">
-              <InputNumber
-                className="w-full"
-                placeholder="Tới"
-                onBlur={(e) =>
-                  setFilters({
-                    debtTo:
-                      Number((e.target as HTMLInputElement).value) || null,
-                    pageIndex: 1,
-                  })
-                }
-              />
-            </div>
-          </div>
-        </div>
-        
-        <div className="pt-1">
-          <Button type="link" onClick={resetFilters}>
-            Mặc định
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+      const blob = response.data;
+      const contentDisposition =
+        response.headers["content-disposition"] ??
+        response.headers["Content-Disposition"];
+      const fileName =
+        getFileNameFromContentDisposition(contentDisposition) ??
+        "SupplierDebts.xlsx";
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      message.success("Xuất file thành công");
+    } catch (error) {
+      let errorMessage = "Xuất file thất bại";
+
+      if (isAxiosError(error)) {
+        const apiMessage = (error.response?.data as { message?: string })?.message;
+        if (apiMessage) {
+          errorMessage = apiMessage;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      message.error(errorMessage);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [filters]);
 
   return (
     <div className="flex gap-4 flex-col lg:flex-row">
@@ -273,12 +265,22 @@ export default function SupplierList() {
         onClose={() => setShowFilters(false)}
         width={300}
       >
-        <FilterContent />
+        <FilterContent
+          filters={filters}
+          setFilters={setFilters}
+          resetFilters={resetFilters}
+          dateFilterValue={dateFilterValue}
+        />
       </Drawer>
 
       {/* Sidebar Filter for Desktop */}
       <aside className="hidden lg:block w-[300px] shrink-0 bg-white rounded-md border border-gray-200 p-3">
-        <FilterContent />
+        <FilterContent
+          filters={filters}
+          setFilters={setFilters}
+          resetFilters={resetFilters}
+          dateFilterValue={dateFilterValue}
+        />
       </aside>
 
       {/* Table + inline detail */}
@@ -303,9 +305,11 @@ export default function SupplierList() {
               >
                 Import
               </Button>
-              <Button 
-                size="small" 
+              <Button
+                size="small"
                 className="text-xs sm:text-base h-7 sm:h-auto"
+                loading={isExporting}
+                onClick={handleExport}
               >
                 Xuất file
               </Button>
@@ -367,6 +371,144 @@ export default function SupplierList() {
           )}
         </div>
       </section>
+    </div>
+  );
+}
+
+type FilterContentProps = {
+  filters: SupplierFilters;
+  setFilters: SetFiltersFn;
+  resetFilters: ResetFiltersFn;
+  dateFilterValue: DateFilterValue;
+};
+
+function FilterContent({
+  filters,
+  setFilters,
+  resetFilters,
+  dateFilterValue,
+}: FilterContentProps) {
+  return (
+    <div className="space-y-4">
+      <div className="mb-3">
+        <Input
+          allowClear
+          prefix={<SearchOutlined />}
+          placeholder="Theo mã, tên, số điện thoại"
+          defaultValue={filters.q}
+          onPressEnter={(e) =>
+            setFilters({
+              q: (e.target as HTMLInputElement).value,
+              pageIndex: 1,
+            })
+          }
+          onBlur={(e) =>
+            setFilters({
+              q: (e.target as HTMLInputElement).value,
+              pageIndex: 1,
+            })
+          }
+        />
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <div className="text-[13px] font-semibold mb-1">Tổng mua</div>
+          <div className="flex flex-col space-y-2">
+            <div className="w-full">
+              <InputNumber
+                className="w-full"
+                placeholder="Từ"
+                onBlur={(e) =>
+                  setFilters({
+                    totalFrom:
+                      Number((e.target as HTMLInputElement).value) || null,
+                    pageIndex: 1,
+                  })
+                }
+              />
+            </div>
+            <div className="w-full">
+              <InputNumber
+                className="w-full"
+                placeholder="Tới"
+                onBlur={(e) =>
+                  setFilters({
+                    totalTo:
+                      Number((e.target as HTMLInputElement).value) || null,
+                    pageIndex: 1,
+                  })
+                }
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Thời gian */}
+        <div>
+          <div className="text-[13px] font-semibold mb-1">Thời gian</div>
+          <DateFilter
+            value={dateFilterValue}
+            onChange={(val) => {
+              if (val.mode === "preset") {
+                setFilters({
+                  datePreset: val.value,
+                  fromDate: null,
+                  toDate: null,
+                  pageIndex: 1,
+                });
+              } else {
+                const [from, to] = val.value;
+                setFilters({
+                  fromDate: from,
+                  toDate: to,
+                  datePreset: null,
+                  pageIndex: 1,
+                });
+              }
+            }}
+          />
+        </div>
+
+        {/* Nợ hiện tại */}
+        <div>
+          <div className="text-[13px] font-semibold mb-1">Nợ hiện tại</div>
+          <div className="flex flex-col space-y-2">
+            <div className="w-full">
+              <InputNumber
+                className="w-full"
+                placeholder="Từ"
+                onBlur={(e) =>
+                  setFilters({
+                    debtFrom:
+                      Number((e.target as HTMLInputElement).value) || null,
+                    pageIndex: 1,
+                  })
+                }
+              />
+            </div>
+            <div className="w-full">
+              <InputNumber
+                className="w-full"
+                placeholder="Tới"
+                onBlur={(e) =>
+                  setFilters({
+                    debtTo:
+                      Number((e.target as HTMLInputElement).value) || null,
+                    pageIndex: 1,
+                  })
+                }
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-1">
+          <Button type="link" onClick={resetFilters}>
+            Mặc định
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

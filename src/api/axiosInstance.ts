@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
+import { getSessionState } from '@/stores/useSessionStore';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || '/api',
@@ -76,6 +77,8 @@ api.interceptors.response.use(
         });
 
         const { data } = response.data;
+        const session = getSessionState();
+        session.initializeSession(data['branch-id'] ?? null);
         localStorage.setItem('accessToken', data['access-token']);
         localStorage.setItem('refreshToken', data['refresh-token']);
         
@@ -84,7 +87,6 @@ api.interceptors.response.use(
           userName: data['user-name'],
           email: data['email'],
           role: data['role'],
-          branchId: data['branch-id'],
         };
         localStorage.setItem('userInfo', JSON.stringify(userInfo));
 

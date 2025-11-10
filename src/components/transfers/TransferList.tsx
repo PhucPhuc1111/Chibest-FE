@@ -242,6 +242,7 @@ import type { TableProps } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { useTransferStore } from "@/stores/useTransferStore";
+import { useSessionStore } from "@/stores/useSessionStore";
 import type { TransferSummary, TransferStatus } from "@/types/transfer";
 import TransferDetail from "./TransferDetail";
 import DateFilter from "../ui/DateFilter/DateFilter";
@@ -257,6 +258,8 @@ export default function TransferList() {
     resetFilters,
     filters,
   } = useTransferStore();
+  const userBranchId = useSessionStore((state) => state.userBranchId);
+  const activeBranchId = useSessionStore((state) => state.activeBranchId);
 
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
 
@@ -297,6 +300,13 @@ export default function TransferList() {
     };
     loadData();
   }, [filters, getAll, messageApi]);
+
+  useEffect(() => {
+    const branchId = userBranchId ?? activeBranchId ?? null;
+    if (filters.branchId !== branchId) {
+      setFilters({ branchId, pageIndex: 1 });
+    }
+  }, [userBranchId, activeBranchId, filters.branchId, setFilters]);
 
   const handleCreateNew = () => {
     router.push("/transfers/new");

@@ -8,8 +8,8 @@ import type {
   BranchDebtTransactionType,
 } from "@/types/branch";
 
-type Filters = {
-  q?: string;
+export type BranchDebtFilters = {
+  search?: string;
   totalFrom?: number | null;
   totalTo?: number | null;
   datePreset?: string | null;
@@ -28,12 +28,12 @@ type State = {
   isLoadingDetail: boolean;
   isSubmittingTransaction: boolean;
   error: string | null;
-  filters: Filters;
+  filters: BranchDebtFilters;
   total: number;
 };
 
 type Actions = {
-  setFilters: (payload: Partial<Filters>) => void;
+  setFilters: (payload: Partial<BranchDebtFilters>) => void;
   resetFilters: () => void;
   getAll: () => Promise<void>;
   getById: (id: string, transactionType?: string) => Promise<void>;
@@ -132,7 +132,7 @@ export const useBranchDebtStore = create<State & Actions>()(
     isSubmittingTransaction: false,
     error: null,
     filters: {
-      q: "",
+      search: "",
       datePreset: "Toàn thời gian",
       pageIndex: 1,
       pageSize: 15,
@@ -147,7 +147,7 @@ export const useBranchDebtStore = create<State & Actions>()(
     resetFilters: () =>
       set((state) => {
         state.filters = {
-          q: "",
+          search: "",
           datePreset: "Toàn thời gian",
           pageIndex: 1,
           pageSize: 15,

@@ -8,7 +8,7 @@ import type {
   SupplierDebtListItem,
 } from "@/types/supplier";
 
-type Filters = {
+export type SupplierFilters = {
   q?: string;
   totalFrom?: number | null;
   totalTo?: number | null;
@@ -29,12 +29,12 @@ type State = {
   isSubmittingTransaction: boolean;
   isDeletingHistory: boolean;
   error: string | null;
-  filters: Filters;
+  filters: SupplierFilters;
   total: number;
 };
 
 type Actions = {
-  setFilters: (p: Partial<Filters>) => void;
+  setFilters: (p: Partial<SupplierFilters>) => void;
   resetFilters: () => void;
   getAll: () => Promise<void>;
   getById: (id: string, transactionType?: string) => Promise<void>;

@@ -275,7 +275,7 @@ export default function BranchDebtDetail({
         onCancel={handleCloseModal}
         onOk={() => form.submit()}
         confirmLoading={isSubmittingTransaction}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
           <Form.Item

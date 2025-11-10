@@ -5,7 +5,7 @@ import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 
 export default function Page() {
   return (
-    <div className="p-20">
+    <div>
       <PageBreadcrumb pageTitle="Công nợ chi nhánh" />
       <BranchDebtList />
     </div>

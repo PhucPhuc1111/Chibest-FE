@@ -1,6 +1,6 @@
 "use client";
-import { ThemeToggleButton } from "@/components/common/ThemeToggleButton";
 //import NotificationDropdown from "@/components/header/NotificationDropdown";
+import BranchSelect from "@/components/header/BranchSelect";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
 import { BoxCubeIcon, CalenderIcon, GridIcon, PieChartIcon, DollarLineIcon } from "@/icons";
@@ -61,7 +61,7 @@ const AppHeader: React.FC = () => {
       title: "Công nợ",
       items: [
         { name: "Nhà cung cấp", path: "/suppliers" },
-        { name: "Công nợ chi nhánh", path: "/branchDebt" },
+        { name: "Chi nhánh", path: "/branchDebt" },
       ],
     },
   ];
@@ -198,7 +198,8 @@ const AppHeader: React.FC = () => {
           className={`${isApplicationMenuOpen ? "flex" : "hidden"} items-center justify-between w-full gap-4 px-5 py-4 lg:flex lg:justify-end lg:px-6`}
         >
           <div className="flex items-center gap-3">
-            <ThemeToggleButton />
+            <BranchSelect />
+            {/* <ThemeToggleButton /> */}
             {/* <NotificationDropdown /> */}
           </div>
           <UserDropdown />

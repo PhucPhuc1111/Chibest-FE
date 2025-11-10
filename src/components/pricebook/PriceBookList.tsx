@@ -17,6 +17,7 @@ import type { SelectProps } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { usePriceBookStore } from "@/stores/usePriceBookStore";
+import { useSessionStore } from "@/stores/useSessionStore";
 import type { PriceBookItem } from "@/types/pricebook";
 import { useBranchStore } from "@/stores/useBranchStore";
 import { useCategoryStore } from "@/stores/useCategoryStore";
@@ -34,6 +35,8 @@ export default function PriceBookList() {
     totalRecords,
     createPrice,
   } = usePriceBookStore();
+  const userBranchId = useSessionStore((state) => state.userBranchId);
+  const activeBranchId = useSessionStore((state) => state.activeBranchId);
 
   const categoryKey = useMemo(
     () => (filters.categoryIds ?? []).join("|"),
@@ -79,6 +82,13 @@ export default function PriceBookList() {
   ]);
 
   useEffect(() => {
+    const branchId = userBranchId ?? activeBranchId ?? null;
+    if (filters.branchId !== branchId) {
+      setFilters({ branchId, pageIndex: 1 });
+    }
+  }, [userBranchId, activeBranchId, filters.branchId, setFilters]);
+
+  useEffect(() => {
     getBranches({ pageIndex: 1, pageSize: 100 });
   }, [getBranches]);
 
@@ -102,10 +112,6 @@ export default function PriceBookList() {
 
   const handleCategoryChange = (value: string[]) => {
     setFilters({ categoryIds: value, pageIndex: 1 });
-  };
-
-  const handleBranchChange = (value: string | null) => {
-    setFilters({ branchId: value ?? null, pageIndex: 1 });
   };
 
   const branchOptions = useMemo<SelectProps<string | null>["options"]>(
@@ -333,17 +339,6 @@ export default function PriceBookList() {
               Tổng: <b>{totalRecords.toLocaleString()}</b> bản ghi giá
             </div>
             <div className="flex items-center gap-3">
-              <Select<string | null>
-                className="w-[220px]"
-                placeholder="Lọc theo chi nhánh"
-                options={branchOptions}
-                value={filters.branchId ?? null}
-                onChange={(value) => handleBranchChange(value ?? null)}
-                loading={branchLoading}
-                allowClear
-                showSearch
-                optionFilterProp="label"
-              />
               <div className="flex gap-2">
                 <Button type="primary" onClick={handleOpenModal}>
                   + Thiết lập giá
@@ -401,7 +396,7 @@ export default function PriceBookList() {
         okText="Lưu"
         cancelText="Hủy"
         confirmLoading={isSubmitting}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}
@@ -435,6 +430,7 @@ export default function PriceBookList() {
               options={branchOptions}
               optionFilterProp="label"
               showSearch
+              loading={branchLoading}
             />
           </Form.Item>
 

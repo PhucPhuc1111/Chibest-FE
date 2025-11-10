@@ -1,9 +1,9 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Radio, Dropdown, Button, DatePicker } from "antd";
 import type { RangePickerProps } from "antd/es/date-picker";
 import { RightOutlined } from "@ant-design/icons";
-import  { Dayjs } from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 
 const { RangePicker } = DatePicker;
 
@@ -11,17 +11,71 @@ type Payload =
   | { mode: "preset"; value: string }
   | { mode: "custom"; value: [string, string] };
 
+export const DEFAULT_DATE_PRESET = "Toàn thời gian";
+
+export type DateFilterValue =
+  | { mode: "preset"; preset?: string | null }
+  | { mode: "custom"; range?: [string | null, string | null] };
+
 export default function DateFilter({
+  value,
   onChange,
 }: {
+  value: DateFilterValue;
   onChange: (range: Payload) => void;
 }) {
-  const [mode, setMode] = useState<"preset" | "custom">("preset");
-  const [preset, setPreset] = useState<string>("Tháng này");
+  const [mode, setMode] = useState<"preset" | "custom">(
+    value.mode === "custom" ? "custom" : "preset"
+  );
+  const [preset, setPreset] = useState<string>(
+    value.mode === "preset"
+      ? value.preset ?? DEFAULT_DATE_PRESET
+      : DEFAULT_DATE_PRESET
+  );
   const [open, setOpen] = useState(false);
-  const [customRange, setCustomRange] = useState<[Dayjs, Dayjs] | null>(null);
+  const [customRange, setCustomRange] = useState<[Dayjs, Dayjs] | null>(() => {
+    if (
+      value.mode === "custom" &&
+      value.range &&
+      value.range[0] &&
+      value.range[1]
+    ) {
+      return [dayjs(value.range[0]), dayjs(value.range[1])];
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (value.mode === "preset") {
+      setMode("preset");
+      setPreset(value.preset ?? DEFAULT_DATE_PRESET);
+      setCustomRange(null);
+      return;
+    }
+
+    setMode("custom");
+    if (value.range && value.range[0] && value.range[1]) {
+      setCustomRange([dayjs(value.range[0]), dayjs(value.range[1])]);
+    } else {
+      setCustomRange(null);
+    }
+  }, [value]);
+
+  const handleModeChange = (nextMode: "preset" | "custom") => {
+    setMode(nextMode);
+    if (nextMode === "preset") {
+      onChange({ mode: "preset", value: preset });
+    } else if (customRange) {
+      const [from, to] = customRange;
+      onChange({
+        mode: "custom",
+        value: [from.format("YYYY-MM-DD"), to.format("YYYY-MM-DD")],
+      });
+    }
+  };
 
   const handlePreset = (label: string) => {
+    setMode("preset");
     setPreset(label);
     setOpen(false);
     onChange({ mode: "preset", value: label });
@@ -31,6 +85,7 @@ export default function DateFilter({
     if (!dates || !dates[0] || !dates[1]) return;
     const from = dates[0].format("YYYY-MM-DD");
     const to = dates[1].format("YYYY-MM-DD");
+    setMode("custom");
     setCustomRange([dates[0], dates[1]]);
     onChange({ mode: "custom", value: [from, to] });
   };
@@ -80,7 +135,7 @@ export default function DateFilter({
 
       <Radio.Group
         value={mode}
-        onChange={(e) => setMode(e.target.value)}
+        onChange={(e) => handleModeChange(e.target.value)}
         className="flex flex-col space-y-2 w-full "
       >
         {/* Radio 1: Preset (bảng nút trong dropdown) */}
