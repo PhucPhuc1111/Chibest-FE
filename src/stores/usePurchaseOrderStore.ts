@@ -52,6 +52,7 @@ interface RawPurchaseOrderSummary {
 type Filters = {
   pageIndex: number;
   pageSize: number;
+  branchId: string | null;
   search?: string;
   fromDate?: string | null;
   toDate?: string | null;
@@ -243,7 +244,7 @@ export const usePurchaseOrderStore = create<State & Actions>()(
     isLoading: false,
     error: null,
     totalRecords: 0,
-    filters: { pageIndex: 1, pageSize: 15 },
+    filters: { pageIndex: 1, pageSize: 15, branchId: null },
 
     // --- ACTIONS ---
 
@@ -254,36 +255,77 @@ export const usePurchaseOrderStore = create<State & Actions>()(
 
     resetFilters: () =>
       set((s) => {
-        s.filters = { pageIndex: 1, pageSize: 15 };
+        const branchId = s.filters.branchId ?? null;
+        s.filters = { pageIndex: 1, pageSize: 15, branchId };
       }),
 
     getAll: async () => {
       const { filters } = get();
-      
-      return handleApiCall(
-        set,
-        () => api.get("/api/purchase-order", {
+
+      set((s: State) => {
+        s.isLoading = true;
+        s.error = null;
+      });
+
+      try {
+        const response = await api.get("/api/purchase-order", {
           params: {
             pageIndex: filters.pageIndex,
             pageSize: filters.pageSize,
             search: filters.search ?? "",
-            fromDate: filters.fromDate ?? "", 
+            fromDate: filters.fromDate ?? "",
             toDate: filters.toDate ?? "",
             status: filters.status ?? "",
+            branchId: filters.branchId ?? undefined,
           },
-        }),
-        (data) => {
-          const list = transformPurchaseOrderSummary(data as RawPurchaseOrderSummary[]);
+        });
+
+        if (response.data["status-code"] === 200) {
+          const list = transformPurchaseOrderSummary(response.data.data as RawPurchaseOrderSummary[]);
           set((s: State) => {
             s.list = list;
             s.totalRecords = list.length;
+            s.isLoading = false;
           });
-        },
-        { 
-          showSuccessMessage: false,
-          showErrorMessage: true
+          return { success: true, message: response.data.message };
         }
-      );
+
+        const errorMsg = response.data.message || "Không thể tải dữ liệu phiếu nhập";
+        set((s: State) => {
+          s.isLoading = false;
+          s.error = errorMsg;
+        });
+        message.error(errorMsg);
+        return { success: false, message: errorMsg };
+      } catch (err: unknown) {
+        if (err && typeof err === "object" && "response" in err) {
+          const axiosError = err as { response?: { status?: number; data?: { message?: string } } };
+          if (axiosError.response?.status === 404) {
+            set((s: State) => {
+              s.list = [];
+              s.totalRecords = 0;
+              s.isLoading = false;
+              s.error = null;
+            });
+            return { success: true };
+          }
+          const errorMsg = axiosError.response?.data?.message || "Có lỗi xảy ra";
+          set((s: State) => {
+            s.isLoading = false;
+            s.error = errorMsg;
+          });
+          message.error(errorMsg);
+          return { success: false, message: errorMsg };
+        }
+
+        const genericMsg = err instanceof Error ? err.message : "Có lỗi xảy ra";
+        set((s: State) => {
+          s.isLoading = false;
+          s.error = genericMsg;
+        });
+        message.error(genericMsg);
+        return { success: false, message: genericMsg };
+      }
     },
 
     getById: async (id: string) => {

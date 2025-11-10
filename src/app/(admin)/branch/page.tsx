@@ -9,7 +9,6 @@ import { SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import CreateBranchModal from "@/components/branch/CreateBranchModal";
 import UpdateBranchModal from "@/components/branch/UpdateBranchModal";
 import { deleteBranch } from '@/api/branchApi';
-import { log } from "console";
 
 interface BranchData {
   id: string;
@@ -33,7 +32,7 @@ interface BranchResponse {
 export default function Page() {
   const [data, setData] = useState<BranchData[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState(''); 
   const searchTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const [pagination, setPagination] = useState({

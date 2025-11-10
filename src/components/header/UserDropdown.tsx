@@ -4,15 +4,18 @@ import React, { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { useRouter } from "next/navigation";
+import { useSessionStore } from "@/stores/useSessionStore";
 
 
 export default function UserDropdown() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const resetSession = useSessionStore((state) => state.resetSession);
   const handleSignOut = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("userInfo");
+    resetSession();
     router.push("/signin");
   };
 
