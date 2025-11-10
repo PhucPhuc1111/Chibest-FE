@@ -8,7 +8,7 @@ interface FileState {
 }
 
 interface FileActions {
-  uploadImage: (file: File, name: string, category: string) => Promise<boolean>;
+  uploadImage: (file: File, name: string, category: string) => Promise<string | null>;
   getImage: (urlPath: string) => Promise<string>;
   exportFile: (columns: string[]) => Promise<boolean>;
   clearError: () => void;
@@ -46,9 +46,12 @@ export const useFileStore = create<FileState & FileActions>((set) => ({
       });
       
       if (response.data["status-code"] === 200) {
-        set({ uploading: false });
-        message.success("Upload ảnh thành công!");
-        return true;
+        const imagePath = response.data; // "images\aos\at-okd-23.jpg"
+      const fullImageUrl = `http://45.125.238.52:5000/api/file/image?urlPath=${encodeURIComponent(imagePath)}`;
+      
+      set({ uploading: false });
+      message.success("Upload ảnh thành công!");
+      return fullImageUrl;
       }
       
       throw new Error(response.data.message);
@@ -63,7 +66,7 @@ export const useFileStore = create<FileState & FileActions>((set) => ({
       
       set({ uploading: false, error: errorMsg });
       message.error(errorMsg);
-      return false;
+      return null;
     }
   },
 
