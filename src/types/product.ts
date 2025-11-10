@@ -139,3 +139,32 @@ export interface ProductQueryParams {
   SortBy?: string;
   SortDescending?: boolean;
 }
+export interface ParentProduct {
+  id: string;
+  sku: string;
+  name: string;
+  "category-id": string;
+  brand: string;
+  "is-master": boolean;
+}
+
+export interface ProductFormValues {
+  name: string;
+  color?: string;
+  size?: string;
+  style?: string;
+  brand?: string;
+  material?: string;
+  weight?: number;
+  status?: string;
+  categoryId: string;
+  sellingPrice?: number;
+  costPrice?: number;
+}
+export interface ModalCreateProductProps {
+  open: boolean;
+  onClose: () => void;
+  parentProduct?: ParentProduct | null;
+  productData?: Product | ProductVariant | null;
+  isUpdate?: boolean;
+}
