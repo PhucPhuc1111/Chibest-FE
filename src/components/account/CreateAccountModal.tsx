@@ -67,7 +67,7 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       open={visible}
       onCancel={onClose}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
       maskClosable={false}
     >
       <Form

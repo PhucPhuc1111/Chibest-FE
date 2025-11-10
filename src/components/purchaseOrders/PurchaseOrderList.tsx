@@ -6,6 +6,7 @@ import type { TableProps } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { usePurchaseOrderStore } from "@/stores/usePurchaseOrderStore";
+import { useSessionStore } from "@/stores/useSessionStore";
 import type { PurchaseOrderSummary, PurchaseOrderStatus } from "@/types/purchaseOrder";
 import PurchaseOrderDetail from "./PurchaseOrderDetail";
 import DateFilter from "../ui/DateFilter/DateFilter";
@@ -21,6 +22,8 @@ export default function PurchaseOrderList() {
     resetFilters,
     filters,
   } = usePurchaseOrderStore();
+  const userBranchId = useSessionStore((state) => state.userBranchId);
+  const activeBranchId = useSessionStore((state) => state.activeBranchId);
 
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
 
@@ -63,6 +66,13 @@ export default function PurchaseOrderList() {
     };
     loadData();
   }, [filters, getAll, messageApi]);
+
+  useEffect(() => {
+    const branchId = userBranchId ?? activeBranchId ?? null;
+    if (filters.branchId !== branchId) {
+      setFilters({ branchId, pageIndex: 1 });
+    }
+  }, [userBranchId, activeBranchId, filters.branchId, setFilters]);
 
   const handleCreateNew = () => {
     router.push("/purchaseOrder/new");

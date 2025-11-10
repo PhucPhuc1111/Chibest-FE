@@ -429,7 +429,7 @@ export default function SupplierDetail({ supplier }: { supplier: Supplier }) {
         onCancel={handleCloseModal}
         onOk={() => form.submit()}
         confirmLoading={isSubmittingTransaction}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
           <Form.Item
