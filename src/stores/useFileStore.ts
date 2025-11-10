@@ -28,47 +28,55 @@ function isApiError(error: unknown): error is ApiError {
 
 export const useFileStore = create<FileState & FileActions>((set) => ({
   // INIT STATE
+
   uploading: false,
   error: null,
 
   // UPLOAD ẢNH
-  uploadImage: async (file: File, name: string, category: string) => {
-    set({ uploading: true, error: null });
-    
-    try {
-      const formData = new FormData();
-      formData.append('FileData', file);
-      formData.append('Name', name);
-      formData.append('Category', category);
+uploadImage: async (file: File, name: string, category: string) => {
+  set({ uploading: true, error: null });
+  
+  try {
+    const formData = new FormData();
+    formData.append('FileData', file);
+    formData.append('Name', name);
+    formData.append('Category', category);
 
-      const response = await api.post("/api/file/image", formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      
-      if (response.data["status-code"] === 200) {
-        const imagePath = response.data; // "images\aos\at-okd-23.jpg"
+    const response = await api.post("/api/file/image", formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+      let imagePath = "";
+      if (typeof response.data === "string") {
+      imagePath = response.data;
+    } else if (response.data && response.data["status-code"] === 200) {
+      // BE trả object chuẩn
+      imagePath = response.data.data;
+    } else {
+      throw new Error("Upload lỗi: response không đúng định dạng");
+    }
+      imagePath = imagePath.replace(/\\/g, "/");
       const fullImageUrl = `http://45.125.238.52:5000/api/file/image?urlPath=${encodeURIComponent(imagePath)}`;
-      
+           
       set({ uploading: false });
       message.success("Upload ảnh thành công!");
       return fullImageUrl;
-      }
-      
-      throw new Error(response.data.message);
-    } catch (error: unknown) {
-      let errorMsg = "Lỗi upload ảnh";
-      
-      if (isApiError(error)) {
-        errorMsg = error.response?.data?.message || errorMsg;
-      } else if (error instanceof Error) {
-        errorMsg = error.message;
-      }
-      
-      set({ uploading: false, error: errorMsg });
-      message.error(errorMsg);
-      return null;
+
+    
+    throw new Error(response.data.message);
+  } catch (error: unknown) {
+    let errorMsg = "Lỗi upload ảnh";
+    
+    if (isApiError(error)) {
+      errorMsg = error.response?.data?.message || errorMsg;
+    } else if (error instanceof Error) {
+      errorMsg = error.message;
     }
-  },
+    
+    set({ uploading: false, error: errorMsg });
+    message.error(errorMsg);
+    return null;
+  }
+},
 
   // LẤY ẢNH
   getImage: async (urlPath: string) => {

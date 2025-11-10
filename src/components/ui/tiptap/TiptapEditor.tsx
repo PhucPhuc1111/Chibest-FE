@@ -21,12 +21,18 @@ import {
 } from "@ant-design/icons";
 import React from "react";
 
+// SỬA: Thêm placeholder vào props interface
 interface TiptapEditorProps {
   content: string;
   onChange: (html: string) => void;
+  placeholder?: string; // Thêm dòng này
 }
 
-export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
+export default function TiptapEditor({ 
+  content, 
+  onChange, 
+  placeholder = "Nhập nội dung mô tả ở đây..." // Thêm default value
+}: TiptapEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ codeBlock: false }),
@@ -39,12 +45,13 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
         HTMLAttributes: { class: "max-w-full h-auto rounded-md" },
       }),
       Blockquote,
+      // SỬA: Sử dụng placeholder từ prop
       Placeholder.configure({
-        placeholder: "Nhập nội dung mô tả ở đây...",
+        placeholder: placeholder, // Sửa thành biến placeholder
       }),
     ],
     content,
-    immediatelyRender: false, // ✅ fix SSR
+    immediatelyRender: false,
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
     editorProps: {
       attributes: {
