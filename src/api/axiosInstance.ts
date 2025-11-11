@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from 'axios';
-import { getSessionState } from '@/stores/useSessionStore';
+import axios from "axios";
+import { USER_INFO_STORAGE_KEY } from "@/hooks/useUserInfo";
+import { getSessionState } from "@/stores/useSessionStore";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || '/api',
@@ -84,12 +85,13 @@ api.interceptors.response.use(
         localStorage.setItem('refreshToken', data['refresh-token']);
         
         const userInfo = {
-          accountId: data['account-id'],
-          userName: data['user-name'],
-          email: data['email'],
-          role: data['role'],
+          accountId: data['account-id'] ?? null,
+          userName: data['user-name'] ?? '',
+          email: data['email'] ?? '',
+          role: data['role'] ?? '',
+          avatarPath: data['avatar'] ?? null,
         };
-        localStorage.setItem('userInfo', JSON.stringify(userInfo));
+        localStorage.setItem(USER_INFO_STORAGE_KEY, JSON.stringify(userInfo));
 
         api.defaults.headers.common['Authorization'] = `Bearer ${data['access-token']}`;
         originalRequest.headers.Authorization = `Bearer ${data['access-token']}`;
@@ -103,7 +105,7 @@ api.interceptors.response.use(
         isRefreshing = false;
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        localStorage.removeItem('userInfo');
+        localStorage.removeItem(USER_INFO_STORAGE_KEY);
         
         if (typeof window !== "undefined") {
           window.location.href = '/signin';

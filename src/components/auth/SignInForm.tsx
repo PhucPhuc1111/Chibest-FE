@@ -5,7 +5,8 @@ import Checkbox from "@/components/form/input/Checkbox";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
-import {  EyeCloseIcon, EyeIcon } from "@/icons";
+import { EyeCloseIcon, EyeIcon } from "@/icons";
+import { USER_INFO_STORAGE_KEY } from "@/hooks/useUserInfo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -48,17 +49,18 @@ export default function SignInForm() {
       const accessToken = data["access-token"];
       const refreshToken = data["refresh-token"];
       const userInfo = {
-        accountId: data["account-id"],
-        userName: data["user-name"],
-        email: data["email"],
-        role: data["role"],
+        accountId: data["account-id"] ?? null,
+        userName: data["user-name"] ?? "",
+        email: data["email"] ?? "",
+        role: data["role"] ?? "",
+        avatarPath: data["avatar"] ?? null,
       };
 
       initializeSession(data["branch-id"] ?? null);
       
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      localStorage.setItem(USER_INFO_STORAGE_KEY, JSON.stringify(userInfo));
       toast.success("Đăng nhập thành công!");
       router.push("/");
     } catch (error: any) {

@@ -80,7 +80,7 @@ const BranchSelect: React.FC = () => {
   const isDisabled = userBranchId !== null || isFetching || options.length === 0;
 
   return (
-    <div className="min-w-[220px]">
+    <div className="min-w-[180px]">
       <select
         className="h-11 w-full appearance-none rounded-lg border border-gray-200 px-4 pr-10 text-sm text-gray-700 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-2 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
         value={selectValue}

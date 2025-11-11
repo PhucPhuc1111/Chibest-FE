@@ -31,6 +31,7 @@ import type { CreateMultiTransferPayload } from "@/types/transfer";
 import type { Product } from "@/types/product";
 import dayjs from "dayjs";
 import type { RcFile } from "antd/es/upload";
+import { getStoredUserInfo } from "@/hooks/useUserInfo";
 
 interface ProductRow {
   id: string;
@@ -138,16 +139,7 @@ export default function TransferNew() {
   }, [getWarehouses]);
 
   // Get user info from localStorage
-  const getUserInfo = () => {
-    if (typeof window === 'undefined') return null;
-    try {
-      const userInfo = localStorage.getItem('userInfo');
-      return userInfo ? JSON.parse(userInfo) : null;
-    } catch (error) {
-      console.error('Error getting user info:', error);
-      return null;
-    }
-  };
+  const getUserInfo = () => getStoredUserInfo();
 
   const updateDestinationProducts = (
     destinationId: string,

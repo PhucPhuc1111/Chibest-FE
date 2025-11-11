@@ -32,6 +32,7 @@ import type { CreatePurchaseReturnPayload } from "@/types/purchaseReturn";
 import type { Product } from "@/types/product";
 import dayjs from "dayjs";
 import type { RcFile } from "antd/es/upload";
+import { getStoredUserInfo } from "@/hooks/useUserInfo";
 
 interface ProductRow {
   id: string;
@@ -85,16 +86,7 @@ export default function PurchaseReturnNew() {
   }, [getSuppliers, getWarehouses]);
 
   // Get user info from localStorage
-  const getUserInfo = () => {
-    if (typeof window === 'undefined') return null;
-    try {
-      const userInfo = localStorage.getItem('userInfo');
-      return userInfo ? JSON.parse(userInfo) : null;
-    } catch (error) {
-      console.error('Error getting user info:', error);
-      return null;
-    }
-  };
+  const getUserInfo = () => getStoredUserInfo();
 
   const handleProductChange = (index: number, field: keyof ProductRow, value: string | number) => {
     const newList = [...productsList];
