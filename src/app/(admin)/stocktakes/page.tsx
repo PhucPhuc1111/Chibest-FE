@@ -1,4 +1,4 @@
-import StockTakeList from "@/components/stocktakes/StockTakeList";
+import StockTakeList from "../../../components/stocktakes/StockTakeList";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 export default function Page() {
   return (

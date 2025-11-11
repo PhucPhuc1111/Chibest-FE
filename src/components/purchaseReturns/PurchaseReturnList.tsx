@@ -1,3 +1,4 @@
+// src/components/purchaseReturns/PurchaseReturnList.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -8,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { usePurchaseReturnsStore } from "@/stores/usePurchaseReturnStore";
 import { useSessionStore } from "@/stores/useSessionStore";
 import type { PurchaseReturnSummary, PurchaseReturnStatus } from "@/types/purchaseReturn";
+import { STATUS_MAPPING, STATUS_OPTIONS, getStatusColor } from "@/types/purchaseReturn";
 import PurchaseReturnDetail from "./PurchaseReturnDetail";
 import DateFilter from "../ui/DateFilter/DateFilter";
 
@@ -26,20 +28,6 @@ export default function PurchaseReturnList() {
   const activeBranchId = useSessionStore((state) => state.activeBranchId);
 
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
-
-  // Hàm lấy màu theo trạng thái
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Chờ Xử Lý":
-        return "orange";
-      case "Hoàn Thành":
-        return "green";
-      case "Đã Hủy":
-        return "red";
-      default:
-        return "default";
-    }
-  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -64,6 +52,13 @@ export default function PurchaseReturnList() {
 
   const handleSearch = (value: string) => {
     setFilters({ search: value, pageIndex: 1 });
+  };
+
+  const handleStatusUpdated = (id: string, ) => {
+    // Update local list state
+    setExpandedRowKeys(prev => prev.filter(key => key !== id));
+    // Refresh list to get updated data
+    getAll();
   };
 
   const columns: TableProps<PurchaseReturnSummary>["columns"] = useMemo(
@@ -101,7 +96,8 @@ export default function PurchaseReturnList() {
         width: 140,
         render: (status: PurchaseReturnStatus) => {
           const color = getStatusColor(status);
-          return <Tag color={color}>{status}</Tag>;
+          const label = STATUS_MAPPING[status];
+          return <Tag color={color}>{label}</Tag>;
         },
       },
     ],
@@ -134,11 +130,7 @@ export default function PurchaseReturnList() {
                 className="w-full"
                 placeholder="Chọn trạng thái"
                 value={filters.status}
-                options={[
-                  { label: "Chờ Xử Lý", value: "Chờ Xử Lý" },
-                  { label: "Hoàn Thành", value: "Hoàn Thành" },
-                  { label: "Đã Hủy", value: "Đã Hủy" },
-                ]}
+                options={STATUS_OPTIONS}
                 onChange={(value) => setFilters({ status: value, pageIndex: 1 })}
               />
             </div>
@@ -207,6 +199,7 @@ export default function PurchaseReturnList() {
                       onDeleted={() => {
                         setExpandedRowKeys([]);
                       }}
+                      onStatusUpdated={handleStatusUpdated}
                     />
                   ),
                   expandRowByClick: true,

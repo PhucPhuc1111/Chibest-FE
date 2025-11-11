@@ -194,6 +194,13 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
         width: 120,
         render: (qty: number) => qty || 0
       },
+      { 
+        title: "Số lượng thực tế", 
+        dataIndex: "actualQuantity", 
+        align: "center", 
+        width: 140,
+        render: (qty: number) => qty || 0
+      },
       {
         title: "Đơn giá",
         dataIndex: "unitPrice",

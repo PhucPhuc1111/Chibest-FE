@@ -70,6 +70,7 @@ type Actions = {
   createReturn: (payload: CreatePurchaseReturnPayload) => Promise<{success: boolean; message?: string}>;
   importFile: (file: File) => Promise<{success: boolean; message?: string; data?: ImportedPurchaseReturnProduct[]}>;
   deleteReturn: (id: string) => Promise<{success: boolean; message?: string}>;
+  updateReturnStatus: (id: string, status: PurchaseReturnStatus) => Promise<{success: boolean; message?: string}>;
 };
 
 // Config để control message cho từng API
@@ -388,5 +389,32 @@ export const usePurchaseReturnsStore = create<State & Actions>()(
         }
       );
     },
+    updateReturnStatus: async (id: string, status: PurchaseReturnStatus) => {
+  return handleApiCall(
+    set,
+    () => api.put(`/api/purchase-return/${id}`, null, {
+      params: { status }
+    }),
+    () => {
+      // Update local state
+      set((s: State) => {
+        // Update in list
+        s.list = s.list.map(item => 
+          item.id === id ? { ...item, status } : item
+        );
+        // Update in detail if currently viewing
+        if (s.detail?.id === id) {
+          s.detail.status = status;
+        }
+      });
+    },
+    { 
+      showSuccessMessage: true,
+      showErrorMessage: true,
+      customSuccessMessage: "Cập nhật trạng thái thành công!"
+    }
+  );
+},
+    
   }))
 );
