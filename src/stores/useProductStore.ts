@@ -66,18 +66,117 @@ export const useProductStore = create<ProductState & ProductActions>((set, get) 
   loading: false,
   error: null,
   totalCount: 0,
-   searchProducts: async (searchTerm: string) => {
-    const params: ProductQueryParams = {
-      SearchTerm: searchTerm,
-      PageNumber: 1,
-      PageSize: 50, // Default tốt cho search
-      SortBy: "name", // Sort by name khi search
-      SortDescending: false,
-    };
+  //  searchProducts: async (searchTerm: string) => {
+  //   const params: ProductQueryParams = {
+  //     SearchTerm: searchTerm,
+  //     PageNumber: 1,
+  //     PageSize: 50, 
+  //     // SortBy: "name", 
+  //     // SortDescending: false,
+  //   };
     
-    return get().getProducts(params);
-  },
+  //   return get().getProducts(params);
+  // },
+// Trong useProductStore - SỬA SEARCH
+searchProducts: async (searchTerm: string) => {
+  set({ loading: true, error: null });
+  
+  try {
+    const response = await api.get<ApiResponse>("/api/product", { 
+      params: {
+        SearchTerm: searchTerm,
+        PageNumber: 1,
+        PageSize: 50,
+        // KHÔNG filter IsMaster để tìm cả variant
+      }
+    });
+    
+    if (response.data["status-code"] === 200) {
+      const foundProducts: Product[] = response.data.data["data-list"].map((item: RawProduct) => ({
+        id: item.id,
+        avartarUrl: item["avartar-url"],
+        sku: item.sku,
+        name: item.name,
+        description: item.description,
+        color: item.color,
+        size: item.size,
+        style: item.style,
+        brand: item.brand,
+        material: item.material,
+        weight: item.weight,
+        isMaster: item["is-master"],
+        status: item.status,
+        categoryName: item["category-name"],
+        parentSku: item["parent-sku"],
+        costPrice: item["cost-price"],
+        sellingPrice: item["selling-price"],
+        stockQuantity: item["stock-quantity"],
+      }));
 
+      // ✅ QUAN TRỌNG: Nếu tìm thấy variant, fetch thêm master product
+      const variants = foundProducts.filter(p => !p.isMaster);
+      if (variants.length > 0) {
+        const masterSkus = [...new Set(variants.map(v => v.parentSku).filter(Boolean))];
+        
+        // Fetch tất cả master products của các variant tìm thấy
+        for (const masterSku of masterSkus) {
+          if (masterSku) {
+            try {
+              const masterResponse = await api.get<ApiResponse>("/api/product", { 
+                params: {
+                  SearchTerm: masterSku,
+                  PageNumber: 1,
+                  PageSize: 1,
+                }
+              });
+              
+              if (masterResponse.data["status-code"] === 200) {
+                const masterProducts: Product[] = masterResponse.data.data["data-list"].map((item: RawProduct) => ({
+                  id: item.id,
+                  avartarUrl: item["avartar-url"],
+                  sku: item.sku,
+                  name: item.name,
+                  description: item.description,
+                  color: item.color,
+                  size: item.size,
+                  style: item.style,
+                  brand: item.brand,
+                  material: item.material,
+                  weight: item.weight,
+                  isMaster: item["is-master"],
+                  status: item.status,
+                  categoryName: item["category-name"],
+                  parentSku: item["parent-sku"],
+                  costPrice: item["cost-price"],
+                  sellingPrice: item["selling-price"],
+                  stockQuantity: item["stock-quantity"],
+                }));
+                
+                // Thêm master products vào kết quả
+                foundProducts.push(...masterProducts.filter(m => m.isMaster));
+              }
+            } catch (error) {
+              console.warn(`Không thể fetch master product cho SKU: ${masterSku}`, error);
+            }
+          }
+        }
+      }
+
+      // Loại bỏ trùng lặp
+      const uniqueProducts = foundProducts.filter((product, index, self) => 
+        index === self.findIndex(p => p.id === product.id)
+      );
+      
+      set({ 
+        products: uniqueProducts,
+        totalCount: uniqueProducts.length,
+        loading: false 
+      });
+    }
+  } catch (error: unknown) {
+    // ... error handling
+  }
+},
   // LẤY DANH SÁCH SẢN PHẨM
   getProducts: async (params?: ProductQueryParams) => {
     set({ loading: true, error: null });

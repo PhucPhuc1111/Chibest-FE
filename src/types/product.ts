@@ -165,6 +165,7 @@ export interface ModalCreateProductProps {
   open: boolean;
   onClose: () => void;
   parentProduct?: ParentProduct | null;
-  productData?: Product | ProductVariant | null;
+  // productData?: Product | ProductVariant | null;
+    productData?: Product | ProductVariant | TableProduct | null;
   isUpdate?: boolean;
 }
