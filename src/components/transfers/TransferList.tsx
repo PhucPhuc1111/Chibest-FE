@@ -27,31 +27,34 @@ export default function TransferList() {
 
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
 
-  // Hàm lấy màu theo trạng thái
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Draft":
-        return "blue";
-      case "Hoàn Thành":
-        return "green";
-      case "Đã Hủy":
-        return "red";
+        return "blue"; 
+      case "Submitted":
+        return "orange"; 
+      case "Received":
+        return "green"; 
+      case "Cancelled":
+        return "red"; 
       default:
-        return "default";
+        return "default"; 
     }
   };
 
-  // Hàm lấy tên hiển thị theo trạng thái
-  const getStatusDisplayName = (status: string) => {
+
+ const getStatusDisplayName = (status: string) => {
     switch (status) {
       case "Draft":
         return "Nháp";
-      case "Hoàn Thành":
-        return "Hoàn thành";
-      case "Đã Hủy":
+      case "Submitted":
+        return "Đã gửi";
+      case "Received":
+        return "Đã nhận";
+      case "Cancelled":
         return "Đã hủy";
       default:
-        return status;
+        return status; 
     }
   };
 
@@ -233,6 +236,10 @@ export default function TransferList() {
                       id={record.id} 
                       onDeleted={() => {
                         setExpandedRowKeys([]);
+                      }}
+                      onStatusUpdated={(id, newStatus) => {
+                        // Có thể thêm logic xử lý khi status được update nếu cần
+                        console.log(`Transfer ${id} status updated to ${newStatus}`);
                       }}
                     />
                   ),

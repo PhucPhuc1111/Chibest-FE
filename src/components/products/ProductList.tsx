@@ -14,6 +14,7 @@ import ModalCreateProduct from "./modals/ModalCreateProduct";
 import ModalCreateService from "./modals/ModalCreateService";
 import ModalCreateCombo from "./modals/ModalCreateCombo";
 import { TableProduct } from "@/types/product";
+import ProductTabsDetail from "./ProductTabsDetail";
 interface ProductFilters {
   SearchTerm?: string;
   CategoryId?: string;
@@ -83,46 +84,185 @@ export default function ProductList() {
     }));
   }, [categories]);
 
-  // Transform products từ API format sang frontend format cho table
-  const tableProducts = useMemo(() => {
-    const masterProducts = products.filter(product => product.isMaster);
-      return masterProducts.map(product => {
-    // Tìm tất cả variants của product này (có parentSku trùng với sku của master)
-    const variants = products.filter(variant => 
-      variant.parentSku === product.sku && !variant.isMaster
-    );
-    return {
-      id: product.id,
-      name: product.name,
-      variant: product.description || "",
-      sellingPrice: product.sellingPrice || 0, 
-      costPrice: product.costPrice || 0,      
-      stockQuantity: product.stockQuantity || 0, 
-      createdAt: "",
-      avartarUrl: product.avartarUrl || "/default-product.png",
-      type: "product",
-      group: product.categoryName || "",
-      supplier: product.brand || "",
-      attrs: {
-        color: product.color,
-        size: product.size,
-      },
-      status: product.status,
-      sku: product.sku,
-      description: product.description,
-      color: product.color,
-      size: product.size,
-      brand: product.brand,
-      material: product.material,
-      weight: product.weight,
-      isMaster: product.isMaster,
-      parentSku: product.parentSku,
-      variants: variants, 
-    };
-  
-  });
-  }, [products]);
 
+  // Transform branches cho select options
+  // const branchOptions = useMemo(() => {
+  //   return branches.map(branch => ({
+  //     label: branch.name,
+  //     value: branch.id,
+  //   }));
+  // }, [branches]);
+
+  // const tableProducts = useMemo(() => {
+  //   const masterProducts = products.filter(product => product.isMaster);
+  //     return masterProducts.map(product => {
+  //   // Tìm tất cả variants của product này (có parentSku trùng với sku của master)
+  //   const variants = products.filter(variant => 
+  //     variant.parentSku === product.sku && !variant.isMaster
+  //   );
+  //   return {
+  //     id: product.id,
+  //     name: product.name,
+  //     variant: product.description || "",
+  //     sellingPrice: product.sellingPrice || 0, 
+  //     costPrice: product.costPrice || 0,      
+  //     stockQuantity: product.stockQuantity || 0, 
+  //     createdAt: "",
+  //     avartarUrl: product.avartarUrl || "/default-product.png",
+  //     type: "product",
+  //     group: product.categoryName || "",
+  //     supplier: product.brand || "",
+  //     attrs: {
+  //       color: product.color,
+  //       size: product.size,
+  //     },
+  //     status: product.status,
+  //     sku: product.sku,
+  //     description: product.description,
+  //     color: product.color,
+  //     size: product.size,
+  //     brand: product.brand,
+  //     material: product.material,
+  //     weight: product.weight,
+  //     isMaster: product.isMaster,
+  //     parentSku: product.parentSku,
+  //     variants: variants, 
+  //   };
+
+  
+  // });
+  // }, [products]);
+// Transform products từ API format sang frontend format cho table
+const tableProducts = useMemo(() => {
+  // Tạo map để group
+  const productMap = new Map();
+  
+  // Phân loại products
+  products.forEach(product => {
+    if (product.isMaster) {
+      // Sản phẩm master - tạo group mới
+      if (!productMap.has(product.id)) {
+        productMap.set(product.id, {
+          master: product,
+          variants: []
+        });
+      } else {
+        productMap.get(product.id).master = product;
+      }
+    } else {
+      // Sản phẩm variant
+      if (product.parentSku) {
+        // Variant có parent - tìm master
+        const masterProduct = products.find(p => p.sku === product.parentSku && p.isMaster);
+        if (masterProduct) {
+          // Có master - thêm vào group của master
+          if (!productMap.has(masterProduct.id)) {
+            productMap.set(masterProduct.id, {
+              master: masterProduct,
+              variants: [product]
+            });
+          } else {
+            productMap.get(masterProduct.id).variants.push(product);
+          }
+        } else {
+          // Không tìm thấy master - tạo group độc lập cho variant
+          if (!productMap.has(product.id)) {
+            productMap.set(product.id, {
+              master: null,
+              variants: [product]
+            });
+          }
+        }
+      } else {
+        // Variant không có parentSku - tạo group độc lập
+        if (!productMap.has(product.id)) {
+          productMap.set(product.id, {
+            master: null,
+            variants: [product]
+          });
+        }
+      }
+    }
+  });
+
+  // Tạo danh sách hiển thị
+  const result: TableProduct[] = [];
+  
+  productMap.forEach((group) => {
+    const { master, variants } = group;
+    
+    if (master) {
+      // Có master - master hiển thị đầu, variants trong expanded row
+      result.push({
+        id: master.id,
+        name: master.name,
+        variant: master.description || "",
+        sellingPrice: master.sellingPrice || 0,
+        costPrice: master.costPrice || 0,
+        stockQuantity: master.stockQuantity || 0,
+        createdAt: "",
+        avartarUrl: master.avartarUrl || "/default-product.png",
+        type: "product",
+        group: master.categoryName || "",
+        supplier: master.brand || "",
+        attrs: {
+          color: master.color,
+          size: master.size,
+        },
+        status: master.status,
+        sku: master.sku,
+        description: master.description,
+        color: master.color,
+        size: master.size,
+        brand: master.brand,
+        material: master.material,
+        weight: master.weight,
+        isMaster: true,
+        parentSku: master.parentSku,
+        variants: variants,
+        isGroupMaster: true,
+        hasVariants: variants.length > 0,
+      });
+    } else if (variants.length > 0) {
+      // Không có master, chỉ có variants độc lập
+      variants.forEach(variant => {
+        result.push({
+          id: variant.id,
+          name: variant.name,
+          variant: variant.description || "",
+          sellingPrice: variant.sellingPrice || 0,
+          costPrice: variant.costPrice || 0,
+          stockQuantity: variant.stockQuantity || 0,
+          createdAt: "",
+          avartarUrl: variant.avartarUrl || "/default-product.png",
+          type: "product",
+          group: variant.categoryName || "",
+          supplier: variant.brand || "",
+          attrs: {
+            color: variant.color,
+            size: variant.size,
+          },
+          status: variant.status,
+          sku: variant.sku,
+          description: variant.description,
+          color: variant.color,
+          size: variant.size,
+          brand: variant.brand,
+          material: variant.material,
+          weight: variant.weight,
+          isMaster: false,
+          parentSku: variant.parentSku,
+          variants: [],
+          isGroupMaster: false,
+          hasVariants: false,
+          isOrphanVariant: true, // ✅ Flag để biết đây là variant độc lập
+        });
+      });
+    }
+  });
+
+  return result;
+}, [products]);
   // Cập nhật filters
   const handleFilterChange = (newFilters: Partial<ProductFilters>) => {
     setFilters(prev => ({
@@ -244,6 +384,23 @@ export default function ProductList() {
         </span>
       ),
     },
+//     {
+//   title: "Loại",
+//   dataIndex: "isGroupMaster",
+//   width: 140,
+//   render: (isGroupMaster: boolean, record: TableProduct) => {
+//     if (record.isOrphanVariant) {
+//       return <span className="px-2 py-1 rounded text-xs bg-orange-100 text-orange-800">Biến thể độc lập</span>;
+//     }
+//     return (
+//       <span className={`px-2 py-1 rounded text-xs ${
+//         isGroupMaster ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"
+//       }`}>
+//         {isGroupMaster ? "Sản phẩm chính" : "Biến thể"}
+//       </span>
+//     );
+//   },
+// },
   ];
 
   // Dropdown items cho tạo mới
@@ -346,14 +503,48 @@ export default function ProductList() {
                 }
               }}
               scroll={{ x: 1200 }}
-              expandable={{
-              expandedRowRender: (record) => (
-                  <SubVariantTable master={record} />
-                ),
-                expandedRowKeys: expandedRowKeys, 
-                onExpand: handleExpand, 
-                rowExpandable: () => true,
-              }}
+              // expandable={{
+              // expandedRowRender: (record) => (
+              //     <SubVariantTable master={record} />
+              //   ),
+              //   expandedRowKeys: expandedRowKeys, 
+              //   onExpand: handleExpand, 
+              //   rowExpandable: () => true,
+              // }}
+              // Trong ProductList.tsx - SỬA EXPANDABLE
+expandable={{
+  expandedRowRender: (record) => {
+    if (record.isGroupMaster && record.hasVariants) {
+      // Master có variants - hiển thị SubVariantTable
+      return <SubVariantTable master={record} />;
+    } else if (record.isOrphanVariant) {
+      // Variant độc lập - hiển thị ProductTabsDetail
+      return (
+        <ProductTabsDetail 
+          master={record} 
+          variant={record}
+        />
+      );
+    } else {
+      // Master không có variants - hiển thị ProductTabsDetail
+      return (
+        <ProductTabsDetail 
+          master={record} 
+          variant={record}
+        />
+      );
+    }
+  },
+  expandedRowKeys: expandedRowKeys, 
+  onExpand: handleExpand, 
+  rowExpandable: (record) => {
+    // Cho phép expand nếu:
+    // - Là master có variants
+    // - Là variant độc lập
+    // - Là master không có variants (để chỉnh sửa)
+    return record.isGroupMaster || record.isOrphanVariant || record.isMaster;
+  },
+}}
               rowClassName="hover:bg-blue-50"
               sticky
             />

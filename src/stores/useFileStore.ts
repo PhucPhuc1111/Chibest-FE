@@ -55,7 +55,7 @@ uploadImage: async (file: File, name: string, category: string) => {
       throw new Error("Upload lỗi: response không đúng định dạng");
     }
       imagePath = imagePath.replace(/\\/g, "/");
-      const fullImageUrl = `http://45.125.238.52:5000/api/file/image?urlPath=${encodeURIComponent(imagePath)}`;
+      const fullImageUrl = `http://103.68.83.52:5000/api/file/image?urlPath=${encodeURIComponent(imagePath)}`;
            
       set({ uploading: false });
       message.success("Upload ảnh thành công!");
