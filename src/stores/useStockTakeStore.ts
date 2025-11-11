@@ -1,77 +1,236 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import api from "@/api/axiosInstance";
-import type { StockTake, StockTakeStatus } from "@/types/stocktake";
+import {
+  StockAdjustment,
+  StockAdjustmentSummary,
+  RawStockAdjustment,
+  RawStockAdjustmentSummary,
+  RawStockAdjustmentDetail,
+  GetStockAdjustmentsParams,
+  CreateStockAdjustmentRequest,
+  UpdateStockAdjustmentRequest,
+} from "@/types/stocktake";
 
-type Filters = {
-  q?: string;
-  status?: StockTakeStatus[];
-  creator?: string | null;
-  fromDate?: string | null;
-  toDate?: string | null;
-   dateRange?: string | null;
-    datePreset?: string | null; 
-};
-
-type State = {
-  stockTakes: StockTake[];
-  details: Record<string, StockTake>;
+interface StockTakeState {
+  stockAdjustments: StockAdjustmentSummary[];
+  currentStockAdjustment: StockAdjustment | null;
   isLoading: boolean;
-  filters: Filters;
   error: string | null;
-};
+}
 
-type Actions = {
-  setFilters: (p: Partial<Filters>) => void;
-  resetFilters: () => void;
-  getAllStockTakes: () => Promise<void>;
-  getStockTakeById: (id: string) => Promise<void>;
-  clearDetails: () => void;
-};
+interface StockTakeActions {
+  getStockAdjustments: (params?: GetStockAdjustmentsParams) => Promise<{ success: boolean; message?: string }>;
+  getStockAdjustmentById: (id: string) => Promise<{ success: boolean; message?: string }>;
+  createStockAdjustment: (data: CreateStockAdjustmentRequest) => Promise<{ success: boolean; message?: string }>;
+  updateStockAdjustment: (id: string, data: UpdateStockAdjustmentRequest) => Promise<{ success: boolean; message?: string }>;
+  deleteStockAdjustment: (id: string) => Promise<{ success: boolean; message?: string }>;
+  clearError: () => void;
+  clearCurrentStockAdjustment: () => void;
+}
 
-export const useStockTakeStore = create<State & Actions>()(
-  immer((set, get) => ({
-    stockTakes: [],
-    details: {},
+export const useStockTakeStore = create<StockTakeState & StockTakeActions>()(
+  immer((set) => ({
+    stockAdjustments: [],
+    currentStockAdjustment: null,
     isLoading: false,
-    filters: {},
     error: null,
 
-    setFilters: (p) => set((s) => { s.filters = { ...s.filters, ...p }; }),
-    resetFilters: () => set((s) => { s.filters = {}; }),
-    clearDetails: () => set((s) => { s.details = {}; }),
-
-    getAllStockTakes: async () => {
-      set((s) => { s.isLoading = true; });
-      const { filters } = get();
-      const params: Record<string, unknown> = {};
-      Object.entries(filters).forEach(([k, v]) => {
-        if (v === undefined || v === null || v === "" || v === "all") return;
-        params[k] = v;
+    getStockAdjustments: async (params: GetStockAdjustmentsParams = {}) => {
+      set((s) => {
+        s.isLoading = true;
+        s.error = null;
       });
+
       try {
-        const res = await api.get<StockTake[]>("/stocktakes", { params });
-        set((s) => {
-          s.stockTakes = res.data;
-          s.isLoading = false;
+        const res = await api.get("/api/stock-adjustment", {
+          params: {
+            pageIndex: 1,
+            pageSize: 100,
+            ...params
+          },
         });
-      } catch (e) {
+
+        if (res.data["status-code"] === 200) {
+          const stockAdjustments: StockAdjustmentSummary[] = res.data.data.map((item: RawStockAdjustmentSummary) => ({
+            id: item.id,
+            adjustmentCode: item["adjustment-code"],
+            adjustmentDate: item["adjustment-date"],
+            adjustmentType: item["adjustment-type"],
+            totalValueChange: item["total-value-change"],
+            status: item.status,
+          }));
+
+          set((s) => {
+            s.stockAdjustments = stockAdjustments;
+            s.isLoading = false;
+          });
+          return { success: true, message: res.data.message };
+        } else {
+          set((s) => { s.isLoading = false; });
+          return { success: false, message: res.data.message || "Không có dữ liệu điều chỉnh tồn kho" };
+        }
+      } catch (err: unknown) {
         set((s) => {
           s.isLoading = false;
-          s.error = e instanceof Error ? e.message : "Fetch error";
+          s.error = err instanceof Error ? err.message : "Fetch error";
         });
+        return { success: false, message: "Không thể tải danh sách điều chỉnh tồn kho" };
       }
     },
 
-    getStockTakeById: async (id: string) => {
-      const cached = get().details[id];
-      if (cached) return;
+    getStockAdjustmentById: async (id: string) => {
+      set((s) => {
+        s.isLoading = true;
+        s.error = null;
+      });
+
       try {
-        const res = await api.get<StockTake>(`/stocktakes/${id}`);
-        set((s) => { s.details[id] = res.data; });
-      } catch {
-        /* silent */
+        const res = await api.get(`/api/stock-adjustment/${id}`);
+
+        if (res.data["status-code"] === 200) {
+          const rawData: RawStockAdjustment = res.data.data;
+          const stockAdjustment: StockAdjustment = {
+            id: rawData.id,
+            adjustmentCode: rawData["adjustment-code"],
+            adjustmentDate: rawData["adjustment-date"],
+            adjustmentType: rawData["adjustment-type"],
+            branchName: rawData["branch-name"],
+            warehouseName: rawData["warehouse-name"],
+            employeeName: rawData["employee-name"],
+            approveName: rawData["approve-name"],
+            totalValueChange: rawData["total-value-change"],
+            status: rawData.status,
+            reason: rawData.reason,
+            note: rawData.note,
+            createdAt: rawData["created-at"],
+            updatedAt: rawData["updated-at"],
+            approvedAt: rawData["approved-at"],
+            stockAdjustmentDetails: rawData["stock-adjustment-details"].map((detail: RawStockAdjustmentDetail) => ({
+              id: detail.id,
+              systemQty: detail["system-qty"],
+              actualQty: detail["actual-qty"],
+              differenceQty: detail["difference-qty"],
+              unitCost: detail["unit-cost"],
+              totalValueChange: detail["total-value-change"],
+              reason: detail.reason,
+              note: detail.note,
+              productName: detail["product-name"],
+              sku: detail.sku,
+            })),
+          };
+
+          set((s) => {
+            s.currentStockAdjustment = stockAdjustment;
+            s.isLoading = false;
+          });
+          return { success: true, message: res.data.message };
+        } else {
+          set((s) => { s.isLoading = false; });
+          return { success: false, message: res.data.message || "Không tìm thấy phiếu điều chỉnh" };
+        }
+      } catch (err: unknown) {
+        set((s) => {
+          s.isLoading = false;
+          s.error = err instanceof Error ? err.message : "Fetch error";
+        });
+        return { success: false, message: "Không thể tải thông tin phiếu điều chỉnh" };
       }
+    },
+
+    createStockAdjustment: async (data: CreateStockAdjustmentRequest) => {
+      set((s) => {
+        s.isLoading = true;
+        s.error = null;
+      });
+
+      try {
+        const res = await api.post("/api/stock-adjustment", data);
+
+        if (res.data["status-code"] === 200) {
+          set((s) => {
+            s.isLoading = false;
+          });
+          return { success: true, message: res.data.message };
+        } else {
+          set((s) => { s.isLoading = false; });
+          return { success: false, message: res.data.message || "Tạo phiếu điều chỉnh thất bại" };
+        }
+      } catch (err: unknown) {
+        set((s) => {
+          s.isLoading = false;
+          s.error = err instanceof Error ? err.message : "Create error";
+        });
+        return { success: false, message: "Không thể tạo phiếu điều chỉnh" };
+      }
+    },
+
+    updateStockAdjustment: async (id: string, data: UpdateStockAdjustmentRequest) => {
+      set((s) => {
+        s.isLoading = true;
+        s.error = null;
+      });
+
+      try {
+        const res = await api.put(`/api/stock-adjustment/${id}`, data);
+
+        if (res.data["status-code"] === 200) {
+          set((s) => {
+            s.isLoading = false;
+          });
+          return { success: true, message: res.data.message };
+        } else {
+          set((s) => { s.isLoading = false; });
+          return { success: false, message: res.data.message || "Cập nhật phiếu điều chỉnh thất bại" };
+        }
+      } catch (err: unknown) {
+        set((s) => {
+          s.isLoading = false;
+          s.error = err instanceof Error ? err.message : "Update error";
+        });
+        return { success: false, message: "Không thể cập nhật phiếu điều chỉnh" };
+      }
+    },
+
+    deleteStockAdjustment: async (id: string) => {
+      set((s) => {
+        s.isLoading = true;
+        s.error = null;
+      });
+
+      try {
+        const res = await api.delete(`/api/stock-adjustment/${id}`);
+
+        if (res.data["status-code"] === 200) {
+          set((s) => {
+            s.isLoading = false;
+          });
+          return { success: true, message: res.data.message };
+        } else {
+          set((s) => { s.isLoading = false; });
+          return { success: false, message: res.data.message || "Xóa phiếu điều chỉnh thất bại" };
+        }
+      } catch (err: unknown) {
+        set((s) => {
+          s.isLoading = false;
+          s.error = err instanceof Error ? err.message : "Delete error";
+        });
+        return { success: false, message: "Không thể xóa phiếu điều chỉnh" };
+      }
+    },
+
+    clearError: () => {
+      set((s) => {
+        s.error = null;
+      });
+    },
+
+    clearCurrentStockAdjustment: () => {
+      set((s) => {
+        s.currentStockAdjustment = null;
+      });
     },
   }))
 );
+
+export default useStockTakeStore;

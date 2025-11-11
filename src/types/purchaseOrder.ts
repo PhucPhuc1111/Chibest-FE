@@ -72,3 +72,19 @@ export interface ImportedProduct {
   "product-name": string;
   sku: string;
 }
+
+export interface UpdatePurchaseOrderPayload {
+  "pay-method": string;
+  "sub-total": number;
+  "discount-amount": number;
+  paid: number;
+  status: string;
+  "purchase-order-details": Array<{
+    id: string;
+    "unit-price": number;
+    discount: number;
+    "re-fee": number;
+    note: string;
+    "actual-quantity": number;
+  }>;
+}

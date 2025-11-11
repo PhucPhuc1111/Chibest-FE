@@ -14,6 +14,7 @@ import {
   Tag,
 } from "antd";
 import type { TableProps, UploadProps } from "antd";
+import { InputNumber } from "antd";
 import {
   UploadOutlined,
   SaveOutlined,
@@ -265,21 +266,38 @@ const handleSearch = async () => {
         />
       ),
     },
+    // {
+    //   title: "Giá trả",
+    //   dataIndex: "returnPrice",
+    //   width: 120,
+    //   render: (value, _, index) => (
+    //     <Input
+    //       type="number"
+    //       value={value}
+    //       placeholder="0"
+    //       onChange={(e) =>
+    //         handleProductChange(index, "returnPrice", Number(e.target.value))
+    //       }
+    //     />
+    //   ),
+    // },
     {
-      title: "Giá trả",
-      dataIndex: "returnPrice",
-      width: 120,
-      render: (value, _, index) => (
-        <Input
-          type="number"
-          value={value}
-          placeholder="0"
-          onChange={(e) =>
-            handleProductChange(index, "returnPrice", Number(e.target.value))
-          }
-        />
-      ),
-    },
+  title: "Giá trả",
+  dataIndex: "returnPrice",
+  width: 120,
+  render: (value, _, index) => (
+    <InputNumber
+      min={0}
+      style={{ width: '100%' }}
+      value={value}
+      placeholder="0"
+      formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+      onChange={(value) =>
+        handleProductChange(index, "returnPrice", Number(value || 0))
+      }
+    />
+  ),
+},
     {
       title: "Thành tiền",
       dataIndex: "total",

@@ -1,10 +1,13 @@
-// src/components/purchaseOrders/PurchaseOrderDetail.tsx
+// components/purchaseOrders/PurchaseOrderDetail.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Tabs, Table, Input, Tag, Button, Select, DatePicker, Modal,Tooltip  } from "antd";
+import { 
+  Tabs, Table, Input, Tag, Button, Select, DatePicker, Modal, Tooltip, 
+  Form, InputNumber, message 
+} from "antd";
 import type { TabsProps, TableProps } from "antd";
-import type { PurchaseOrderItem } from "@/types/purchaseOrder";
+import type { PurchaseOrderItem, UpdatePurchaseOrderPayload } from "@/types/purchaseOrder";
 import { usePurchaseOrderStore } from "@/stores/usePurchaseOrderStore";
 import {
   DeleteOutlined,
@@ -16,7 +19,9 @@ import {
   CalendarOutlined,
   UploadOutlined,
   MailOutlined,
-  QuestionCircleOutlined
+  QuestionCircleOutlined,
+  EditOutlined,
+  // DollarOutlined
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -25,12 +30,26 @@ interface PurchaseOrderDetailProps {
   onDeleted?: (deletedId: string) => void;
 }
 
-export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDetailProps) {
+interface PriceSettingForm {
+  items: Array<{
+    id: string;
+    unitPrice: number;
+    discount: number;
+    reFee: number;
+    note: string;
+    actualQuantity: number;
+  }>;
+}
 
-  const { detail, getById, deleteOrder, getAll } = usePurchaseOrderStore();
+export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDetailProps) {
+  const { detail, getById, deleteOrder, getAll, updateOrder } = usePurchaseOrderStore();
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showPriceSetting, setShowPriceSetting] = useState(false);
+  const [priceForm] = Form.useForm();
+  const [savingPrice, setSavingPrice] = useState(false);
+
   useEffect(() => {
     const loadDetail = async () => {
       if (!detail || detail.id !== id) {
@@ -38,11 +57,69 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
         const result = await getById(id);
         setLoading(false);
         if (!result.success && result.message) {
-   }
+          // Handle error if needed
+        }
       }
     };
     loadDetail();
   }, [id, detail, getById]);
+
+  // Xử lý mở modal thiết lập giá
+  const handleOpenPriceSetting = () => {
+    if (!detail?.items) return;
+    
+    const initialValues: PriceSettingForm = {
+      items: detail.items.map(item => ({
+        id: item.id,
+        unitPrice: item.unitPrice || 0,
+        discount: item.discount || 0,
+        reFee: item.reFee || 0,
+        note: item.note || "",
+        actualQuantity: item.actualQuantity || item.quantity || 0
+      }))
+    };
+    
+    priceForm.setFieldsValue(initialValues);
+    setShowPriceSetting(true);
+  };
+
+  // Xử lý lưu thiết lập giá
+  const handleSavePriceSetting = async (values: PriceSettingForm) => {
+    if (!detail) return;
+    
+    setSavingPrice(true);
+    try {
+      const payload: UpdatePurchaseOrderPayload = {
+        "pay-method": "string", // Có thể lấy từ detail nếu có
+        "sub-total": detail.subTotal,
+        "discount-amount": detail.discountAmount,
+        "paid": detail.paid,
+        "status": detail.status,
+        "purchase-order-details": values.items.map(item => ({
+          id: item.id,
+          "unit-price": item.unitPrice,
+          discount: item.discount,
+          "re-fee": item.reFee,
+          note: item.note,
+          "actual-quantity": item.actualQuantity
+        }))
+      };
+
+      const result = await updateOrder(detail.id, payload);
+      if (result.success) {
+        message.success("Thiết lập giá thành công!");
+        setShowPriceSetting(false);
+        // Reload detail để hiển thị data mới
+        await getById(id);
+      }
+    } catch (error:unknown) {
+      message.error("Lỗi khi thiết lập giá");
+      console.log(error);
+      
+    } finally {
+      setSavingPrice(false);
+    }
+  };
 
   // Xử lý hiển thị confirm delete
   const handleDeleteClick = () => {
@@ -59,15 +136,13 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
       
       if (result.success) {
         await getAll();
-        // Gọi callback để thông báo cho parent component
         if (onDeleted) {
           onDeleted(detail.id);
         }
-    // Đóng confirm
         setShowDeleteConfirm(false);
       } 
     } catch  {
-     
+      // Handle error
     } finally {
       setDeleteLoading(false);
     }
@@ -77,7 +152,6 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
   const handleCancelDelete = () => {
     setShowDeleteConfirm(false);
   };
-  
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -120,6 +194,13 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
         width: 120,
         render: (qty: number) => qty || 0
       },
+      { 
+        title: "Số lượng thực tế", 
+        dataIndex: "actualQuantity", 
+        align: "center", 
+        width: 140,
+        render: (qty: number) => qty || 0
+      },
       {
         title: "Đơn giá",
         dataIndex: "unitPrice",
@@ -133,10 +214,6 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
         align: "right",
         width: 120,
         render: (v: number) => (v || 0).toLocaleString("vi-VN") + " đ",
-        // render: (_: unknown, record: PurchaseOrderItem) => {
-        //   const total = (record.quantity || 0) * (record.reFee || 0) + (record.discount || 0);
-        //   return total.toLocaleString("vi-VN") + " đ";
-        // },
       },
       {
         title: (
@@ -146,14 +223,7 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
               title="Phí giảm giá cho từng sản phẩm mua lại" 
               placement="top"
             >
-              <span 
-                style={{ 
-                  color: '#1890ff',
-                  cursor: 'help',
-                  fontWeight: 'bold',
-                  fontSize: '14px'
-                }}
-              >
+              <span style={{ color: '#1890ff', cursor: 'help', fontWeight: 'bold', fontSize: '14px' }}>
                 <QuestionCircleOutlined />
               </span>
             </Tooltip>
@@ -164,16 +234,32 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
         width: 160,
         render: (v: number) => (v || 0).toLocaleString("vi-VN") + " đ",
       },
-      
       {
         title: "Thành tiền",
         align: "right",
         width: 160,
         render: (_: unknown, record: PurchaseOrderItem) => {
-          const total = (record.quantity || 0) * ((record.unitPrice || 0)-(record.reFee || 0)) - (record.discount || 0);
+          const total = (record.quantity || 0) * ((record.unitPrice || 0) - (record.reFee || 0)) - (record.discount || 0);
           return total.toLocaleString("vi-VN") + " đ";
         },
       },
+      // {
+      //   title: "Thao tác",
+      //   width: 100,
+      //   align: "center",
+      //   render: (_: unknown, record: PurchaseOrderItem, index: number) => (
+      //     <Tooltip title="Thiết lập giá">
+      //       <Button
+      //         type="link"
+      //         icon={<DollarOutlined />}
+      //         onClick={() => {
+      //           // Có thể mở modal edit cho từng item nếu cần
+      //           handleOpenPriceSetting();
+      //         }}
+      //       />
+      //     </Tooltip>
+      //   ),
+      // },
     ],
     []
   );
@@ -191,20 +277,18 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
   const statusDisplayName = getStatusDisplayName(order.status);
 
   const totalQty = order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) ?? 0;
-  // const totalAmount = order.items?.reduce((sum, item) => {
-  //   const itemTotal = (item.quantity || 0) * ((item.unitPrice || 0) - (item.reFee || 0)) - (item.discount || 0);
-  //   return sum + itemTotal;
-  // }, 0) ?? 0;
- const totalAmount = order.items?.reduce((sum, item) => {
+  const totalAmount = order.items?.reduce((sum, item) => {
     const itemTotal = (item.quantity || 0) * (item.unitPrice || 0);
     return sum + itemTotal;
   }, 0) ?? 0;
+
   const infoTab: TabsProps["items"] = [
     {
       key: "info",
       label: "Thông tin",
       children: (
         <div className="bg-white p-4 rounded-md border">
+          {/* Modal xác nhận xóa */}
           <Modal
             title="Xác nhận xóa phiếu nhập"
             open={showDeleteConfirm}
@@ -223,6 +307,140 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
               Bạn có chắc chắn muốn xóa phiếu nhập `<strong>{order.code}</strong>`? 
               Hành động này không thể hoàn tác.
             </p>
+          </Modal>
+
+          {/* Modal thiết lập giá */}
+          <Modal
+            title="Thiết lập giá sản phẩm"
+            open={showPriceSetting}
+            onCancel={() => setShowPriceSetting(false)}
+            footer={[
+              <Button key="cancel" onClick={() => setShowPriceSetting(false)}>
+                Hủy
+              </Button>,
+              <Button 
+                key="save" 
+                type="primary" 
+                loading={savingPrice}
+                onClick={() => priceForm.submit()}
+                icon={<SaveOutlined />}
+              >
+                Lưu thiết lập
+              </Button>,
+            ]}
+            width={800}
+            styles={{
+              mask: { zIndex: 1000 },
+              wrapper: { zIndex: 1001 }
+            }}
+          >
+            <Form
+              form={priceForm}
+              layout="vertical"
+              onFinish={handleSavePriceSetting}
+            >
+              <Form.List name="items">
+                {(fields) => (
+                  <div className="max-h-96 overflow-y-auto">
+                    <Table
+                      size="small"
+                      pagination={false}
+                      dataSource={fields}
+                      rowKey={(record) => record.key}
+                      columns={[
+                        {
+                          title: "Mã hàng",
+                          width: 120,
+                          render: (_, __, index) => order.items?.[index]?.sku || "—"
+                        },
+                        {
+                          title: "Tên hàng", 
+                          width: 200,
+                          render: (_, __, index) => order.items?.[index]?.productName || "—"
+                        },
+                        {
+                          title: "Đơn giá",
+                          width: 120,
+                          render: (_, __, index) => (
+                            <Form.Item
+                              name={[index, "unitPrice"]}
+                              style={{ margin: 0 }}
+                            >
+                              <InputNumber
+                                min={0}
+                                style={{ width: '100%' }}
+                                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                 parser={(value: string | undefined) => {
+                                  if (!value) return 0;
+                                  return parseFloat(value.replace(/\$\s?|(,*)/g, ''));
+                                }}
+                               />
+                            </Form.Item>
+                          ),
+                        },
+                        {
+                          title: "Giảm giá",
+                          width: 100,
+                          render: (_, __, index) => (
+                            <Form.Item
+                              name={[index, "discount"]}
+                              style={{ margin: 0 }}
+                            >
+                              <InputNumber
+                                min={0}
+                                style={{ width: '100%' }}
+                              />
+                            </Form.Item>
+                          ),
+                        },
+                        {
+                          title: "Re-fee",
+                          width: 100,
+                          render: (_, __, index) => (
+                            <Form.Item
+                              name={[index, "reFee"]}
+                              style={{ margin: 0 }}
+                            >
+                              <InputNumber
+                                min={0}
+                                style={{ width: '100%' }}
+                              />
+                            </Form.Item>
+                          ),
+                        },
+                        {
+                          title: "SL thực nhận",
+                          width: 100,
+                          render: (_, __, index) => (
+                            <Form.Item
+                              name={[index, "actualQuantity"]}
+                              style={{ margin: 0 }}
+                            >
+                              <InputNumber
+                                min={0}
+                                style={{ width: '100%' }}
+                              />
+                            </Form.Item>
+                          ),
+                        },
+                        {
+                          title: "Ghi chú",
+                          width: 150,
+                          render: (_, __, index) => (
+                            <Form.Item
+                              name={[index, "note"]}
+                              style={{ margin: 0 }}
+                            >
+                              <Input placeholder="Ghi chú" />
+                            </Form.Item>
+                          ),
+                        },
+                      ]}
+                    />
+                  </div>
+                )}
+              </Form.List>
+            </Form>
           </Modal>
 
           {/* HEADER */}
@@ -259,9 +477,9 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
               <Select
                 className="w-full text-sm"
                 suffixIcon={<UserOutlined />}
-                value={order.employeeName|| undefined}
+                value={order.employeeName || undefined}
                 options={[
-                  { label: order.employeeName || "Không xác định", value: order.employeeName || "unknown"  },
+                  { label: order.employeeName || "Không xác định", value: order.employeeName || "unknown" },
                 ]}
                 disabled
               />
@@ -284,6 +502,13 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
             <div className="flex gap-3 mb-2">
               <Input placeholder="Tìm mã hàng" className="max-w-[160px]" />
               <Input placeholder="Tìm tên hàng" className="max-w-[220px]" />
+              <Button 
+                type="primary" 
+                icon={<EditOutlined />}
+                onClick={handleOpenPriceSetting}
+              >
+                Thiết lập giá
+              </Button>
             </div>
 
             <Table<PurchaseOrderItem>
@@ -292,7 +517,7 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
               dataSource={order.items || []}
               pagination={false}
               size="small"
-              scroll={{ x: 1100 }}
+              scroll={{ x: 1200 }}
             />
 
             {/* FOOTER GRID */}
@@ -331,21 +556,14 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
                   <div className="flex">
                     <label className="text-gray-600 w-[170px] text-right pr-2">
                       Giảm giá:
-                       <Tooltip 
-                          title="Phí giảm giá = (số lượng x giảm tái mua + giá giảm)" 
-                          placement="top"
-                        >
-                          <span 
-                            style={{ 
-                              color: '#2c2f31',
-                              cursor: 'help',
-                              fontWeight: 'bold',
-                              fontSize: '14px'
-                            }}
-                          >
-                            <QuestionCircleOutlined />
-                          </span>
-                        </Tooltip>
+                      <Tooltip 
+                        title="Phí giảm giá = (số lượng x giảm tái mua + giá giảm)" 
+                        placement="top"
+                      >
+                        <span style={{ color: '#2c2f31', cursor: 'help', fontWeight: 'bold', fontSize: '14px' }}>
+                          <QuestionCircleOutlined />
+                        </span>
+                      </Tooltip>
                     </label>
                     <div className="text-right font-medium text-gray-800 flex-1">
                       {order.discountAmount?.toLocaleString("vi-VN") || "0"} đ
@@ -386,7 +604,7 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
               >
                 Hủy
               </Button>
-              <Button className="flex items-center gap-1"  icon={<CopyOutlined />}>
+              <Button className="flex items-center gap-1" icon={<CopyOutlined />}>
                 Sao chép
               </Button>
               <Button className="flex items-center gap-1" icon={<ExportOutlined />}>

@@ -5,13 +5,17 @@ import type { TabsProps } from "antd";
 import ProductInfoTab from "./tabs/ProductInfoTab";
 import ProductNoteTab from "./tabs/ProductNoteTab";
 import ProductWarehouseTab from "./tabs/ProductWarehouseTab";
-import type { Product, Variant } from "@/types/product";
+import { ProductMaster, ProductVariant } from "@/types/product";
+// Định nghĩa local interfaces (giống với SubVariantTable)
+
+
+
 export default function ProductTabsDetail({
   master,
   variant,
 }: {
-  master: Product;
-  variant: Variant;
+  master: ProductMaster;
+  variant: ProductVariant;
 }) {
   const items: TabsProps["items"] = [
     {
@@ -38,24 +42,23 @@ export default function ProductTabsDetail({
         </div>
       ),
     },
-  {
-  key: "siblings",
-  label: "Hàng hóa cùng loại",
-  children: (
-    <div className="text-sm">
-      {master?.variants?.length ? (
-        master.variants.map((v: Variant) => (
-          <div key={v.id} className="py-1">
-            • {v.name} — Giá bán {v.price?.toLocaleString()}₫
-          </div>
-        ))
-      ) : (
-        "Không có biến thể khác"
-      )}
-    </div>
-  ),
-},
-
+    {
+      key: "siblings",
+      label: "Hàng hóa cùng loại",
+      children: (
+        <div className="text-sm">
+          {master?.variants?.length ? (
+            master.variants.map((v: ProductVariant) => (
+              <div key={v.id} className="py-1">
+                • {v.name} — Giá bán {v.sellingPrice?.toLocaleString()}₫
+              </div>
+            ))
+          ) : (
+            "Không có biến thể khác"
+          )}
+        </div>
+      ),
+    },
     {
       key: "channels",
       label: "Liên kết kênh bán",

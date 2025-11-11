@@ -2,14 +2,24 @@
 import { Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
-import type { Product, Variant, WarehouseRecord } from "@/types/product";
+import { ProductMaster, ProductVariant } from "@/types/product";
 
 interface Props {
-  master: Product;
-  variant: Variant;
+  master: ProductMaster;
+  variant: ProductVariant;
 }
 
-export default function ProductWarehouseTab({  variant }: Props) {
+interface WarehouseRecord {
+  id: string;
+  time: string;
+  type: string;
+  tradePrice?: number;
+  cost?: number;
+  qty: number;
+  ending: number;
+  partner?: string;
+}
+export default function ProductWarehouseTab({ variant }: Props) {
   const data: WarehouseRecord[] = [
     {
       id: "PN0001",
@@ -18,7 +28,7 @@ export default function ProductWarehouseTab({  variant }: Props) {
       tradePrice: 82000,
       cost: 82000,
       qty: 10,
-      ending: variant.stock,
+      ending: variant.stockQuantity,
     },
     {
       id: "CB272072",

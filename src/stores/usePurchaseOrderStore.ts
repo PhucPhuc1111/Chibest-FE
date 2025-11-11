@@ -8,7 +8,8 @@ import type {
   PurchaseOrderStatus, 
   PurchaseOrder, 
   CreatePurchaseOrderPayload ,
-  ImportedProduct 
+  ImportedProduct ,
+  UpdatePurchaseOrderPayload
 } from "@/types/purchaseOrder"; 
 
 // --- DEFINITIONS & HELPERS ---
@@ -74,6 +75,7 @@ type Actions = {
   getAll: () => Promise<{success: boolean; message?: string}>;
   getById: (id: string) => Promise<{success: boolean; message?: string}>;
   createOrder: (payload: CreatePurchaseOrderPayload) => Promise<{success: boolean; message?: string}>;
+   updateOrder: (id: string, payload: UpdatePurchaseOrderPayload) => Promise<{success: boolean; message?: string}>;
   importFile: (file: File) => Promise<{success: boolean; message?: string; data?: ImportedProduct[]}>;
   deleteOrder: (id: string) => Promise<{success: boolean; message?: string}>;
 };
@@ -402,5 +404,26 @@ export const usePurchaseOrderStore = create<State & Actions>()(
         }
       );
     },
+
+    updateOrder: async (id: string, payload: UpdatePurchaseOrderPayload) => {
+  return handleApiCall(
+    set,
+    () => api.put(`/api/purchase-order/${id}`, payload, {
+      headers: {
+        "Content-Type": "application/json-patch+json",
+      },
+    }),
+    () => {
+      // Reload detail sau khi update
+      get().getById(id);
+    },
+    { 
+      showSuccessMessage: true, 
+      showErrorMessage: true,
+      customSuccessMessage: "Cập nhật phiếu nhập thành công!" 
+    }
+  );
+},
+
   }))
 );
