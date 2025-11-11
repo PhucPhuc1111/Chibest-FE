@@ -1,4 +1,3 @@
-// components/purchaseOrders/PurchaseOrderDetail.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -7,7 +6,12 @@ import {
   Form, InputNumber, message 
 } from "antd";
 import type { TabsProps, TableProps } from "antd";
-import type { PurchaseOrderItem, UpdatePurchaseOrderPayload } from "@/types/purchaseOrder";
+import type { 
+  PurchaseOrderItem, 
+  // UpdatePurchaseOrderPayload,
+  PurchaseOrderStatus,
+  UpdatePurchaseOrderPricesPayload 
+} from "@/types/purchaseOrder";
 import { usePurchaseOrderStore } from "@/stores/usePurchaseOrderStore";
 import {
   DeleteOutlined,
@@ -21,13 +25,13 @@ import {
   MailOutlined,
   QuestionCircleOutlined,
   EditOutlined,
-  // DollarOutlined
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
 interface PurchaseOrderDetailProps {
   id: string;
   onDeleted?: (deletedId: string) => void;
+  onStatusUpdated?: (id: string, newStatus: PurchaseOrderStatus) => void;
 }
 
 interface PriceSettingForm {
@@ -41,30 +45,54 @@ interface PriceSettingForm {
   }>;
 }
 
-export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDetailProps) {
-  const { detail, getById, deleteOrder, getAll, updateOrder } = usePurchaseOrderStore();
-  const [loading, setLoading] = useState(false);
+// Thêm status options
+const STATUS_OPTIONS = [
+  { value: "Draft", label: "Nháp" },
+  { value: "Submitted", label: "Đã gửi" },
+  { value: "Received", label: "Đã nhận" },
+  { value: "Cancelled", label: "Đã hủy" },
+];
+
+export default function PurchaseOrderDetail({ id, onDeleted, onStatusUpdated }: PurchaseOrderDetailProps) {
+  const { 
+    detail, 
+    getById, 
+    deleteOrder, 
+    getAll, 
+    updateOrderStatus, 
+    updateOrderPrices ,
+  } = usePurchaseOrderStore();
+  
+  // const [loading, setLoading] = useState(false);
+   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPriceSetting, setShowPriceSetting] = useState(false);
   const [priceForm] = Form.useForm();
   const [savingPrice, setSavingPrice] = useState(false);
+  const [editingStatus, setEditingStatus] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<PurchaseOrderStatus>();
 
-  useEffect(() => {
-    const loadDetail = async () => {
-      if (!detail || detail.id !== id) {
-        setLoading(true);
-        const result = await getById(id);
-        setLoading(false);
-        if (!result.success && result.message) {
-          // Handle error if needed
-        }
+useEffect(() => {
+  const loadDetail = async () => {
+    if (!detail || detail.id !== id) {
+      setLoading(true);
+      const result = await getById(id);
+      setLoading(false);
+      if (!result.success && result.message) {
+        message.error(result.message);
       }
-    };
-    loadDetail();
-  }, [id, detail, getById]);
-
-  // Xử lý mở modal thiết lập giá
+    }
+  };
+  
+  loadDetail();
+}, [id]);
+  useEffect(() => {
+    if (detail) {
+      setSelectedStatus(detail.status);
+    }
+  }, [detail]);
   const handleOpenPriceSetting = () => {
     if (!detail?.items) return;
     
@@ -82,19 +110,25 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
     priceForm.setFieldsValue(initialValues);
     setShowPriceSetting(true);
   };
-
-  // Xử lý lưu thiết lập giá
   const handleSavePriceSetting = async (values: PriceSettingForm) => {
     if (!detail) return;
     
     setSavingPrice(true);
     try {
-      const payload: UpdatePurchaseOrderPayload = {
-        "pay-method": "string", // Có thể lấy từ detail nếu có
-        "sub-total": detail.subTotal,
-        "discount-amount": detail.discountAmount,
-        "paid": detail.paid,
-        "status": detail.status,
+      const newSubTotal = values.items.reduce((sum, item) => {
+        const itemTotal = (item.actualQuantity || 0) * (item.unitPrice || 0);
+        return sum + itemTotal;
+      }, 0);
+
+      const newDiscountAmount = values.items.reduce((sum, item) => {
+        return sum + (item.discount || 0);
+      }, 0);
+
+      const payload: UpdatePurchaseOrderPricesPayload = {
+        "pay-method": detail.payMethod || "Cash",
+        "sub-total": newSubTotal,
+        "discount-amount": newDiscountAmount,
+        "paid": newSubTotal - newDiscountAmount,
         "purchase-order-details": values.items.map(item => ({
           id: item.id,
           "unit-price": item.unitPrice,
@@ -105,17 +139,16 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
         }))
       };
 
-      const result = await updateOrder(detail.id, payload);
+      const result = await updateOrderPrices(detail.id, payload);
       if (result.success) {
         message.success("Thiết lập giá thành công!");
         setShowPriceSetting(false);
         // Reload detail để hiển thị data mới
         await getById(id);
       }
-    } catch (error:unknown) {
+    } catch (error: unknown) {
       message.error("Lỗi khi thiết lập giá");
       console.log(error);
-      
     } finally {
       setSavingPrice(false);
     }
@@ -141,8 +174,8 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
         }
         setShowDeleteConfirm(false);
       } 
-    } catch  {
-      // Handle error
+    } catch {
+      // Error handled in store
     } finally {
       setDeleteLoading(false);
     }
@@ -151,6 +184,34 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
   // Xử lý hủy xóa
   const handleCancelDelete = () => {
     setShowDeleteConfirm(false);
+  };
+
+  // Xử lý cập nhật status
+  const handleStatusUpdate = async () => {
+    if (!detail || !selectedStatus || selectedStatus === detail.status) {
+      setEditingStatus(false);
+      return;
+    }
+
+    setStatusLoading(true);
+    try {
+      const result = await updateOrderStatus(detail.id, selectedStatus);
+      
+      if (result.success) {
+        setEditingStatus(false);
+        if (onStatusUpdated) {
+          onStatusUpdated(detail.id, selectedStatus);
+        }
+      }
+    } catch {
+      // Error handled in store
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  const handleStatusChange = (value: PurchaseOrderStatus) => {
+    setSelectedStatus(value);
   };
 
   const getStatusColor = (status: string) => {
@@ -243,23 +304,6 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
           return total.toLocaleString("vi-VN") + " đ";
         },
       },
-      // {
-      //   title: "Thao tác",
-      //   width: 100,
-      //   align: "center",
-      //   render: (_: unknown, record: PurchaseOrderItem, index: number) => (
-      //     <Tooltip title="Thiết lập giá">
-      //       <Button
-      //         type="link"
-      //         icon={<DollarOutlined />}
-      //         onClick={() => {
-      //           // Có thể mở modal edit cho từng item nếu cần
-      //           handleOpenPriceSetting();
-      //         }}
-      //       />
-      //     </Tooltip>
-      //   ),
-      // },
     ],
     []
   );
@@ -298,10 +342,6 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
             cancelText="Hủy"
             okType="danger"
             confirmLoading={deleteLoading}
-            styles={{
-              mask: { zIndex: 1000 },
-              wrapper: { zIndex: 1001 }
-            }}
           >
             <p>
               Bạn có chắc chắn muốn xóa phiếu nhập `<strong>{order.code}</strong>`? 
@@ -329,10 +369,6 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
               </Button>,
             ]}
             width={800}
-            styles={{
-              mask: { zIndex: 1000 },
-              wrapper: { zIndex: 1001 }
-            }}
           >
             <Form
               form={priceForm}
@@ -370,11 +406,11 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
                                 min={0}
                                 style={{ width: '100%' }}
                                 formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                 parser={(value: string | undefined) => {
+                                parser={(value: string | undefined) => {
                                   if (!value) return 0;
                                   return parseFloat(value.replace(/\$\s?|(,*)/g, ''));
                                 }}
-                               />
+                              />
                             </Form.Item>
                           ),
                         },
@@ -444,11 +480,58 @@ export default function PurchaseOrderDetail({ id, onDeleted }: PurchaseOrderDeta
           </Modal>
 
           {/* HEADER */}
-          <div className="flex justify-between items-center mb-2">
-            <div className="text-lg font-semibold flex items-center gap-2">
-              {order.code} <Tag color={statusColor}>{statusDisplayName}</Tag>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <div className="text-lg font-semibold flex items-center gap-2 mb-2">
+                {order.code}
+                {!editingStatus && (
+                  <Tag color={statusColor}>{statusDisplayName}</Tag>
+                )}
+              </div>
+              <div className="text-sm text-gray-600">
+                Kho nhập: <b>{order.warehouseName}</b>
+              </div>
             </div>
-            <div className="text-sm text-gray-500">{order.warehouseName}</div>
+            
+            {/* Status Selector */}
+            <div className="flex items-center gap-2">
+              {editingStatus ? (
+                <>
+                  <Select
+                    value={selectedStatus}
+                    onChange={handleStatusChange}
+                    options={STATUS_OPTIONS}
+                    style={{ width: 150 }}
+                    placeholder="Chọn trạng thái"
+                  />
+                  <Button 
+                    type="primary" 
+                    size="small"
+                    loading={statusLoading}
+                    onClick={handleStatusUpdate}
+                  >
+                    Lưu
+                  </Button>
+                  <Button 
+                    size="small"
+                    onClick={() => {
+                      setEditingStatus(false);
+                      setSelectedStatus(order.status);
+                    }}
+                    disabled={statusLoading}
+                  >
+                    Hủy
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm text-gray-600 mr-2">Trạng thái:</span>
+                  <Tag color={statusColor} className="cursor-pointer" onClick={() => setEditingStatus(true)}>
+                    {statusDisplayName} <EditOutlined className="ml-1" />
+                  </Tag>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Người tạo + thông tin nhập */}

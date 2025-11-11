@@ -9,7 +9,9 @@ import type {
   PurchaseOrder, 
   CreatePurchaseOrderPayload ,
   ImportedProduct ,
-  UpdatePurchaseOrderPayload
+  UpdatePurchaseOrderPayload,
+  // UpdatePurchaseOrderStatusPayload ,
+  UpdatePurchaseOrderPricesPayload
 } from "@/types/purchaseOrder"; 
 
 // --- DEFINITIONS & HELPERS ---
@@ -28,6 +30,7 @@ interface RawPurchaseOrderDetail {
   "warehouse-name": string;
   "employee-name": string;
   "supplier-name": string;
+  "pay-method"?: string;
   "purchase-order-details": Array<{
     id: string;
     quantity: number;
@@ -64,6 +67,7 @@ type State = {
   list: PurchaseOrderSummary[];
   detail: PurchaseOrder | null;
   isLoading: boolean;
+  isLoadingDetail: boolean;
   error: string | null;
   filters: Filters;
   totalRecords: number;
@@ -75,9 +79,11 @@ type Actions = {
   getAll: () => Promise<{success: boolean; message?: string}>;
   getById: (id: string) => Promise<{success: boolean; message?: string}>;
   createOrder: (payload: CreatePurchaseOrderPayload) => Promise<{success: boolean; message?: string}>;
-   updateOrder: (id: string, payload: UpdatePurchaseOrderPayload) => Promise<{success: boolean; message?: string}>;
+  updateOrder: (id: string, payload: UpdatePurchaseOrderPayload) => Promise<{success: boolean; message?: string}>;
   importFile: (file: File) => Promise<{success: boolean; message?: string; data?: ImportedProduct[]}>;
   deleteOrder: (id: string) => Promise<{success: boolean; message?: string}>;
+  updateOrderStatus: (id: string, status: PurchaseOrderStatus) => Promise<{success: boolean; message?: string}>;
+  updateOrderPrices: (id: string, payload: UpdatePurchaseOrderPricesPayload) => Promise<{success: boolean; message?: string}>;
 };
 
 // Config để control message cho từng API
@@ -101,18 +107,23 @@ const handleApiCall = async <T>(
   set: SetState,
   apiCall: () => Promise<{ data: ApiResponse<unknown> }>,
   successCallback?: (data: unknown) => void,
-  config: ApiConfig = {}
+   config: ApiConfig & { isDetail?: boolean } = {} 
 ): Promise<{success: boolean; message?: string; data?: T}> => {
   const { 
     showSuccessMessage = true,
     showErrorMessage = true,
     customSuccessMessage,
-    customErrorMessage 
+    customErrorMessage ,
+    isDetail = false
   } = config;
 
   // Set loading state
-  set((s: State) => {
-    s.isLoading = true;
+ set((s: State) => {
+    if (isDetail) {
+      s.isLoadingDetail = true;
+    } else {
+      s.isLoading = true;
+    }
     s.error = null;
   });
 
@@ -128,7 +139,11 @@ const handleApiCall = async <T>(
       
       // Set loading false
       set((s: State) => {
-        s.isLoading = false;
+        if (isDetail) {
+          s.isLoadingDetail = false;
+        } else {
+          s.isLoading = false;
+        }
       });
       
       // Hiển thị message thành công nếu được enable
@@ -145,7 +160,11 @@ const handleApiCall = async <T>(
     } else {
       // API trả về status code không phải 200
       set((s: State) => {
-        s.isLoading = false;
+        if (isDetail) {
+          s.isLoadingDetail = false;
+        } else {
+          s.isLoading = false;
+        }
       });
      
         if (showErrorMessage) {
@@ -160,8 +179,12 @@ const handleApiCall = async <T>(
     }
   } catch (err: unknown) {
   
-    set((s: State) => {
-      s.isLoading = false;
+     set((s: State) => {
+      if (isDetail) {
+        s.isLoadingDetail = false;
+      } else {
+        s.isLoading = false;
+      }
       s.error = err instanceof Error ? err.message : "Unknown error";
     });
     
@@ -234,6 +257,7 @@ const transformPurchaseOrderDetail = (rawData: RawPurchaseOrderDetail): Purchase
     warehouseName: rawData["warehouse-name"],
     employeeName: rawData["employee-name"],
     supplierName: rawData["supplier-name"],
+    payMethod: rawData["pay-method"] || "Cash",
     items: items,
   };
 };
@@ -244,6 +268,7 @@ export const usePurchaseOrderStore = create<State & Actions>()(
     list: [],
     detail: null,
     isLoading: false,
+    isLoadingDetail: false,
     error: null,
     totalRecords: 0,
     filters: { pageIndex: 1, pageSize: 15, branchId: null },
@@ -342,7 +367,8 @@ export const usePurchaseOrderStore = create<State & Actions>()(
         },
         { 
           showSuccessMessage: false,
-          showErrorMessage: true 
+          showErrorMessage: true ,
+          isDetail: true
         }
       );
     },
@@ -421,6 +447,106 @@ export const usePurchaseOrderStore = create<State & Actions>()(
       showSuccessMessage: true, 
       showErrorMessage: true,
       customSuccessMessage: "Cập nhật phiếu nhập thành công!" 
+    }
+  );
+},
+
+updateOrderStatus: async (id: string, status: PurchaseOrderStatus) => {
+  const { detail } = get(); // Lấy detail từ state hiện tại
+  
+  return handleApiCall(
+    set,
+    () => api.put(`/api/purchase-order/${id}`, {
+      "pay-method": detail?.payMethod || "Cash",
+      "sub-total": detail?.subTotal || 0,
+      "discount-amount": detail?.discountAmount || 0,
+      "paid": detail?.paid || 0,
+      status: status, // Chỉ thay đổi status
+      "purchase-order-details": detail?.items?.map(item => ({
+        id: item.id,
+        "unit-price": item.unitPrice || 0,
+        "discount": item.discount || 0,
+        "re-fee": item.reFee || 0,
+        "note": item.note || "",
+        "actual-quantity": item.actualQuantity || item.quantity || 0
+      })) || []
+    }, {
+      headers: {
+        "Content-Type": "application/json-patch+json",
+      },
+    }),
+    () => {
+      // Update local state - chỉ cập nhật status
+      set((s: State) => {
+        // Update in list
+        s.list = s.list.map(item => 
+          item.id === id ? { ...item, status } : item
+        );
+        // Update in detail if currently viewing
+        if (s.detail?.id === id) {
+          s.detail.status = status;
+        }
+      });
+    },
+    { 
+      showSuccessMessage: true,
+      showErrorMessage: true,
+      customSuccessMessage: "Cập nhật trạng thái thành công!"
+    }
+  );
+},
+
+updateOrderPrices: async (id: string, payload: UpdatePurchaseOrderPricesPayload) => {
+  const { detail } = get(); // Lấy detail từ state hiện tại
+  
+  return handleApiCall(
+    set,
+    () => api.put(`/api/purchase-order/${id}`, {
+      ...payload,
+      status: detail?.status || "Draft" // Giữ nguyên status hiện tại
+    }, {
+      headers: {
+        "Content-Type": "application/json-patch+json",
+      },
+    }),
+    () => {
+      // Update local state - chỉ cập nhật thông tin giá
+      set((s: State) => {
+        // Update in detail if currently viewing
+        if (s.detail?.id === id) {
+          if (s.detail) {
+            // Cập nhật các thông tin giá từ payload
+            s.detail.subTotal = payload["sub-total"];
+            s.detail.discountAmount = payload["discount-amount"];
+            s.detail.paid = payload.paid;
+            
+            // Cập nhật thông tin items
+            if (payload["purchase-order-details"] && s.detail.items) {
+              s.detail.items = s.detail.items.map(item => {
+                const updatedItem = payload["purchase-order-details"].find(
+                  (detailItem) => detailItem.id === item.id
+                );
+                if (updatedItem) {
+                  return {
+                    ...item,
+                    unitPrice: updatedItem["unit-price"],
+                    discount: updatedItem.discount,
+                    reFee: updatedItem["re-fee"],
+                    note: updatedItem.note,
+                    actualQuantity: updatedItem["actual-quantity"]
+                  };
+                }
+                return item;
+              });
+            }
+          }
+        }
+      });
+    },
+    { 
+      showSuccessMessage: true,
+      showErrorMessage: true,
+      customSuccessMessage: "Thiết lập giá thành công!"
     }
   );
 },

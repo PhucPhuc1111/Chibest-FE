@@ -36,6 +36,7 @@ export interface PurchaseOrder {
   warehouseName: string;
   employeeName: string;
   supplierName: string;
+  payMethod?: string;
   items: PurchaseOrderItem[];
 }
 
@@ -79,6 +80,22 @@ export interface UpdatePurchaseOrderPayload {
   "discount-amount": number;
   paid: number;
   status: string;
+  "purchase-order-details": Array<{
+    id: string;
+    "unit-price": number;
+    discount: number;
+    "re-fee": number;
+    note: string;
+    "actual-quantity": number;
+  }>;
+}
+
+
+export interface UpdatePurchaseOrderPricesPayload {
+  "pay-method": string;
+  "sub-total": number;
+  "discount-amount": number;
+  "paid": number;
   "purchase-order-details": Array<{
     id: string;
     "unit-price": number;
