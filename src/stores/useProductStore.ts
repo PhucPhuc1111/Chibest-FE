@@ -2,6 +2,7 @@ import { create } from "zustand";
 import api from "@/api/axiosInstance";
 import { message } from "antd";
 import type { Product,ProductQueryParams ,ProductCreateRequest} from "@/types/product";
+import { getSessionState } from "./useSessionStore";
 
 interface RawProduct {
   id: string;
@@ -180,9 +181,18 @@ searchProducts: async (searchTerm: string) => {
   // LẤY DANH SÁCH SẢN PHẨM
   getProducts: async (params?: ProductQueryParams) => {
     set({ loading: true, error: null });
+
+    const { activeBranchId } = getSessionState();
+    const requestParams: ProductQueryParams = {
+      ...(params ?? {}),
+    };
+
+    if (requestParams.BranchId === undefined && activeBranchId) {
+      requestParams.BranchId = activeBranchId;
+    }
     
     try {
-      const response = await api.get<ApiResponse>("/api/product", { params });
+      const response = await api.get<ApiResponse>("/api/product", { params: requestParams });
       
       if (response.data["status-code"] === 200) {
         // Transform data từ API format sang frontend format

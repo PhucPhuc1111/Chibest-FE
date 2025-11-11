@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useProductStore } from "@/stores/useProductStore";
 import { useCategoryStore } from "@/stores/useCategoryStore";
 import { useBranchStore } from "@/stores/useBranchStore";
+import { useSessionStore } from "@/stores/useSessionStore";
 import { Button, Input, Select, Table, Skeleton, Dropdown, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { SearchOutlined } from "@ant-design/icons";
@@ -35,7 +36,9 @@ export default function ProductList() {
   } = useProductStore();
 
   const { categories, getCategories } = useCategoryStore();
-  const { branches, getBranches } = useBranchStore();
+  const {  getBranches } = useBranchStore();
+  const activeBranchId = useSessionStore((state) => state.activeBranchId);
+  const setActiveBranchId = useSessionStore((state) => state.setActiveBranchId);
 
   const [openType, setOpenType] = useState<"product" | "service" | "combo" | null>(null);
   const [filters, setFilters] = useState<ProductFilters>({
@@ -50,6 +53,21 @@ export default function ProductList() {
     getCategories();
     getBranches();
   }, [filters]);
+
+  // Đồng bộ BranchId với session store
+  useEffect(() => {
+    setFilters((prev) => {
+      const normalizedBranchId = activeBranchId ?? undefined;
+      if (prev.BranchId === normalizedBranchId) {
+        return prev;
+      }
+      return {
+        ...prev,
+        BranchId: normalizedBranchId,
+        PageNumber: 1,
+      };
+    });
+  }, [activeBranchId]);
 
   // Hiển thị error nếu có
   useEffect(() => {
@@ -66,13 +84,14 @@ export default function ProductList() {
     }));
   }, [categories]);
 
+
   // Transform branches cho select options
-  const branchOptions = useMemo(() => {
-    return branches.map(branch => ({
-      label: branch.name,
-      value: branch.id,
-    }));
-  }, [branches]);
+  // const branchOptions = useMemo(() => {
+  //   return branches.map(branch => ({
+  //     label: branch.name,
+  //     value: branch.id,
+  //   }));
+  // }, [branches]);
 
   // const tableProducts = useMemo(() => {
   //   const masterProducts = products.filter(product => product.isMaster);
@@ -109,6 +128,7 @@ export default function ProductList() {
   //     parentSku: product.parentSku,
   //     variants: variants, 
   //   };
+
   
   // });
   // }, [products]);
@@ -250,6 +270,13 @@ const tableProducts = useMemo(() => {
       ...newFilters,
       PageNumber: 1, // Reset về trang 1 khi filter
     }));
+
+    if ("BranchId" in newFilters) {
+      const branchValue = newFilters.BranchId ?? null;
+      if (activeBranchId !== branchValue) {
+        setActiveBranchId(branchValue);
+      }
+    }
   };
 
   // Reset filters
@@ -257,6 +284,7 @@ const tableProducts = useMemo(() => {
     setFilters({
       PageNumber: 1,
       PageSize: 10,
+      BranchId: activeBranchId ?? undefined,
     });
   };
 
@@ -294,10 +322,9 @@ const tableProducts = useMemo(() => {
       fixed: "left",
       render: (sku: string, record: TableProduct) => (
         <div className="flex items-center gap-2">
-          <img src={record.avartarUrl} className="w-8 h-10 rounded" alt={record.name} />
+          <img src={record.avartarUrl} className="w-8 h-10 rounded"/>
           <div>
             <div className="font-medium">{sku}</div>
-            <div className="text-xs text-gray-400">{record.id?.slice(0, 6)}...</div>
           </div>
         </div>
       ),
@@ -383,16 +410,6 @@ const tableProducts = useMemo(() => {
       label: "Hàng hóa",
       onClick: () => setOpenType("product"),
     },
-    {
-      key: "service",
-      label: "Dịch vụ",
-      onClick: () => setOpenType("service"),
-    },
-    {
-      key: "combo",
-      label: "Combo - đóng gói",
-      onClick: () => setOpenType("combo"),
-    },
   ];
 
   return (
@@ -433,17 +450,6 @@ const tableProducts = useMemo(() => {
                 { label: "Hết hàng", value: "OutOfStock" },
               ]}
               onChange={(v) => handleFilterChange({ Status: v })}
-            />
-          </div>
-
-          <div>
-            <div className="text-[13px] font-semibold mb-1">Chi nhánh</div>
-            <Select
-              className="w-full"
-              allowClear
-              placeholder="Chọn chi nhánh"
-              options={branchOptions}
-              onChange={(v) => handleFilterChange({ BranchId: v })}
             />
           </div>
 
