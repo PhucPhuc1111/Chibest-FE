@@ -26,6 +26,7 @@ export interface Product {
 // 🧱 2. ProductCreateRequest (API gửi lên)
 // =========================================
 export interface ProductCreateRequest {
+  id?: string;
   sku: string;
   name: string;
   description: string;
@@ -43,6 +44,10 @@ export interface ProductCreateRequest {
   "selling-price": number;
   "cost-price": number;
   "branch-id": string;
+  "created-at"?: string;
+  "updated-at"?: string;
+  "effective-date"?: string;
+  "expiry-date"?: string;
 }
 
 // =========================================
@@ -126,6 +131,9 @@ export interface TableProduct {
   isMaster: boolean;
   parentSku?: string;
   variants: ProductVariant[];
+  isGroupMaster?: boolean;
+  hasVariants?: boolean;
+  isOrphanVariant?: boolean;
 }
 export interface ProductQueryParams {
   SearchTerm?: string;

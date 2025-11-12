@@ -130,16 +130,55 @@
 
 import { Table, Button } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ProductTabsDetail from "./ProductTabsDetail";
 import ModalCreateProduct from "./modals/ModalCreateProduct";
 import { ProductMaster, ProductVariant } from "@/types/product";
+import Image from "next/image";
+
+const DEFAULT_PRODUCT_IMAGE = "/images/noimage.png";
+
+const normalizeImageSrc = (src?: string | null): string => {
+  if (!src) {
+    return DEFAULT_PRODUCT_IMAGE;
+  }
+
+  const trimmed = src.trim();
+  if (!trimmed) {
+    return DEFAULT_PRODUCT_IMAGE;
+  }
+
+  const normalized = trimmed.replace(/\\/g, "/");
+
+  if (
+    normalized.startsWith("http://") ||
+    normalized.startsWith("https://") ||
+    normalized.startsWith("data:") ||
+    normalized.startsWith("blob:")
+  ) {
+    return normalized;
+  }
+
+  if (normalized.startsWith("//")) {
+    return normalized;
+  }
+
+  if (normalized.startsWith("/")) {
+    return normalized;
+  }
+
+  return `/${normalized}`;
+};
 
 export default function SubVariantTable({ master }: { master: ProductMaster }) {
   const [showCreateVariant, setShowCreateVariant] = useState(false);
   const [expandedVariantKeys, setExpandedVariantKeys] = useState<string[]>([]);
 
   const variants: ProductVariant[] = master.variants || [];
+  const normalizedMasterAvatar = useMemo(
+    () => normalizeImageSrc(master.avartarUrl),
+    [master.avartarUrl],
+  );
 
   const handleVariantExpand = (expanded: boolean, record: ProductVariant) => {
     if (expanded) {
@@ -160,9 +199,18 @@ export default function SubVariantTable({ master }: { master: ProductMaster }) {
       title: "",
       dataIndex: "icon",
       width: 36,
-      render: (_: unknown, r: ProductVariant) => (
-        <img src={r.avartarUrl || master.avartarUrl} className="w-6 h-7 rounded" alt={r.name} />
-      ),
+      render: (_: unknown, r: ProductVariant) => {
+        const variantAvatar = r.avartarUrl ? normalizeImageSrc(r.avartarUrl) : normalizedMasterAvatar;
+        return (
+          <Image
+            src={variantAvatar || normalizedMasterAvatar}
+            alt={r.name}
+            width={24}
+            height={28}
+            className="w-6 h-7 rounded object-cover"
+          />
+        );
+      },
     },
     {
       title: "Mã hàng",

@@ -7,14 +7,14 @@ import  { Dayjs } from "dayjs";
 
 const { RangePicker } = DatePicker;
 
-type Payload =
+export type StockDateFilterChange =
   | { mode: "preset"; value: string }
   | { mode: "custom"; value: [string, string] };
 
 export default function StockDateFilter({
   onChange,
 }: {
-  onChange: (range: Payload) => void;
+  onChange: (range: StockDateFilterChange) => void;
 }) {
   const [mode, setMode] = useState<"preset" | "custom">("preset");
   const [preset, setPreset] = useState<string>("Tháng này");

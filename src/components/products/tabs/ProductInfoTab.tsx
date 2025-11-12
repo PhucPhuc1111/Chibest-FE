@@ -2,7 +2,7 @@
 
 import { Button, Descriptions, Tag, Modal } from "antd";
 import { Image } from 'antd';
-import { ProductMaster, ProductVariant } from "@/types/product";
+import { ProductMaster, ProductVariant, ParentProduct } from "@/types/product";
 import { DeleteOutlined, EditOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { useProductStore } from "@/stores/useProductStore";
@@ -13,7 +13,26 @@ interface Props {
   variant: ProductVariant;
 }
 
+type MasterLegacyFields = {
+  "category-id"?: string;
+  "is-master"?: boolean;
+};
+
+const toParentProduct = (product: ProductMaster): ParentProduct => {
+  const legacyFields = product as ProductMaster & MasterLegacyFields;
+
+  return {
+    id: product.id,
+    sku: product.sku ?? "",
+    name: product.name,
+    "category-id": legacyFields["category-id"] ?? "",
+    brand: product.brand ?? "",
+    "is-master": legacyFields["is-master"] ?? product.isMaster ?? true,
+  };
+};
+
 export default function ProductInfoTab({ master, variant }: Props) {
+  const [showCreateVariant, setShowCreateVariant] = useState(false);
   const data = { ...master, ...variant };
   const { deleteProduct } = useProductStore();
   
@@ -38,9 +57,9 @@ export default function ProductInfoTab({ master, variant }: Props) {
     <div className="bg-white p-3 rounded-md">
       <div className="flex gap-4">
         {/* Ảnh sản phẩm */}
-        <Image.PreviewGroup items={[data.avartarUrl || '']}>
+        <Image.PreviewGroup items={[data.avartarUrl || "/images/noimage.png"]}>
           <Image
-            src={data.avartarUrl || '/default-product.png'}
+            src={data.avartarUrl || "/images/noimage.png"}
             alt={data.name}
             width={96}
             height={112}
@@ -92,10 +111,17 @@ export default function ProductInfoTab({ master, variant }: Props) {
         <div className="flex flex-wrap gap-3">
           <Button type="primary" onClick={() => setOpenEditModal(true)}><EditOutlined /> Chỉnh sửa</Button>
           <Button>In tem mã</Button>
-          <Button>+ Thêm hàng hóa cùng loại</Button>
+          <Button onClick={() => setShowCreateVariant(true)}>+ Thêm hàng hóa cùng loại</Button>
           <Button>...</Button>
         </div>
       </div>
+
+      {/* Modal tạo variant */}
+      <ModalCreateProduct
+        open={showCreateVariant}
+        onClose={() => setShowCreateVariant(false)}
+        parentProduct={data.isMaster ? toParentProduct(master) : null}
+      />
 
       {/* Modal chỉnh sửa sản phẩm */}
       {openEditModal && (
@@ -104,7 +130,7 @@ export default function ProductInfoTab({ master, variant }: Props) {
           onClose={() => setOpenEditModal(false)}
           productData={data}
           isUpdate={true}
-          parentProduct={data.isMaster ? master : null}
+          parentProduct={data.isMaster ? toParentProduct(master) : null}
         />
       )}
     </div>

@@ -63,7 +63,7 @@ export default function StockTakeNew() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importModalVisible, setImportModalVisible] = useState(false);
-  const [importedData, setImportedData] = useState<any[]>([]);
+  const [, setImportedData] = useState<ProductRow[]>([]);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<string>("");
 

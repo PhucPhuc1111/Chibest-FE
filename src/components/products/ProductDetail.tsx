@@ -72,8 +72,8 @@ export default function ProductDetail() {
           {/* Ảnh sản phẩm */}
           <div className="flex-shrink-0">
             <Image
-              src={product.avartarUrl || "/default-product.png"}
-              alt={product.name}
+              src={product.avartarUrl || "/images/noimage.png"}
+              alt={product.name || "Ảnh sản phẩm"}
               width={200}
               height={240}
               className="rounded-md border border-gray-200"

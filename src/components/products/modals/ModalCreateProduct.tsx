@@ -598,13 +598,17 @@ import { useState, useEffect, useRef } from "react";
 import { useProductStore } from "@/stores/useProductStore";
 import { useCategoryStore } from "@/stores/useCategoryStore";
 import { useBranchStore } from "@/stores/useBranchStore";
+import { useSessionStore } from "@/stores/useSessionStore";
 import { useFileStore } from "@/stores/useFileStore";
 import TiptapEditor from "@/components/ui/tiptap/TiptapEditor";
 import ProductImageUploader from "../components/ProductImageUploader";
 import type { 
   ProductCreateRequest,
   ProductFormValues,
-  ModalCreateProductProps 
+  ModalCreateProductProps,
+  Product,
+  ProductVariant,
+  TableProduct
 } from "@/types/product";
 
 interface FormData {
@@ -621,6 +625,28 @@ interface FormData {
   costPrice: number;
 }
 
+type ProductLegacyFields = {
+  "category-id"?: string;
+  "is-master"?: boolean;
+  "parent-sku"?: string | null;
+  "created-at"?: string;
+};
+
+const getLegacyField = <K extends keyof ProductLegacyFields>(
+  data: Product | ProductVariant | TableProduct | null,
+  field: K
+): ProductLegacyFields[K] | undefined => {
+  if (!data) {
+    return undefined;
+  }
+
+  return (data as ProductLegacyFields)[field];
+};
+
+const hasStyle = (
+  data: Product | ProductVariant | TableProduct
+): data is Product | ProductVariant => "style" in data;
+
 export default function ModalCreateProduct({
   open,
   onClose,
@@ -632,7 +658,6 @@ export default function ModalCreateProduct({
   const [activeTab, setActiveTab] = useState("1");
   const [description, setDescription] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string>("");
-  const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [sku, setSku] = useState("");
   const formSubmittedRef = useRef(false);
 
@@ -640,6 +665,7 @@ export default function ModalCreateProduct({
   const { categories, getCategories } = useCategoryStore();
   const { branches, getBranches } = useBranchStore();
   const { uploadImage } = useFileStore();
+  const activeBranchId = useSessionStore((state) => state.activeBranchId);
 
   const isCreatingVariant = !!parentProduct;
 
@@ -653,7 +679,6 @@ export default function ModalCreateProduct({
       form.resetFields();
       setDescription("");
       setAvatarUrl("");
-      setSelectedBranch("");
       formSubmittedRef.current = false;
 
       if (isUpdate && productData) {
@@ -663,13 +688,14 @@ export default function ModalCreateProduct({
         setAvatarUrl(productData.avartarUrl || "");
         
         setTimeout(() => {
+          const legacyCategoryId = getLegacyField(productData, "category-id");
           const formValues: Partial<FormData> = {
             name: productData.name,
-            categoryId: (productData as any)["category-id"] || "",
+            categoryId: legacyCategoryId ?? "",
             brand: productData.brand || "",
             color: productData.color || "",
             size: productData.size || "",
-            style: productData.style || "",
+            style: hasStyle(productData) ? productData.style || "" : "",
             material: productData.material || "",
             weight: productData.weight || 0,
             status: productData.status || "Available",
@@ -776,6 +802,11 @@ export default function ModalCreateProduct({
 
       const finalAvatarUrl = avatarUrl;
       const currentDate = new Date().toISOString().split("T")[0];
+      const previousDate = (() => {
+        const date = new Date();
+        date.setDate(date.getDate() - 1);
+        return date.toISOString().split("T")[0];
+      })();
 
       // FIX: Xử lý is-master và parent-sku đúng cách
       let isMasterValue: boolean;
@@ -783,8 +814,10 @@ export default function ModalCreateProduct({
       
       if (isUpdate && productData) {
         // Khi update: giữ nguyên giá trị từ dữ liệu gốc
-        isMasterValue = (productData as any)["is-master"] ?? productData.isMaster ?? true;
-        parentSkuValue = (productData as any)["parent-sku"] || productData.parentSku || null;
+        const legacyIsMaster = getLegacyField(productData, "is-master");
+        const legacyParentSku = getLegacyField(productData, "parent-sku");
+        isMasterValue = legacyIsMaster ?? productData.isMaster ?? true;
+        parentSkuValue = legacyParentSku ?? productData.parentSku ?? null;
       } else if (isCreatingVariant && parentProduct) {
         // Khi tạo variant mới: là master = false
         isMasterValue = false;
@@ -796,7 +829,7 @@ export default function ModalCreateProduct({
       }
 
       const productRequestData: ProductCreateRequest = {
-        id: isUpdate && productData ? productData.id : "",
+        id: isUpdate && productData ? productData.id : undefined,
         sku: finalSku,
         name: values.name,
         description: description || "",
@@ -809,15 +842,17 @@ export default function ModalCreateProduct({
         weight: values.weight || 0,
         "is-master": isMasterValue, // FIXED: Sử dụng giá trị đã xử lý
         status: values.status || "Available",
-        "created-at": isUpdate && productData ? (productData as any)["created-at"] || currentDate : currentDate,
+        "created-at": isUpdate && productData
+          ? getLegacyField(productData, "created-at") || currentDate
+          : currentDate,
         "updated-at": currentDate,
         "category-id": values.categoryId,
         "parent-sku": parentSkuValue, // FIXED: Sử dụng giá trị đã xử lý
         "selling-price": values.sellingPrice || 0,
         "cost-price": values.costPrice || 0,
-        "effective-date": currentDate,
+        "effective-date": previousDate,
         "expiry-date": "2099-12-31",
-        "branch-id": selectedBranch || branches[0]?.id || "",
+        "branch-id": activeBranchId ?? branches[0]?.id ?? "",
       };
 
       console.log("Submitting product data:", {
@@ -907,7 +942,6 @@ export default function ModalCreateProduct({
         items={[
           { key: "1", label: "Thông tin" },
           { key: "2", label: "Mô tả" },
-          { key: "3", label: "Chi nhánh kinh doanh" },
         ]}
       />
 
@@ -995,7 +1029,6 @@ export default function ModalCreateProduct({
                   label: branch.name,
                   value: branch.name,
                 }))}
-                onChange={(value) => setSelectedBranch(value)}
               />
             </Form.Item>
 
@@ -1129,35 +1162,6 @@ export default function ModalCreateProduct({
               Lưu
             </Button>
           </div>
-        </div>
-      )}
-
-      {/* =============== TAB 3: CHI NHÁNH =============== */}
-      {activeTab === "3" && (
-        <div className="p-4">
-          <Form layout="vertical">
-            <Form.Item label="Chi nhánh áp dụng" name="branchId">
-              <Select
-                placeholder="Chọn chi nhánh"
-                options={branches.map(branch => ({
-                  label: branch.name,
-                  value: branch.id,
-                }))}
-                onChange={(value) => setSelectedBranch(value)}
-              />
-            </Form.Item>
-
-            <div className="flex justify-end items-center gap-2 border-t pt-3">
-              <Button onClick={onClose}>Bỏ qua</Button>
-              <Button type="primary" onClick={() => {
-                // Chuyển về tab 1 để submit
-                setActiveTab("1");
-                setTimeout(() => form.submit(), 100);
-              }}>
-                Lưu
-              </Button>
-            </div>
-          </Form>
         </div>
       )}
     </Modal>

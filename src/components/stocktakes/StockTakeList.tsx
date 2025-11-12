@@ -14,7 +14,7 @@ import type { ColumnsType } from "antd/es/table";
 import type { StockAdjustmentSummary } from "../../types/stocktake";
 import useStockTakeStore from "../../stores/useStockTakeStore";
 import StockTakeDetail from "./StockTakeDetail";
-import StockDateFilter from "./components/StockDateFilter";
+import StockDateFilter, { StockDateFilterChange } from "./components/StockDateFilter";
 import { useRouter } from "next/navigation";
 
 export default function StockTakeList() {
@@ -94,7 +94,7 @@ export default function StockTakeList() {
     setSearchParams(prev => ({ ...prev, status: value }));
   };
 
-  const handleDateFilterChange = (val: any) => {
+  const handleDateFilterChange = (val: StockDateFilterChange) => {
     if (val.mode === "preset") {
       // Xử lý preset date nếu cần
     } else {

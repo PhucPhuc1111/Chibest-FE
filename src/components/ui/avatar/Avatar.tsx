@@ -29,7 +29,10 @@ const statusSizeClasses = {
   xxlarge: "h-4 w-4",
 };
 
-const statusColorClasses = {
+const statusColorClasses: Record<
+  Exclude<NonNullable<AvatarProps["status"]>, "none">,
+  string
+> = {
   online: "bg-success-500",
   offline: "bg-error-400",
   busy: "bg-warning-500",
@@ -75,17 +78,19 @@ const Avatar: React.FC<AvatarProps> = ({
     [className, size]
   );
 
-  const statusClasses = useMemo(
-    () =>
-      [
-        "absolute bottom-0 right-0 rounded-full border-[1.5px] border-white dark:border-gray-900",
-        statusSizeClasses[size],
-        statusColorClasses[status] ?? "",
-      ]
-        .filter(Boolean)
-        .join(" "),
-    [size, status]
-  );
+  const statusClasses = useMemo(() => {
+    if (status === "none") {
+      return "";
+    }
+
+    return [
+      "absolute bottom-0 right-0 rounded-full border-[1.5px] border-white dark:border-gray-900",
+      statusSizeClasses[size],
+      statusColorClasses[status],
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }, [size, status]);
 
   return (
     <div className={containerClasses}>

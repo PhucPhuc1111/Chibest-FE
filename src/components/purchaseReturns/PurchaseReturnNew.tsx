@@ -392,7 +392,7 @@ const handleSearch = async () => {
   return (
     <>
       {contextHolder}
-      <div className="bg-gray-50 p-4 min-h-screen">
+      <div className="bg-gray-50 min-h-screen">
         <div className="flex gap-4">
           {/* Left Table */}
           <div className="flex-1 bg-white rounded-md border border-gray-200">
