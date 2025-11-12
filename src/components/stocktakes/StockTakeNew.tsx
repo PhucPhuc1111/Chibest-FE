@@ -555,10 +555,10 @@ export default function StockTakeNew() {
                 initialValue="Kiểm Kê"
               >
                 <Select placeholder="Chọn loại điều chỉnh">
-                  <Select.Option value="Kiểm Kê">Kiểm Kê</Select.Option>
-                  <Select.Option value="Hư Hỏng">Hư Hỏng</Select.Option>
-                  <Select.Option value="Mất Hàng">Mất Hàng</Select.Option>
-                  <Select.Option value="Khác">Khác</Select.Option>
+                  <Select.Option value="part">Kiểm Kê</Select.Option>
+                  <Select.Option value="part">Hư Hỏng</Select.Option>
+                  <Select.Option value="part">Mất Hàng</Select.Option>
+                  <Select.Option value="all">Khác</Select.Option>
                 </Select>
               </Form.Item>
 
