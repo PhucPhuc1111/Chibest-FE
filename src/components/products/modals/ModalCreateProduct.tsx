@@ -598,6 +598,7 @@ import { useState, useEffect, useRef } from "react";
 import { useProductStore } from "@/stores/useProductStore";
 import { useCategoryStore } from "@/stores/useCategoryStore";
 import { useBranchStore } from "@/stores/useBranchStore";
+import { useSessionStore } from "@/stores/useSessionStore";
 import { useFileStore } from "@/stores/useFileStore";
 import TiptapEditor from "@/components/ui/tiptap/TiptapEditor";
 import ProductImageUploader from "../components/ProductImageUploader";
@@ -632,7 +633,6 @@ export default function ModalCreateProduct({
   const [activeTab, setActiveTab] = useState("1");
   const [description, setDescription] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string>("");
-  const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [sku, setSku] = useState("");
   const formSubmittedRef = useRef(false);
 
@@ -640,6 +640,7 @@ export default function ModalCreateProduct({
   const { categories, getCategories } = useCategoryStore();
   const { branches, getBranches } = useBranchStore();
   const { uploadImage } = useFileStore();
+  const activeBranchId = useSessionStore((state) => state.activeBranchId);
 
   const isCreatingVariant = !!parentProduct;
 
@@ -653,7 +654,6 @@ export default function ModalCreateProduct({
       form.resetFields();
       setDescription("");
       setAvatarUrl("");
-      setSelectedBranch("");
       formSubmittedRef.current = false;
 
       if (isUpdate && productData) {
@@ -776,6 +776,11 @@ export default function ModalCreateProduct({
 
       const finalAvatarUrl = avatarUrl;
       const currentDate = new Date().toISOString().split("T")[0];
+      const previousDate = (() => {
+        const date = new Date();
+        date.setDate(date.getDate() - 1);
+        return date.toISOString().split("T")[0];
+      })();
 
       // FIX: Xử lý is-master và parent-sku đúng cách
       let isMasterValue: boolean;
@@ -815,9 +820,9 @@ export default function ModalCreateProduct({
         "parent-sku": parentSkuValue, // FIXED: Sử dụng giá trị đã xử lý
         "selling-price": values.sellingPrice || 0,
         "cost-price": values.costPrice || 0,
-        "effective-date": currentDate,
+        "effective-date": previousDate,
         "expiry-date": "2099-12-31",
-        "branch-id": selectedBranch || branches[0]?.id || "",
+        "branch-id": activeBranchId ?? branches[0]?.id ?? "",
       };
 
       console.log("Submitting product data:", {
@@ -907,7 +912,6 @@ export default function ModalCreateProduct({
         items={[
           { key: "1", label: "Thông tin" },
           { key: "2", label: "Mô tả" },
-          { key: "3", label: "Chi nhánh kinh doanh" },
         ]}
       />
 
@@ -995,7 +999,6 @@ export default function ModalCreateProduct({
                   label: branch.name,
                   value: branch.name,
                 }))}
-                onChange={(value) => setSelectedBranch(value)}
               />
             </Form.Item>
 
@@ -1129,35 +1132,6 @@ export default function ModalCreateProduct({
               Lưu
             </Button>
           </div>
-        </div>
-      )}
-
-      {/* =============== TAB 3: CHI NHÁNH =============== */}
-      {activeTab === "3" && (
-        <div className="p-4">
-          <Form layout="vertical">
-            <Form.Item label="Chi nhánh áp dụng" name="branchId">
-              <Select
-                placeholder="Chọn chi nhánh"
-                options={branches.map(branch => ({
-                  label: branch.name,
-                  value: branch.id,
-                }))}
-                onChange={(value) => setSelectedBranch(value)}
-              />
-            </Form.Item>
-
-            <div className="flex justify-end items-center gap-2 border-t pt-3">
-              <Button onClick={onClose}>Bỏ qua</Button>
-              <Button type="primary" onClick={() => {
-                // Chuyển về tab 1 để submit
-                setActiveTab("1");
-                setTimeout(() => form.submit(), 100);
-              }}>
-                Lưu
-              </Button>
-            </div>
-          </Form>
         </div>
       )}
     </Modal>

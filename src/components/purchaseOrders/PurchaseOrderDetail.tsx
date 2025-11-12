@@ -430,7 +430,7 @@ useEffect(() => {
                           ),
                         },
                         {
-                          title: "Re-fee",
+                          title: "Phí tái",
                           width: 100,
                           render: (_, __, index) => (
                             <Form.Item

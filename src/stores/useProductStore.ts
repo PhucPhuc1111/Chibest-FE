@@ -183,7 +183,12 @@ searchProducts: async (searchTerm: string) => {
     set({ loading: true, error: null });
 
     const { activeBranchId } = getSessionState();
+    const defaultParams: ProductQueryParams = {
+      SortBy: "createdat",
+      SortDescending: true,
+    };
     const requestParams: ProductQueryParams = {
+      ...defaultParams,
       ...(params ?? {}),
     };
 

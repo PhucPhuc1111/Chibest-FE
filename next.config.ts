@@ -6,13 +6,15 @@ const apiRemotePatterns: NonNullable<NextConfig["images"]>["remotePatterns"] =
 const appendRemotePattern = (
   protocol: "http" | "https",
   hostname: string,
-  port?: string
+  port?: string,
+  pathname: string = "/**"
 ) => {
   const exists = apiRemotePatterns.some(
     (pattern) =>
       pattern.protocol === protocol &&
       pattern.hostname === hostname &&
-      (pattern.port ?? "") === (port ?? "")
+      (pattern.port ?? "") === (port ?? "") &&
+      pattern.pathname === pathname
   );
 
   if (!exists) {
@@ -20,7 +22,7 @@ const appendRemotePattern = (
       protocol,
       hostname,
       port,
-      pathname: "/api/file/image",
+      pathname,
     });
   }
 };
@@ -44,6 +46,9 @@ if (process.env.NEXT_PUBLIC_API_BASE_URL) {
 // Fallbacks for local development
 appendRemotePattern("https", "localhost", "44334");
 appendRemotePattern("http", "localhost", "44334");
+// Generic HTTPS domain support for product images
+appendRemotePattern("https", "**");
+appendRemotePattern("http", "**");
 
 const nextConfig: NextConfig = {
   images: {

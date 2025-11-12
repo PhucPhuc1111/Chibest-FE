@@ -1,7 +1,7 @@
 // components/products/ProductList.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useProductStore } from "@/stores/useProductStore";
 import { useCategoryStore } from "@/stores/useCategoryStore";
 import { useBranchStore } from "@/stores/useBranchStore";
@@ -13,8 +13,10 @@ import SubVariantTable from "./SubVariantTable";
 import ModalCreateProduct from "./modals/ModalCreateProduct";
 import ModalCreateService from "./modals/ModalCreateService";
 import ModalCreateCombo from "./modals/ModalCreateCombo";
-import { TableProduct } from "@/types/product";
+import type { Product, TableProduct } from "@/types/product";
 import ProductTabsDetail from "./ProductTabsDetail";
+import Image from "next/image";
+import api from "@/api/axiosInstance";
 interface ProductFilters {
   SearchTerm?: string;
   CategoryId?: string;
@@ -24,6 +26,108 @@ interface ProductFilters {
   BranchId?: string;
   PageNumber?: number;
   PageSize?: number;
+  SortBy?: string;
+  SortDescending?: boolean;
+}
+
+interface ProductImportResponse {
+  "status-code": number;
+  message: string;
+  data?: {
+    created?: number;
+    updated?: number;
+    errors?: string[];
+  };
+}
+
+const PRODUCT_EXPORT_COLUMNS: string[] = [
+  "Sku",
+  "Name",
+  "Description",
+  "AvatarUrl",
+  "Color",
+  "Size",
+  "Style",
+  "Brand",
+  "Material",
+  "Weight",
+  "IsMaster",
+  "Status",
+  "CreatedAt",
+  "UpdatedAt",
+  "ParentSku",
+  "SellingPrice",
+  "CostPrice",
+  "EffectiveDate",
+  "ExpiryDate",
+  "Note",
+  "Type",
+  "CategoryName",
+];
+
+const DEFAULT_PRODUCT_IMAGE = "/images/noimage.png";
+
+const normalizeImageSrc = (src?: string | null): string => {
+  if (!src) {
+    return DEFAULT_PRODUCT_IMAGE;
+  }
+
+  const trimmed = src.trim();
+  if (!trimmed) {
+    return DEFAULT_PRODUCT_IMAGE;
+  }
+
+  const normalized = trimmed.replace(/\\/g, "/");
+
+  if (
+    normalized.startsWith("http://") ||
+    normalized.startsWith("https://") ||
+    normalized.startsWith("data:") ||
+    normalized.startsWith("blob:")
+  ) {
+    return normalized;
+  }
+
+  if (normalized.startsWith("//")) {
+    return normalized;
+  }
+
+  if (normalized.startsWith("/")) {
+    return normalized;
+  }
+
+  return `/${normalized}`;
+};
+
+function ProductThumbnail({
+  src,
+  alt,
+  width,
+  height,
+  className,
+}: {
+  src?: string | null;
+  alt: string;
+  width: number;
+  height: number;
+  className?: string;
+}) {
+  const [imageSrc, setImageSrc] = useState(() => normalizeImageSrc(src));
+
+  useEffect(() => {
+    setImageSrc(normalizeImageSrc(src));
+  }, [src]);
+
+  return (
+    <Image
+      src={imageSrc}
+      alt={alt}
+      width={width}
+      height={height}
+      className={className}
+      onError={() => setImageSrc(DEFAULT_PRODUCT_IMAGE)}
+    />
+  );
 }
 
 export default function ProductList() {
@@ -44,15 +148,20 @@ export default function ProductList() {
   const [filters, setFilters] = useState<ProductFilters>({
     PageNumber: 1,
     PageSize: 10,
+    SortBy: "createdat",
+    SortDescending: true,
   });
    const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch data khi component mount và khi filters thay đổi
   useEffect(() => {
     getProducts(filters);
     getCategories();
     getBranches();
-  }, [filters]);
+  }, [filters, getProducts, getCategories, getBranches]);
 
   // Đồng bộ BranchId với session store
   useEffect(() => {
@@ -135,7 +244,7 @@ export default function ProductList() {
 // Transform products từ API format sang frontend format cho table
 const tableProducts = useMemo(() => {
   // Tạo map để group
-  const productMap = new Map();
+  const productMap = new Map<string, { master: Product | null; variants: Product[] }>();
   
   // Phân loại products
   products.forEach(product => {
@@ -144,10 +253,13 @@ const tableProducts = useMemo(() => {
       if (!productMap.has(product.id)) {
         productMap.set(product.id, {
           master: product,
-          variants: []
+          variants: [],
         });
       } else {
-        productMap.get(product.id).master = product;
+        const existingGroup = productMap.get(product.id);
+        if (existingGroup) {
+          existingGroup.master = product;
+        }
       }
     } else {
       // Sản phẩm variant
@@ -156,29 +268,36 @@ const tableProducts = useMemo(() => {
         const masterProduct = products.find(p => p.sku === product.parentSku && p.isMaster);
         if (masterProduct) {
           // Có master - thêm vào group của master
-          if (!productMap.has(masterProduct.id)) {
+          const masterGroup = productMap.get(masterProduct.id);
+          if (masterGroup) {
+            masterGroup.variants.push(product);
+          } else {
             productMap.set(masterProduct.id, {
               master: masterProduct,
-              variants: [product]
+              variants: [product],
             });
-          } else {
-            productMap.get(masterProduct.id).variants.push(product);
           }
         } else {
           // Không tìm thấy master - tạo group độc lập cho variant
-          if (!productMap.has(product.id)) {
+          const existingGroup = productMap.get(product.id);
+          if (existingGroup) {
+            existingGroup.variants.push(product);
+          } else {
             productMap.set(product.id, {
               master: null,
-              variants: [product]
+              variants: [product],
             });
           }
         }
       } else {
         // Variant không có parentSku - tạo group độc lập
-        if (!productMap.has(product.id)) {
+        const existingGroup = productMap.get(product.id);
+        if (existingGroup) {
+          existingGroup.variants.push(product);
+        } else {
           productMap.set(product.id, {
             master: null,
-            variants: [product]
+            variants: [product],
           });
         }
       }
@@ -188,7 +307,7 @@ const tableProducts = useMemo(() => {
   // Tạo danh sách hiển thị
   const result: TableProduct[] = [];
   
-  productMap.forEach((group) => {
+  productMap.forEach((group: { master: Product | null; variants: Product[] }) => {
     const { master, variants } = group;
     
     if (master) {
@@ -201,7 +320,7 @@ const tableProducts = useMemo(() => {
         costPrice: master.costPrice || 0,
         stockQuantity: master.stockQuantity || 0,
         createdAt: "",
-        avartarUrl: master.avartarUrl || "/default-product.png",
+        avartarUrl: normalizeImageSrc(master.avartarUrl),
         type: "product",
         group: master.categoryName || "",
         supplier: master.brand || "",
@@ -225,7 +344,7 @@ const tableProducts = useMemo(() => {
       });
     } else if (variants.length > 0) {
       // Không có master, chỉ có variants độc lập
-      variants.forEach(variant => {
+      variants.forEach((variant) => {
         result.push({
           id: variant.id,
           name: variant.name,
@@ -234,7 +353,7 @@ const tableProducts = useMemo(() => {
           costPrice: variant.costPrice || 0,
           stockQuantity: variant.stockQuantity || 0,
           createdAt: "",
-          avartarUrl: variant.avartarUrl || "/default-product.png",
+          avartarUrl: normalizeImageSrc(variant.avartarUrl),
           type: "product",
           group: variant.categoryName || "",
           supplier: variant.brand || "",
@@ -285,6 +404,8 @@ const tableProducts = useMemo(() => {
       PageNumber: 1,
       PageSize: 10,
       BranchId: activeBranchId ?? undefined,
+      SortBy: "createdat",
+      SortDescending: true,
     });
   };
 
@@ -293,7 +414,114 @@ const tableProducts = useMemo(() => {
     if (value.trim()) {
       searchProducts(value);
     } else {
-      getProducts();
+      getProducts(filters);
+    }
+  };
+
+  const handleImportClick = () => {
+    if (importing) {
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setImporting(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await api.post<ProductImportResponse>("/api/product/import", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const statusCode = response.data?.["status-code"];
+
+      if (statusCode === 200) {
+        const result = response.data?.data;
+        message.success(
+          result
+            ? `Import sản phẩm thành công. Tạo: ${result.created ?? 0}, cập nhật: ${result.updated ?? 0}`
+            : "Import sản phẩm thành công."
+        );
+
+        if (result?.errors && result.errors.length > 0) {
+          message.warning(`Có ${result.errors.length} lỗi khi import sản phẩm.`);
+          console.warn("Product import errors:", result.errors);
+        }
+
+        getProducts(filters);
+      } else {
+        const apiMessage = response.data?.message || "Import sản phẩm thất bại.";
+        message.error(apiMessage);
+      }
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { message?: string } } };
+      const errorMessage = apiError?.response?.data?.message || "Import sản phẩm thất bại.";
+      console.error("Import sản phẩm error:", error);
+      message.error(errorMessage);
+    } finally {
+      setImporting(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleExport = async () => {
+    if (exporting) {
+      return;
+    }
+
+    setExporting(true);
+
+    try {
+      const response = await api.post<ArrayBuffer>(
+        "/api/file/export",
+        {
+          "product-export-view-columns": PRODUCT_EXPORT_COLUMNS,
+        },
+        {
+          responseType: "arraybuffer",
+          headers: {
+            "Content-Type": "application/json-patch+json",
+            Accept: "application/octet-stream",
+          },
+        }
+      );
+
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      if (blob.size === 0) {
+        message.warning("File export rỗng.");
+      } else if (typeof window !== "undefined") {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const timestamp = new Date().toISOString().replace(/[:T]/g, "-").split(".")[0];
+        link.href = url;
+        link.download = `products-${timestamp}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        message.success("Xuất file sản phẩm thành công.");
+      }
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { message?: string } } };
+      const errorMessage = apiError?.response?.data?.message || "Xuất file sản phẩm thất bại.";
+      console.error("Export sản phẩm error:", error);
+      message.error(errorMessage);
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -322,7 +550,17 @@ const tableProducts = useMemo(() => {
       fixed: "left",
       render: (sku: string, record: TableProduct) => (
         <div className="flex items-center gap-2">
-          <img src={record.avartarUrl} className="w-8 h-10 rounded"/>
+          <ProductThumbnail
+            src={
+              record.isGroupMaster
+                ? record.avartarUrl
+                : record.variants?.[0]?.avartarUrl ?? record.avartarUrl ?? DEFAULT_PRODUCT_IMAGE
+            }
+            alt={record.name}
+            width={32}
+            height={40}
+            className="w-8 h-10 rounded object-cover"
+          />
           <div>
             <div className="font-medium">{sku}</div>
           </div>
@@ -476,8 +714,19 @@ const tableProducts = useMemo(() => {
               >
                 <Button type="primary">+ Tạo mới</Button>
               </Dropdown>
-              <Button>Import file</Button>
-              <Button>Export file</Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                hidden
+                onChange={handleFileChange}
+              />
+              <Button onClick={handleImportClick} loading={importing} disabled={importing}>
+                Import file
+              </Button>
+              <Button onClick={handleExport} loading={exporting} disabled={exporting}>
+                Export file
+              </Button>
             </div>
           </div>
 
@@ -511,7 +760,6 @@ const tableProducts = useMemo(() => {
               //   onExpand: handleExpand, 
               //   rowExpandable: () => true,
               // }}
-              // Trong ProductList.tsx - SỬA EXPANDABLE
 expandable={{
   expandedRowRender: (record) => {
     if (record.isGroupMaster && record.hasVariants) {
@@ -544,8 +792,28 @@ expandable={{
     // - Là master không có variants (để chỉnh sửa)
     return record.isGroupMaster || record.isOrphanVariant || record.isMaster;
   },
+  expandRowByClick: true,
+  columnWidth: 0,
+  expandIcon: () => null,
 }}
-              rowClassName="hover:bg-blue-50"
+              rowClassName={() => "hover:bg-blue-50 cursor-pointer"}
+              onRow={(record) => ({
+                onClick: (event) => {
+                  const target = event.target as HTMLElement;
+                  const tagName = target.tagName.toLowerCase();
+
+                  if (["input", "button", "a", "svg", "path"].includes(tagName)) {
+                    return;
+                  }
+
+                  const isExpanded = expandedRowKeys.includes(record.id);
+                  if (isExpanded) {
+                    setExpandedRowKeys([]);
+                  } else {
+                    setExpandedRowKeys([record.id]);
+                  }
+                },
+              })}
               sticky
             />
           )}

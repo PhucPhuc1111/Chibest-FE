@@ -605,7 +605,7 @@ export default function TransferNew() {
   return (
     <>
       {contextHolder}
-      <div className="bg-gray-50 p-4 min-h-screen">
+      <div className="bg-gray-50 min-h-screen">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1 space-y-4">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">

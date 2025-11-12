@@ -14,6 +14,7 @@ interface Props {
 }
 
 export default function ProductInfoTab({ master, variant }: Props) {
+  const [showCreateVariant, setShowCreateVariant] = useState(false);
   const data = { ...master, ...variant };
   const { deleteProduct } = useProductStore();
   
@@ -38,9 +39,9 @@ export default function ProductInfoTab({ master, variant }: Props) {
     <div className="bg-white p-3 rounded-md">
       <div className="flex gap-4">
         {/* Ảnh sản phẩm */}
-        <Image.PreviewGroup items={[data.avartarUrl || '']}>
+        <Image.PreviewGroup items={[data.avartarUrl || "/images/noimage.png"]}>
           <Image
-            src={data.avartarUrl || '/default-product.png'}
+            src={data.avartarUrl || "/images/noimage.png"}
             alt={data.name}
             width={96}
             height={112}
@@ -92,10 +93,17 @@ export default function ProductInfoTab({ master, variant }: Props) {
         <div className="flex flex-wrap gap-3">
           <Button type="primary" onClick={() => setOpenEditModal(true)}><EditOutlined /> Chỉnh sửa</Button>
           <Button>In tem mã</Button>
-          <Button>+ Thêm hàng hóa cùng loại</Button>
+          <Button onClick={() => setShowCreateVariant(true)}>+ Thêm hàng hóa cùng loại</Button>
           <Button>...</Button>
         </div>
       </div>
+
+      {/* Modal tạo variant */}
+      <ModalCreateProduct
+        open={showCreateVariant}
+        onClose={() => setShowCreateVariant(false)}
+        parentProduct={data.isMaster ? master : null}
+      />
 
       {/* Modal chỉnh sửa sản phẩm */}
       {openEditModal && (

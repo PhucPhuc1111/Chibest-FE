@@ -246,7 +246,7 @@ const handleSearch = async () => {
       ),
     },
     {
-      title: "Re-fee",
+      title: "Phí tái",
       dataIndex: "reFee",
       width: 100,
       render: (value, _, index) => (
@@ -432,7 +432,7 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
   return (
     <>
       {contextHolder}
-      <div className="bg-gray-50 p-4 min-h-screen">
+      <div className="bg-gray-50  min-h-screen">
         <div className="flex gap-4">
           {/* Left Table */}
           <div className="flex-1 bg-white rounded-md border border-gray-200">
@@ -644,7 +644,7 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
             { title: "Số lượng", dataIndex: "quantity", width: 80 },
             { title: "Đơn giá", dataIndex: "unit-price", width: 100 },
             { title: "Giảm giá", dataIndex: "discount", width: 80 },
-            { title: "Re-fee", dataIndex: "re-fee", width: 80 },
+            { title: "Phí tái", dataIndex: "re-fee", width: 80 },
           ]}
         />
       </Modal>

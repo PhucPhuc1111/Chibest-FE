@@ -126,6 +126,9 @@ export interface TableProduct {
   isMaster: boolean;
   parentSku?: string;
   variants: ProductVariant[];
+  isGroupMaster?: boolean;
+  hasVariants?: boolean;
+  isOrphanVariant?: boolean;
 }
 export interface ProductQueryParams {
   SearchTerm?: string;
