@@ -605,7 +605,10 @@ import ProductImageUploader from "../components/ProductImageUploader";
 import type { 
   ProductCreateRequest,
   ProductFormValues,
-  ModalCreateProductProps 
+  ModalCreateProductProps,
+  Product,
+  ProductVariant,
+  TableProduct
 } from "@/types/product";
 
 interface FormData {
@@ -621,6 +624,28 @@ interface FormData {
   sellingPrice: number;
   costPrice: number;
 }
+
+type ProductLegacyFields = {
+  "category-id"?: string;
+  "is-master"?: boolean;
+  "parent-sku"?: string | null;
+  "created-at"?: string;
+};
+
+const getLegacyField = <K extends keyof ProductLegacyFields>(
+  data: Product | ProductVariant | TableProduct | null,
+  field: K
+): ProductLegacyFields[K] | undefined => {
+  if (!data) {
+    return undefined;
+  }
+
+  return (data as ProductLegacyFields)[field];
+};
+
+const hasStyle = (
+  data: Product | ProductVariant | TableProduct
+): data is Product | ProductVariant => "style" in data;
 
 export default function ModalCreateProduct({
   open,
@@ -663,13 +688,14 @@ export default function ModalCreateProduct({
         setAvatarUrl(productData.avartarUrl || "");
         
         setTimeout(() => {
+          const legacyCategoryId = getLegacyField(productData, "category-id");
           const formValues: Partial<FormData> = {
             name: productData.name,
-            categoryId: (productData as any)["category-id"] || "",
+            categoryId: legacyCategoryId ?? "",
             brand: productData.brand || "",
             color: productData.color || "",
             size: productData.size || "",
-            style: productData.style || "",
+            style: hasStyle(productData) ? productData.style || "" : "",
             material: productData.material || "",
             weight: productData.weight || 0,
             status: productData.status || "Available",
@@ -788,8 +814,10 @@ export default function ModalCreateProduct({
       
       if (isUpdate && productData) {
         // Khi update: giữ nguyên giá trị từ dữ liệu gốc
-        isMasterValue = (productData as any)["is-master"] ?? productData.isMaster ?? true;
-        parentSkuValue = (productData as any)["parent-sku"] || productData.parentSku || null;
+        const legacyIsMaster = getLegacyField(productData, "is-master");
+        const legacyParentSku = getLegacyField(productData, "parent-sku");
+        isMasterValue = legacyIsMaster ?? productData.isMaster ?? true;
+        parentSkuValue = legacyParentSku ?? productData.parentSku ?? null;
       } else if (isCreatingVariant && parentProduct) {
         // Khi tạo variant mới: là master = false
         isMasterValue = false;
@@ -801,7 +829,7 @@ export default function ModalCreateProduct({
       }
 
       const productRequestData: ProductCreateRequest = {
-        id: isUpdate && productData ? productData.id : "",
+        id: isUpdate && productData ? productData.id : undefined,
         sku: finalSku,
         name: values.name,
         description: description || "",
@@ -814,7 +842,9 @@ export default function ModalCreateProduct({
         weight: values.weight || 0,
         "is-master": isMasterValue, // FIXED: Sử dụng giá trị đã xử lý
         status: values.status || "Available",
-        "created-at": isUpdate && productData ? (productData as any)["created-at"] || currentDate : currentDate,
+        "created-at": isUpdate && productData
+          ? getLegacyField(productData, "created-at") || currentDate
+          : currentDate,
         "updated-at": currentDate,
         "category-id": values.categoryId,
         "parent-sku": parentSkuValue, // FIXED: Sử dụng giá trị đã xử lý

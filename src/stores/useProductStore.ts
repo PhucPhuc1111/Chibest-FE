@@ -43,7 +43,7 @@ interface ProductActions {
   getProducts: (params?: ProductQueryParams) => Promise<void>;
   createProduct: (product: ProductCreateRequest) => Promise<boolean>;
   searchProducts: (searchTerm: string) => Promise<void>;
-  updateProduct: (product: Record<string, unknown>) => Promise<boolean>;
+  updateProduct: (product: ProductCreateRequest) => Promise<boolean>;
   deleteProduct: (id: string) => Promise<boolean>;
   updateProductStatus: (id: string, status: string) => Promise<boolean>;
   clearError: () => void;
@@ -95,20 +95,20 @@ searchProducts: async (searchTerm: string) => {
     if (response.data["status-code"] === 200) {
       const foundProducts: Product[] = response.data.data["data-list"].map((item: RawProduct) => ({
         id: item.id,
-        avartarUrl: item["avartar-url"],
+        avartarUrl: item["avartar-url"] ?? undefined,
         sku: item.sku,
         name: item.name,
         description: item.description,
         color: item.color,
         size: item.size,
-        style: item.style,
+        style: item.style ?? undefined,
         brand: item.brand,
-        material: item.material,
+        material: item.material ?? undefined,
         weight: item.weight,
         isMaster: item["is-master"],
         status: item.status,
         categoryName: item["category-name"],
-        parentSku: item["parent-sku"],
+        parentSku: item["parent-sku"] ?? undefined,
         costPrice: item["cost-price"],
         sellingPrice: item["selling-price"],
         stockQuantity: item["stock-quantity"],
@@ -134,20 +134,20 @@ searchProducts: async (searchTerm: string) => {
               if (masterResponse.data["status-code"] === 200) {
                 const masterProducts: Product[] = masterResponse.data.data["data-list"].map((item: RawProduct) => ({
                   id: item.id,
-                  avartarUrl: item["avartar-url"],
+                  avartarUrl: item["avartar-url"] ?? undefined,
                   sku: item.sku,
                   name: item.name,
                   description: item.description,
                   color: item.color,
                   size: item.size,
-                  style: item.style,
+                  style: item.style ?? undefined,
                   brand: item.brand,
-                  material: item.material,
+                  material: item.material ?? undefined,
                   weight: item.weight,
                   isMaster: item["is-master"],
                   status: item.status,
                   categoryName: item["category-name"],
-                  parentSku: item["parent-sku"],
+                  parentSku: item["parent-sku"] ?? undefined,
                   costPrice: item["cost-price"],
                   sellingPrice: item["selling-price"],
                   stockQuantity: item["stock-quantity"],
@@ -174,7 +174,7 @@ searchProducts: async (searchTerm: string) => {
         loading: false 
       });
     }
-  } catch (error: unknown) {
+  } catch {
     // ... error handling
   }
 },
@@ -203,20 +203,20 @@ searchProducts: async (searchTerm: string) => {
         // Transform data từ API format sang frontend format
         const products: Product[] = response.data.data["data-list"].map((item: RawProduct) => ({
           id: item.id,
-          avartarUrl: item["avartar-url"],
+          avartarUrl: item["avartar-url"] ?? undefined,
           sku: item.sku,
           name: item.name,
           description: item.description,
           color: item.color,
           size: item.size,
-          style: item.style,
+          style: item.style ?? undefined,
           brand: item.brand,
-          material: item.material,
+          material: item.material ?? undefined,
           weight: item.weight,
           isMaster: item["is-master"],
           status: item.status,
           categoryName: item["category-name"],
-          parentSku: item["parent-sku"],
+          parentSku: item["parent-sku"] ?? undefined,
           costPrice: item["cost-price"],
           sellingPrice: item["selling-price"],
           stockQuantity: item["stock-quantity"],
@@ -277,7 +277,7 @@ searchProducts: async (searchTerm: string) => {
   },
 
   // CẬP NHẬT SẢN PHẨM
-  updateProduct: async (product: Record<string, unknown>) => {
+  updateProduct: async (product: ProductCreateRequest) => {
     set({ loading: true, error: null });
     
     try {

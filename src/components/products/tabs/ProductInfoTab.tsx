@@ -2,7 +2,7 @@
 
 import { Button, Descriptions, Tag, Modal } from "antd";
 import { Image } from 'antd';
-import { ProductMaster, ProductVariant } from "@/types/product";
+import { ProductMaster, ProductVariant, ParentProduct } from "@/types/product";
 import { DeleteOutlined, EditOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { useProductStore } from "@/stores/useProductStore";
@@ -12,6 +12,24 @@ interface Props {
   master: ProductMaster;
   variant: ProductVariant;
 }
+
+type MasterLegacyFields = {
+  "category-id"?: string;
+  "is-master"?: boolean;
+};
+
+const toParentProduct = (product: ProductMaster): ParentProduct => {
+  const legacyFields = product as ProductMaster & MasterLegacyFields;
+
+  return {
+    id: product.id,
+    sku: product.sku ?? "",
+    name: product.name,
+    "category-id": legacyFields["category-id"] ?? "",
+    brand: product.brand ?? "",
+    "is-master": legacyFields["is-master"] ?? product.isMaster ?? true,
+  };
+};
 
 export default function ProductInfoTab({ master, variant }: Props) {
   const [showCreateVariant, setShowCreateVariant] = useState(false);
@@ -102,7 +120,7 @@ export default function ProductInfoTab({ master, variant }: Props) {
       <ModalCreateProduct
         open={showCreateVariant}
         onClose={() => setShowCreateVariant(false)}
-        parentProduct={data.isMaster ? master : null}
+        parentProduct={data.isMaster ? toParentProduct(master) : null}
       />
 
       {/* Modal chỉnh sửa sản phẩm */}
@@ -112,7 +130,7 @@ export default function ProductInfoTab({ master, variant }: Props) {
           onClose={() => setOpenEditModal(false)}
           productData={data}
           isUpdate={true}
-          parentProduct={data.isMaster ? master : null}
+          parentProduct={data.isMaster ? toParentProduct(master) : null}
         />
       )}
     </div>
