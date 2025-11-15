@@ -3,7 +3,10 @@
 import BranchSelect from "@/components/header/BranchSelect";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
+import { useRouter } from "next/navigation";
 import { BoxCubeIcon, CalenderIcon, GridIcon, PieChartIcon, DollarLineIcon } from "@/icons";
+import { ShoppingCartOutlined } from "@ant-design/icons";
+import { Button} from "antd";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState, useEffect, useRef } from "react";
@@ -13,7 +16,7 @@ const AppHeader: React.FC = () => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const { toggleSidebar, toggleMobileSidebar } = useSidebar();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+  const router = useRouter();
   const handleToggle = () => {
     if (typeof window !== "undefined" && window.innerWidth >= 1024) {
       toggleSidebar();
@@ -76,7 +79,9 @@ const AppHeader: React.FC = () => {
       ],
     },
   ];
-
+const handleSalePage = () => {
+    router.push("/sale");
+  };
   // ======== MEGA MENU COMPONENT =========
   const renderMegaMenu = (menuData: typeof hangHoaMegaMenu | typeof quanTriMegaMenu) => {
     const groupCount = menuData.length;
@@ -208,6 +213,8 @@ const AppHeader: React.FC = () => {
 
       {/* ======== NAVBAR ======== */}
       <nav className="hidden lg:flex items-center bg-amber-100 dark:text-brand-500 dark:bg-gray-900 text-sm w-full">
+        <div className="w-full flex items-center justify-between px-10">
+          <div className="flex">
         {navItems.map((nav) => (
           <div
             key={nav.name}
@@ -248,8 +255,26 @@ const AppHeader: React.FC = () => {
                 ))}
               </div>
             )}
+            
           </div>
+          
         ))}
+        </div>
+        <Button 
+          type="primary" 
+          onClick={handleSalePage} 
+          className="
+            !bg-white
+            !text-black    
+            hover:!bg-gray-50
+            hover:!text-yellow-500 
+            "
+
+        >
+           <ShoppingCartOutlined style={{ fontSize: '20px', background: '' }} />
+          Bán Hàng
+        </Button>
+         </div>
       </nav>
     </div>
   );
