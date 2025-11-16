@@ -4,8 +4,8 @@ import BranchSelect from "@/components/header/BranchSelect";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
 import { useRouter } from "next/navigation";
-import { BoxCubeIcon, CalenderIcon, GridIcon, PieChartIcon, DollarLineIcon } from "@/icons";
-import { ShoppingCartOutlined } from "@ant-design/icons";
+import { BoxCubeIcon, CalenderIcon, GridIcon, PieChartIcon  } from "@/icons";
+import { ShoppingCartOutlined,BarChartOutlined  } from "@ant-design/icons";
 import { Button} from "antd";
 import Image from "next/image";
 import Link from "next/link";
@@ -35,11 +35,11 @@ const AppHeader: React.FC = () => {
 
   // ======== MAIN NAV ITEMS =========
   const navItems: NavItem[] = [
-    { icon: <DollarLineIcon />, name: "Tổng quan", path: "/" },
+    { icon: <BarChartOutlined className="text-2xl text-[#3f3c31]"/>, name: "Tổng quan", path: "/" },
     { icon: <GridIcon />, name: "Quản trị hệ thống", megaMenu: true },
     { icon: <CalenderIcon />, name: "Hàng hóa", megaMenu: true },
-    { icon: <PieChartIcon />, name: "Đơn hàng", path: "/order/demo" },
-    { icon: <BoxCubeIcon />, name: "Khách hàng", path: "/customer/demo" },
+    { icon: <PieChartIcon />, name: "Đơn hàng", megaMenu: true},
+    { icon: <BoxCubeIcon />, name: "Khách hàng", path: "#" },
   ];
 
   // ======== HÀNG HÓA MEGA MENU DATA =========
@@ -76,6 +76,15 @@ const AppHeader: React.FC = () => {
         { name: "Chi nhánh", path: "/branch" },
         { name: "Kho", path: "/warehouse" },
         { name: "Tài khoản", path: "/account" },
+      ],
+    },
+  ];
+  const donhangMegaMenu = [
+    {
+      title: "Quản lý đơn hàng",
+      items: [
+        { name: "Hóa đơn", path: "/invoices" },
+
       ],
     },
   ];
@@ -134,6 +143,12 @@ const handleSalePage = () => {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  const megaMenuMap: Record<string, typeof hangHoaMegaMenu> = {
+    "Hàng hóa": hangHoaMegaMenu,
+    "Đơn hàng": donhangMegaMenu,
+    "Quản trị hệ thống": quanTriMegaMenu,
+  };
 
   // ======== HEADER (FULL-WIDTH, FIXED) ========
   return (
@@ -243,7 +258,7 @@ const handleSalePage = () => {
             </button>
 
             {/* Render mega menu */}
-            {nav.megaMenu && activeMenu === nav.name && renderMegaMenu(nav.name === "Hàng hóa" ? hangHoaMegaMenu : quanTriMegaMenu)}
+            {nav.megaMenu && activeMenu === nav.name && renderMegaMenu(megaMenuMap[nav.name])}
 
             {/* Normal submenu */}
             {nav.subItems && (

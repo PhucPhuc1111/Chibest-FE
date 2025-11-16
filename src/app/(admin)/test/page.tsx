@@ -155,8 +155,8 @@ const onEdit = (targetKey: TargetKey, action: 'add' | 'remove') => {
     message.success("Xóa phiếu nhập thành công!");
   }
 
-  // Tạo một component để hiển thị từng icon
-  const IconCard = ({ name, Component }) => (
+   // Tạo một component để hiển thị từng icon
+  const IconCard = ({ name, Component }: { name: string; Component: React.ComponentType<{ style: React.CSSProperties }> }) => (
     <div 
       className="p-4 border border-gray-200 rounded-lg text-center shadow-sm hover:shadow-lg transition flex flex-col items-center justify-center space-y-2"
       style={{ minWidth: 120, maxWidth: 120 }}
