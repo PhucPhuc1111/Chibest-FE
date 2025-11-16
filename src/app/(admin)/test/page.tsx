@@ -1,8 +1,7 @@
 "use client";
 
-import { message, Button } from "antd";
-import React from 'react';
-
+import { message, Button,Tabs } from "antd";
+import React, { useRef, useState } from 'react';
 // Nhập (Import) TẤT CẢ các Icons từ thư mục "@/icons"
 import {
   DownloadIcon,
@@ -59,8 +58,11 @@ import {
   ChevronUpIcon,
   ChatIcon,
 } from "@/icons"; 
-
-
+type TargetKey = React.MouseEvent | React.KeyboardEvent | string;
+const defaultPanes = Array.from({ length: 2 }).map((_, index) => {
+  const id = String(index + 1);
+  return { label: `Tab ${id}`, children: `Content of Tab Pane ${index + 1}`, key: id };
+});
 // Tập hợp các Icons thành một mảng để dễ dàng hiển thị
 const AllIcons = [
   { name: "PlusIcon", Component: PlusIcon },
@@ -119,6 +121,36 @@ const AllIcons = [
 ];
 
 export default function Page() {
+  const [activeKey, setActiveKey] = useState(defaultPanes[0].key);
+  const [items, setItems] = useState(defaultPanes);
+  const newTabIndex = useRef(0);
+
+    const onChange = (key: string) => {
+    setActiveKey(key);
+  };
+
+  const add = () => {
+    const newActiveKey = `newTab${newTabIndex.current++}`;
+    setItems([...items, { label: 'New Tab', children: 'New Tab Pane', key: newActiveKey }]);
+    setActiveKey(newActiveKey);
+  };
+
+  const remove = (targetKey: TargetKey) => {
+    const targetIndex = items.findIndex((pane) => pane.key === targetKey);
+    const newPanes = items.filter((pane) => pane.key !== targetKey);
+    if (newPanes.length && targetKey === activeKey) {
+      const { key } = newPanes[targetIndex === newPanes.length ? targetIndex - 1 : targetIndex];
+      setActiveKey(key);
+    }
+    setItems(newPanes);
+  };
+const onEdit = (targetKey: TargetKey, action: 'add' | 'remove') => {
+    if (action === 'add') {
+      add();
+    } else {
+      remove(targetKey);
+    }
+  };
   const handleTestMessage = () => {
     message.success("Xóa phiếu nhập thành công!");
   }
@@ -160,6 +192,41 @@ export default function Page() {
           <IconCard key={name} name={name} Component={Component} />
         ))}
       </div>
+
+      {/* tabs test */}
+      <div>
+      <div style={{ marginBottom: 16 }}>
+        <Button onClick={add}>ADD</Button>
+      </div>
+  <Tabs
+  hideAdd
+  onChange={onChange}
+  activeKey={activeKey}
+  type="editable-card"
+  onEdit={onEdit}
+  items={items}
+  style={{color:"white"}}
+  className="
+  bg-red-300
+    [&_.ant-tabs-nav::before]:!border-none
+    [&_.ant-tabs-content-holder]:!border-none
+
+   
+
+    [&_.ant-tabs-card>.ant-tabs-nav .ant-tabs-tab-active]:!border-none
+    [&_.ant-tabs-card>.ant-tabs-nav .ant-tabs-tab-active]:!bg-transparent
+
+    [&_.ant-tabs-card>.ant-tabs-nav .ant-tabs-nav-add]:!border-none
+    [&_.ant-tabs-card>.ant-tabs-nav .ant-tabs-nav-add]:!bg-transparent
+    [&_.ant-tabs-tab]:border-none
+  [&_.ant-tabs-tab-with-remove]:border-none
+  
+  [&_.ant-tabs-tab-with-remove]:!bg-transparent
+  [&_.ant-tabs-ink-bar]:!text-yellow-200
+  "
+  // [&_.ant-tabs-tab-with-remove]:!text-white
+/>
+    </div>
     </div>
   );
 }

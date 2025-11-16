@@ -2,10 +2,14 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Tabs, Button, Input, Card, Divider, Drawer } from 'antd';
-import { SearchOutlined, MenuOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons';
-import { useProductStore } from '@/stores/useProductStore';
+import { Tabs, Button, Input, Divider, Drawer } from 'antd';
+// import { Radio, Select } from "antd";
+import { SearchOutlined, MenuOutlined, PlusOutlined, MinusOutlined,PlusCircleOutlined,BarcodeOutlined,FilterOutlined ,UnorderedListOutlined ,PrinterFilled,ThunderboltOutlined} from '@ant-design/icons';
+import { faReply,faBagShopping,faImage,faClock } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { useProductStore  } from '@/stores/useProductStore';
 import type { Product } from '@/types/product';
+
 
 type TargetKey = React.MouseEvent | React.KeyboardEvent | string;
 
@@ -30,6 +34,10 @@ const SalePage: React.FC = () => {
   const { products, getProducts,  } = useProductStore();
   const [activeKey, setActiveKey] = useState('1');
   const [activeBottomTab, setActiveBottomTab] = useState<'quick' | 'normal'>('normal');
+  //  const [selectedPayment, setSelectedPayment] = useState<"cash" | "transfer" | "card" | "wallet">("cash");
+  // const recommendedCash = [300000, 500000, 1000000];
+  // const demoCards = ["Vietcombank", "Techcombank", "ACB"];
+
   const [tabs, setTabs] = useState<SaleTab[]>([
     { 
       label: 'Hóa đơn 1', 
@@ -173,58 +181,102 @@ const SalePage: React.FC = () => {
   // Bottom tabs items
   const bottomTabItems = [
     {
-      key: 'normal',
-      label: 'Bán thường',
-    },
-    {
       key: 'quick',
       label: 'Bán nhanh',
+      icon: <ThunderboltOutlined />
     },
+    {
+      key: 'normal',
+      label: 'Bán thường',
+      icon: <FontAwesomeIcon icon={faClock} />
+    },
+    
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 ">
       {/* Header */}
-      <div className="bg-blue-500 border-b px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-4 flex-1">
+      <div className="bg-blue-500 border-b px-2  flex items-center justify-between">
+        <div className="flex items-end gap-4 w-full ">
           {/* Search Product */}
+          <div className='py-2 w-[25%]'>
           <Input
             size="large"
             placeholder="Tìm hàng hóa (F3)"
             prefix={<SearchOutlined />}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-10"
-            style={{width:"25%"}}
+            className="w-10 "
+            // style={{width:"25%"}}
+     
+            
           />
-
-          {/* Tabs Hóa đơn */}
-          <div className="flex-1">
-            <Tabs
-              type="editable-card"
-              size="small"
-              hideAdd={false}
-              onChange={onTabChange}
-              activeKey={activeKey}
-              onEdit={onEdit}
-              items={tabs.map(tab => ({
-                label: tab.label,
-                key: tab.key,
-                closable: tabs.length > 1,
-              }))}
-              className="[&_.ant-tabs-nav-wrap]:bg-transparent [&_.ant-tabs-nav]:mb-0 [&_.ant-tabs-tab]:bg-gray-100 [&_.ant-tabs-tab]:borde [&_.ant-tabs-tab]:border-blue-500 [&_.ant-tabs-tab]:mr-1 [&_.ant-tabs-tab-active]:bg-blue-500 [&_.ant-tabs-tab-active]:border-blue-500 [&_.ant-tabs-tab-active_.ant-tabs-tab-btn]:text-white"
-            />
           </div>
+          <div className='py-2'>
+          <BarcodeOutlined style={{ fontSize: '24px', color: '#4e9cf7' }} />
+          </div>
+          {/* Tabs Hóa đơn */}
+              <div className="flex-1 -py-4 flex items-end ">
+              <Tabs
+                type="editable-card"
+                hideAdd={false}
+                addIcon={<PlusCircleOutlined className="!text-white" />}
+                activeKey={activeKey}
+                onEdit={onEdit}
+                onChange={onTabChange}
+                items={tabs.map(tab => ({
+                  label: tab.label,
+                  key: tab.key,
+                  closable: tabs.length > 1
+                }))}
+                className="
+                  [&_.ant-tabs-nav]:!mb-0
+                  [&_.ant-tabs-nav]:!border-none
+                  [&_.ant-tabs-nav-wrap]:!border-none
+                  [&_.ant-tabs-tab]:!border-none
+                  [&_.ant-tabs-tab]:!text-white
+                  [&_.ant-tabs-nav-add]:!border-none
+                  [&_.ant-tabs-ink-bar]:!hidden
+                   [&_.ant-tabs-card>.ant-tabs-nav .ant-tabs-tab]:!border-none
+    [&_.ant-tabs-card>.ant-tabs-nav .ant-tabs-tab]:!text-transparent
+                "
+              />
+            </div>
+          {/* </div> */}
         </div>
 
         {/* Menu Icon */}
-        <Button type="text" icon={<MenuOutlined />} size="large" />
+
+          <div className='mx-8 flex items-center gap-1'>
+            <Button
+              type="text"
+              // 2. Sử dụng component FontAwesomeIcon làm prop icon
+              icon={<FontAwesomeIcon icon={faBagShopping} className='!text-white !font-bold' />} 
+              size="large"
+            >
+            </Button>
+            <Button
+              type="text"
+              // 2. Sử dụng component FontAwesomeIcon làm prop icon
+              icon={<FontAwesomeIcon icon={faReply} className='!text-white !font-bold' />} 
+              size="large"
+            >
+            </Button>
+            <Button type="text" icon={<PrinterFilled className='!text-white !font-bold'/>} size="large"  />
+
+          </div>
+         
+          <p className='text-white whitespace-nowrap'>Viet le</p>
+          <Button type="text" icon={<MenuOutlined className='!text-white'/>} size="large"  />
+        
+        
+        
       </div>
 
       {/* Main Content */}
-      <div className="flex h-[calc(100vh-64px-48px)]">
+      <div className="flex h-[calc(100vh-64px-48px)] ">
         {/* Left Side - Luôn hiển thị order items */}
-        <div className="w-2/3 bg-white border-r p-4 overflow-auto">
+        <div className="w-2/3 bg-[#ecedf0] border-r p-4 overflow-auto">
           <div className="space-y-2">
             {currentTab?.orderItems.map((item) => (
               <div key={item.id} className="border border-gray-200 rounded-lg p-3 bg-white">
@@ -271,57 +323,68 @@ const SalePage: React.FC = () => {
         </div>
 
         {/* Right Side - Hiển thị khác nhau theo tab */}
-        <div className="w-1/3 bg-white p-4 flex flex-col">
+        <div className="w-1/3 bg-white p-4 flex flex-col ">
           {activeBottomTab === 'normal' ? (
             // Bán thường: Hiển thị list sản phẩm với ảnh
-            <div className="h-full overflow-auto">
+            <div className="h-full  overflow-none">
+              <div className="mb-4 gap-4 flex items-center">
+              <Input
+                  size="large"
+                  placeholder="Tìm khách hàng (F4)"
+                  prefix={<SearchOutlined />}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  
+                  // className="w-64"
+                />
+                <UnorderedListOutlined />
+                <FilterOutlined />
+                <FontAwesomeIcon icon={faImage} />
+                
+                
+
+                </div>
               <div className="grid grid-cols-3 gap-2">
                 {filteredProducts.slice(0, 30).map((product) => (
-                  <Card
-                    key={product.id}
-                    hoverable
-                    className="h-40 border border-gray-200 rounded-lg hover:border-blue-500"
-                    onClick={() => addToOrder(product)}
-                    styles={{
-                      body: { 
-                        padding: '8px',
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between'
-                      }
-                    }}
-                    cover={
-                      <div className="h-20 bg-gray-100 flex items-center justify-center overflow-hidden">
+                  <div  
+                      key={product.id}
+                      className="w-[200px] h-[83px] border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all duration-200 cursor-pointer flex bg-white"
+                      onClick={() => addToOrder(product)}
+                    >
+                      <div className="w-1/3 h-full flex items-center justify-center overflow-hidden rounded-l-lg bg-gray-100">
                         {product.avartarUrl ? (
                           <img 
                             src={product.avartarUrl} 
                             alt={product.name}
-                            className="h-full w-full object-cover"
+                            className="h-16 w-16 object-cover rounded" 
                           />
                         ) : (
-                          <div className="text-gray-400 text-xs">No Image</div>
+                          <div className="text-gray-400 text-xs text-center p-2">No Image</div>
                         )}
                       </div>
-                    }
-                  >
-                    <div className="flex-1">
-                      <div className="text-[10px] text-gray-500 mb-1 truncate">{product.sku}</div>
-                      <div className="text-xs font-medium line-clamp-2 mb-1 leading-tight">
-                        {product.name}
+                      
+                      {/* Thông tin sản phẩm - bên phải */}
+                      <div className="w-2/3 p-2 flex flex-col justify-between">
+                        {/* Tên sản phẩm */}
+                        <div className="flex-1">
+                          <div className="text-xs font-medium line-clamp-2 leading-tight mb-1">
+                            {product.name}
+                          </div>
+                        </div>
+                        
+                        {/* Giá */}
+                        <div className="text-red-600 font-bold text-sm">
+                          {(product.sellingPrice || 0).toLocaleString()}₫
+                        </div>
                       </div>
                     </div>
-                    <div className="text-red-600 font-bold text-xs">
-                      {(product.sellingPrice || 0).toLocaleString()}₫
-                    </div>
-                  </Card>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
           ) : (
             // Bán nhanh: Hiển thị thanh toán
             <>
-              {/* Customer Info */}
+            
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-medium text-gray-800">{selectedCustomer}</span>
@@ -337,7 +400,7 @@ const SalePage: React.FC = () => {
                 />
               </div>
 
-              {/* Order Summary */}
+            
               <div className="space-y-3 mb-4 flex-1">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Tổng tiền hàng</span>
@@ -382,7 +445,7 @@ const SalePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Payment Methods */}
+            
               <div className="grid grid-cols-4 gap-2 mb-4">
                 <Button 
                   type="default" 
@@ -414,7 +477,7 @@ const SalePage: React.FC = () => {
                 </Button>
               </div>
 
-              {/* Payment Button */}
+            
               <Button 
                 type="primary" 
                 size="large" 
@@ -424,25 +487,25 @@ const SalePage: React.FC = () => {
                 THANH TOÁN
               </Button>
 
-              {/* Order Note */}
+             <div className='pb-2'>
               <Input.TextArea 
                 placeholder="Ghi chú đơn hàng" 
                 rows={2}
-                className="mb-4 border-gray-300 text-sm"
+                className="mb-4  border-gray-300 text-sm"
               />
-
-              {/* Page indicator */}
-              <div className="text-center text-gray-500 text-sm">
-                1/121
               </div>
+          
+
             </>
           )}
         </div>
+
       </div>
 
       {/* Bottom Tabs */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 flex items-center justify-between">
         {/* Tabs bán thường/bán nhanh */}
+       
         <div className="flex-1">
           <Tabs
             size="small"
