@@ -1,0 +1,629 @@
+{
+  "rules": [
+    {
+      "id": "general-info",
+      "category": "I. Thông tin chung",
+      "items": [
+        {
+          "id": "internal-regulations",
+          "title": "1. Quy định nội bộ",
+          "sections": [
+            {
+              "heading": "QUY ĐỊNH NỘI BỘ CÔNG TY",
+              "subsections": [
+                {
+                  "title": "A. PHẠM VI VÀ ĐỐI TƯỢNG ÁP DỤNG",
+                  "content": [
+                    {
+                      "subTitle": "1. Đối tượng áp dụng",
+                      "description": "Quy định này áp dụng đối với tất cả nhân viên, đối tác và người liên quan đến hoạt động kinh doanh của công ty."
+                    },
+                    {
+                      "subTitle": "2. Phạm vi áp dụng",
+                      "description": "Quy định này bao gồm các nguyên tắc hoạt động chung, quy trình làm việc, tiêu chuẩn dịch vụ và các yêu cầu về chuyên môn."
+                    }
+                  ]
+                },
+                {
+                  "title": "B. NGUYÊN TẮC CƠ BẢN",
+                  "content": [
+                    {
+                      "subTitle": "1. Trung thực và minh bạch",
+                      "description": "Tất cả giao dịch, thông tin cung cấp cho khách hàng phải chính xác, không gây nhầm lẫn, không vi phạm quy định của pháp luật."
+                    },
+                    {
+                      "subTitle": "2. Tuân thủ pháp luật",
+                      "description": "Mọi hoạt động kinh doanh phải tuân thủ các quy định của pháp luật Việt Nam hiện hành, bao gồm Luật Thương mại, Luật Bảo vệ quyền lợi người tiêu dùng và các quy định liên quan khác."
+                    },
+                    {
+                      "subTitle": "3. Tôn trọng quyền lợi khách hàng",
+                      "description": "Bảo vệ thông tin cá nhân, quyền riêng tư của khách hàng, cung cấp dịch vụ chất lượng cao và xử lý khiếu nại kịp thời."
+                    },
+                    {
+                      "subTitle": "4. Bảo vệ quyền sở hữu trí tuệ",
+                      "description": "Không vi phạm bản quyền, nhãn hiệu, bí mật kinh doanh của bên thứ ba. Sử dụng hình ảnh, nội dung chỉ khi có sự cho phép của chủ sở hữu."
+                    }
+                  ]
+                },
+                {
+                  "title": "C. HÀNH VI BỊ NGHIÊM CẤM",
+                  "content": [
+                    {
+                      "subTitle": "1. Nội dung vi phạm pháp luật",
+                      "items": [
+                        "Đăng thông tin có nội dung phản động, chống phá, bài xích tôn giáo, khiêu dâm, bạo lực",
+                        "Vi phạm chủ quyền, toàn vẹn lãnh thổ, an ninh quốc gia của Việt Nam",
+                        "Tuyên truyền về thông tin bị pháp luật cấm như sử dụng ma túy, giết người, cướp của"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Nội dung gây tổn hại đến cộng đồng",
+                      "items": [
+                        "Xúc phạm, khích bác đến người khác dưới bất kỳ hình thức nào",
+                        "Đăng thông tin rác, phá rối hay làm mất uy tín của dịch vụ",
+                        "Những sản phẩm có tính chất phân biệt chủng tộc, xúc phạm đến dân tộc hoặc quốc gia"
+                      ]
+                    },
+                    {
+                      "subTitle": "3. Vi phạm quyền sở hữu và quyền cá nhân",
+                      "items": [
+                        "Vi phạm quyền sở hữu trí tuệ và/hoặc bất kỳ nhãn hiệu hàng hóa nào",
+                        "Sử dụng hình ảnh, lời nói, chữ viết cá nhân mà chưa được phép",
+                        "Tiết lộ tài liệu bí mật nhà nước, bí mật kinh doanh, bí mật cá nhân"
+                      ]
+                    },
+                    {
+                      "subTitle": "4. Hành vi gian lận và đánh lừa",
+                      "items": [
+                        "Cung cấp thông tin không đúng hoặc gây nhầm lẫn về khả năng kinh doanh",
+                        "So sánh trực tiếp về giá cả, chất lượng với đối thủ cạnh tranh",
+                        "Thay đổi nội dung tin đăng để gian lận đánh giá",
+                        "Tạo đơn ảo để gian lận tăng số lượng đơn hàng",
+                        "Tăng giá bán một cách bất hợp lý trước khuyến mãi"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "title": "D. XỬ LÝ VI PHẠM",
+                  "content": [
+                    {
+                      "subTitle": "1. Mức độ vi phạm",
+                      "description": "Vi phạm được phân chia thành 3 mức: Vi phạm nhẹ, Vi phạm vừa và Vi phạm nặng dựa trên mức độ ảnh hưởng và tính chất của hành vi."
+                    },
+                    {
+                      "subTitle": "2. Hình thức xử lý",
+                      "items": [
+                        "Vi phạm nhẹ: Cảnh cáo, yêu cầu sửa chữa, đình chỉ tạm thời hoạt động 1-3 ngày",
+                        "Vi phạm vừa: Phạt tiền, đình chỉ hoạt động 1-2 tuần, tịch thu hàng vi phạm",
+                        "Vi phạm nặng: Xóa tài khoản, báo cáo cho cơ quan chức năng, có thể khởi tố hình sự"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "orders",
+      "category": "II. Đơn hàng",
+      "items": [
+        {
+          "id": "sales",
+          "title": "1. Bán hàng",
+          "sections": [
+            {
+              "heading": "QUY ĐỊNH VỀ ĐĂNG BÁN SẢN PHẨM",
+              "subsections": [
+                {
+                  "title": "A. YÊU CẦU VỀ THÔNG TIN SẢN PHẨM",
+                  "content": [
+                    {
+                      "subTitle": "1. Hình ảnh sản phẩm",
+                      "items": [
+                        "Hình ảnh phải rõ ràng, chi tiết, thể hiện đúng tình trạng sản phẩm",
+                        "Không được đăng hình ảnh không liên quan như thông tin shop, liên hệ, thanh toán",
+                        "Phải có ít nhất một hình ảnh thật do chính người bán chụp, sản phẩm chiếm ≥40% diện tích",
+                        "Ngôn ngữ trên hình ảnh là tiếng Việt, không dùng ngôn ngữ nước ngoài",
+                        "Không chứa yếu tố ghê rợn, phản cảm, khỏa thân, khiêu gợi"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Tên sản phẩm",
+                      "items": [
+                        "Tên phải mô tả đúng hàng hóa, dịch vụ được đăng bán",
+                        "Phải là tiếng Việt có dấu, đủ ký tự, rõ nghĩa, không ký tự đặc biệt, không viết tắt",
+                        "Tên trên hình ảnh phải trùng khớp với tên sản phẩm",
+                        "Không sử dụng từ dung tục, bạo lực hay nội dung phân biệt chủng tộc",
+                        "Nếu là combo/bộ sản phẩm phải ghi rõ 'Combo/Bộ sản phẩm'",
+                        "Không chứa từ khóa fake/nhái, 'Sản phẩm hot', 'Bán chạy', 'Giảm giá', 'Miễn phí vận chuyển'"
+                      ]
+                    },
+                    {
+                      "subTitle": "3. Mô tả sản phẩm",
+                      "items": [
+                        "Cung cấp thông tin đầy đủ về chất lượng, chủng loại, xuất xứ, bao bì, nhãn hiệu",
+                        "Ghi rõ kích thước, màu sắc, chất liệu và các thông số kỹ thuật",
+                        "Nêu rõ hạn sử dụng, điều kiện bảo quản (nếu có)",
+                        "Không cung cấp thông tin sai lệch hoặc gây nhầm lẫn",
+                        "Thông tin phải thống nhất, đúng chính tả, đúng quy định"
+                      ]
+                    },
+                    {
+                      "subTitle": "4. Giá cả",
+                      "items": [
+                        "Giá niêm yết phải hợp lý so với mặt bằng giá thị trường",
+                        "Không tăng giá bất hợp lý trước khuyến mãi",
+                        "Giá không được quá cao hoặc quá thấp so với giá trị thực tế",
+                        "Phải rõ ràng về giá bán, chi phí vận chuyển và các chi phí bổ sung"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "title": "B. QUY ĐỊNH RIÊNG THEO NGÀNH HÀNG",
+                  "content": [
+                    {
+                      "subTitle": "1. Mỹ phẩm",
+                      "items": [
+                        "Hình ảnh rõ ràng: nhãn mác, bao bì, thương hiệu phải nhìn rõ",
+                        "Thông tin đầy đủ: nguồn gốc, xuất xứ, tình trạng sản phẩm, hạn sử dụng",
+                        "Không đăng bán mỹ phẩm đã qua sử dụng",
+                        "Không đăng bán sản phẩm không rõ nguồn gốc (handmade, kem trộn, v.v.)",
+                        "Sản phẩm trong nước: đăng kèm scan Phiếu công bố từ Bộ/Sở Y tế, Chứng nhận đại lý, Hóa đơn nhập hàng"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Thực phẩm chức năng/bảo vệ sức khỏe",
+                      "items": [
+                        "Cần có Xác Nhận Công Bố Phù Hợp Quy Định An Toàn Thực Phẩm",
+                        "Nếu nhập khẩu: cung cấp Chứng nhận đại lý, Hợp đồng mua bán, Hóa đơn mua hàng",
+                        "Phải có Giấy xác nhận quảng cáo của sản phẩm",
+                        "Mô tả phải nêu rõ: 'Sản phẩm này không phải là thuốc và không có tác dụng thay thế thuốc chữa bệnh'",
+                        "Thông tin phải phù hợp với nội dung giấy xác nhận quảng cáo",
+                        "Không đăng bán sản phẩm thực phẩm chức năng xách tay"
+                      ]
+                    },
+                    {
+                      "subTitle": "3. Thời trang/Đồ lót",
+                      "items": [
+                        "Ảnh đại diện nên là ảnh thực, chụp riêng sản phẩm",
+                        "Ảnh có người mẫu: sản phẩm chiếm 40-50% diện tích toàn ảnh",
+                        "Người mẫu tạo hình không gây phản cảm, ảnh không mang nội dung khiêu dâm",
+                        "Nêu rõ chất liệu, kích thước, có bảng quy đổi kích thước"
+                      ]
+                    },
+                    {
+                      "subTitle": "4. Giày dép/Phụ kiện",
+                      "items": [
+                        "Nêu rõ chất liệu, kích thước, có bảng quy đổi kích thước",
+                        "Sản phẩm lụa tơ tằm: đăng kèm chứng nhận nhãn hiệu",
+                        "Nên có ít nhất một hình ảnh thật để khách hàng dễ lựa chọn"
+                      ]
+                    },
+                    {
+                      "subTitle": "5. Thực phẩm khô",
+                      "items": [
+                        "Đăng đầy đủ: nguồn gốc, xuất xứ, hạn sử dụng",
+                        "Các mặt hàng dễ hư hỏng: lưu ý cách sử dụng, bảo quản thích hợp"
+                      ]
+                    },
+                    {
+                      "subTitle": "6. Đồ uống có cồn",
+                      "items": [
+                        "Tuân thủ Luật Phòng, chống tác hại của rượu, bia số 44/2019/QH14",
+                        "Tuân thủ Nghị định số 24/2020/NĐ-CP về điều kiện bán rượu, bia",
+                        "Sản phẩm phải có nguồn gốc hợp pháp theo giấy phép bán lẻ rượu",
+                        "Sản phẩm trên 15 độ cồn: phải đáp ứng các quy định về nhãn hàng hóa, mô tả sản phẩm",
+                        "Ghi rõ nồng độ cồn, hạn sử dụng, thiết lập đúng ngành hàng"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "title": "C. CÁC HÀNH VI KHÔNG ĐƯỢC THỰC HIỆN",
+                  "content": [
+                    {
+                      "subTitle": "1. Vi phạm pháp luật và đạo đức",
+                      "items": [
+                        "Sử dụng thông tin, hình ảnh, âm thanh vi phạm pháp luật",
+                        "Xúc phạm uy tín, danh dự, nhân phẩm tổ chức, cá nhân",
+                        "Sử dụng hình ảnh, lời nói của cá nhân mà chưa được phép"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Gian lận",
+                      "items": [
+                        "Đăng bán không đúng ngành hàng, sử dụng hình ảnh minh họa không đúng",
+                        "Thay đổi nội dung tin đăng để gian lận đánh giá",
+                        "Tạo đơn ảo để gian lận tăng số lượng đơn hàng",
+                        "Đăng lặp đi lặp lại (spam) trên cùng danh mục hoặc danh mục khác"
+                      ]
+                    },
+                    {
+                      "subTitle": "3. Cạnh tranh không lành mạnh",
+                      "items": [
+                        "So sánh trực tiếp về giá cả, chất lượng, hiệu quả với sản phẩm khác",
+                        "Có nội dung cạnh tranh không lành mạnh theo pháp luật",
+                        "Quảng cáo cho doanh nghiệp khác (hình ảnh, logo, địa chỉ, hotline, đường link)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "purchase",
+          "title": "2. Nhập hàng",
+          "sections": [
+            {
+              "heading": "QUY ĐỊNH VỀ NHẬP HÀNG",
+              "subsections": [
+                {
+                  "title": "A. QUYỀN VÀ TRÁCH NHIỆM CỦA NGƯỜI NHẬP HÀNG",
+                  "content": [
+                    {
+                      "subTitle": "1. Quyền lợi",
+                      "items": [
+                        "Có quyền lựa chọn nhà cung cấp phù hợp",
+                        "Có quyền kiểm tra chất lượng, số lượng hàng hóa trước khi nhận",
+                        "Có quyền từ chối nhận hàng không đảm bảo chất lượng",
+                        "Có quyền yêu cầu bồi thường thiệt hại nếu hàng bị lỗi, hỏng"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Trách nhiệm",
+                      "items": [
+                        "Kiểm tra kỹ lưỡng hàng hóa khi nhận, so sánh với hoá đơn, chứng thư",
+                        "Báo cáo kịp thời nếu phát hiện hàng lỗi, hỏng, không đúng số lượng",
+                        "Lưu giữ đầy đủ chứng từ, hoá đơn, giấy tờ liên quan",
+                        "Tuân thủ quy định về thời hạn thanh toán với nhà cung cấp"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "title": "B. QUY TRÌNH NHẬP HÀNG",
+                  "content": [
+                    {
+                      "subTitle": "1. Trước khi nhập hàng",
+                      "items": [
+                        "Lên danh sách hàng hóa cần nhập, dự kiến số lượng, chất lượng",
+                        "Liên hệ với nhà cung cấp, thỏa thuận giá, số lượng, thời gian giao hàng",
+                        "Xác nhận các chứng chỉ chất lượng, xuất xứ từ nhà cung cấp"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Khi nhập hàng",
+                      "items": [
+                        "Kiểm tra bao bì ngoài: có bị hư hỏng, ẩm ướt, mất niêm phong hay không",
+                        "So sánh số lượng với hoá đơn, chứng thư đi kèm",
+                        "Kiểm tra chất lượng từng sản phẩm (màu sắc, mùi, hạn sử dụng, v.v.)",
+                        "Yêu cầu hoá đơn VAT hoặc chứng từ thanh toán từ nhà cung cấp",
+                        "Ghi nhận tình trạng hàng vào sổ nhập"
+                      ]
+                    },
+                    {
+                      "subTitle": "3. Sau khi nhập hàng",
+                      "items": [
+                        "Lưu giữ đầy đủ chứng từ: hoá đơn, chứng thư, hóa đơn VAT",
+                        "Cập nhật thông tin hàng hóa vào hệ thống quản lý kho",
+                        "Sắp xếp, phân loại hàng hóa theo đúng quy định bảo quản",
+                        "Báo cáo với quản lý kho về tình trạng nhập hàng"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "title": "C. TIÊU CHUẨN CHẤT LƯỢNG HÀNG NHẬP",
+                  "content": [
+                    {
+                      "subTitle": "1. Yêu cầu chung",
+                      "items": [
+                        "Hàng hóa phải nguyên vẹn, không bị hỏng, rách, móp méo",
+                        "Hàng hóa phải đảm bảo hạn sử dụng, không quá 50% thời gian sản xuất",
+                        "Bao bì phải sạch sẽ, có nhãn mác đầy đủ, rõ ràng",
+                        "Chứng chỉ, giấy tờ xuất xứ phải hợp lệ, không làm giả, sửa chữa"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Yêu cầu cụ thể",
+                      "items": [
+                        "Các sản phẩm dễ hư hỏng: kiểm tra kỹ về mùi, màu sắc, độ ẩm, nhiệt độ",
+                        "Các sản phẩm điện tử: kiểm tra hoạt động, có bảo hành hay không",
+                        "Các sản phẩm quý hiếm: kiểm tra giấy tờ chứng thực, xuất xứ kỹ lưỡng"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "title": "D. XỬ LÝ HÀY HÓNG, LỖI PHÁT SINH",
+                  "content": [
+                    {
+                      "subTitle": "1. Báo cáo lỗi",
+                      "items": [
+                        "Phải thực hiện trong vòng 48 giờ kể từ khi nhận hàng",
+                        "Lập biên bản, chụp ảnh để làm bằng chứng",
+                        "Thông báo ngay cho nhà cung cấp và quản lý kho"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Bồi thường",
+                      "items": [
+                        "Yêu cầu nhà cung cấp cung cấp hàng thay thế trong thời hạn quy định",
+                        "Nếu không cung cấp được: yêu cầu hoàn tiền theo giá trị hàng lỗi",
+                        "Nếu phát hiện gian lận: báo cáo cho cơ quan chức năng, yêu cầu bồi thường thêm"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "returns",
+          "title": "3. Trả hàng & Trả hàng nhập",
+          "sections": [
+            {
+              "heading": "QUY ĐỊNH VỀ TRẢ HÀNG VÀ TRẢ HÀNG NHẬP",
+              "subsections": [
+                {
+                  "title": "A. TRƯỜNG HỢP ĐƯỢC PHÉP TRẢ HÀNG",
+                  "content": [
+                    {
+                      "subTitle": "1. Hàng bị lỗi, hỏng",
+                      "items": [
+                        "Hàng hóa bị vỡ, méo, rách trong quá trình vận chuyển",
+                        "Hàng hóa bị nấm mốc, ẩm ướt, không thể sử dụng",
+                        "Hàng hóa không hoạt động đúng chức năng so với mô tả",
+                        "Hàng hóa bị mất tay cầm, chân, linh kiện quan trọng"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Hàng không đúng thông tin",
+                      "items": [
+                        "Số lượng hàng nhận không trùng khớp với hoá đơn",
+                        "Chủng loại, mã, màu sắc hàng nhận không đúng với đơn hàng",
+                        "Chất lượng hàng nhận thấp hơn đã thỏa thuận",
+                        "Hàng hóa đã quá hạn sử dụng hoặc gần hết hạn"
+                      ]
+                    },
+                    {
+                      "subTitle": "3. Hàng nhập bị lỗi từ nhà cung cấp",
+                      "items": [
+                        "Nhà cung cấp gửi hàng không đúng thông tin đơn đặt hàng",
+                        "Hàng không đảm bảo chất lượng theo tiêu chuẩn đã thỏa thuận",
+                        "Hàng không có đầy đủ chứng chỉ chất lượng, xuất xứ"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "title": "B. TRƯỜNG HỢP KHÔNG ĐƯỢC PHÉP TRẢ HÀNG",
+                  "content": [
+                    {
+                      "subTitle": "1. Lỗi do khách hàng gây ra",
+                      "items": [
+                        "Hàng bị hỏng do sơ suất, không cẩn thận của khách hàng",
+                        "Hàng được sử dụng rồi muốn trả (đối với các sản phẩm như quần áo, giày, v.v.)",
+                        "Khách hàng mở sản phẩm, lấy ra từng thứ một rồi muốn trả"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Quá thời hạn trả hàng",
+                      "items": [
+                        "Trả hàng sau 30 ngày kể từ ngày nhận (hoặc theo quy định riêng)",
+                        "Không có hoá đơn, chứng từ chứng minh ngày mua, ngày nhận"
+                      ]
+                    },
+                    {
+                      "subTitle": "3. Hàng không còn nguyên vẹn",
+                      "items": [
+                        "Hàng mất nhãn mác, bao bì, hộp, túi đựng gốc",
+                        "Hàng bị dơ bẩn, bẩn, giảm giá trị thẩm mỹ",
+                        "Hàng bị cắt, vá, sửa chữa bất kỳ"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "title": "C. QUY TRÌNH TRẢ HÀNG",
+                  "content": [
+                    {
+                      "subTitle": "1. Bước 1: Yêu cầu trả hàng",
+                      "items": [
+                        "Khách hàng phải thực hiện yêu cầu trong vòng 7 ngày kể từ khi phát hiện lỗi",
+                        "Cung cấp hoá đơn, chứng từ, ảnh chứng minh lỗi của hàng hóa",
+                        "Mô tả rõ ràng lý do trả hàng, mức độ hỏng hóc"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Bước 2: Kiểm tra, xác nhận",
+                      "items": [
+                        "Công ty kiểm tra hàng hóa trả về",
+                        "Xác nhận lỗi là do công ty gây ra hay do khách hàng gây ra",
+                        "Thông báo kết quả kiểm tra cho khách hàng trong vòng 3 ngày"
+                      ]
+                    },
+                    {
+                      "subTitle": "3. Bước 3: Xử lý",
+                      "items": [
+                        "Nếu lỗi do công ty: hoàn tiền 100% hoặc trao đổi hàng mới",
+                        "Nếu lỗi do khách hàng: từ chối yêu cầu, hướng dẫn khách hàng bảo quản đúng cách",
+                        "Nếu lỗi chung: thỏa thuận tỷ lệ hoàn tiền (có thể 50%, 70%, v.v.)"
+                      ]
+                    }
+                    ]
+                  
+                },
+                {
+                  "title": "D. QUY ĐỊNH VỀ TRẢ HÀNG NHẬP",
+                  "content": [
+                    {
+                      "subTitle": "1. Điều kiện trả hàng nhập",
+                      "items": [
+                        "Hàng nhập bị lỗi, hỏng do nhà cung cấp gây ra",
+                        "Hàng không đúng thông tin đơn đặt hàng (số lượng, chủng loại, chất lượng)",
+                        "Hàng bị hư hại trong quá trình vận chuyển từ nhà cung cấp"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Quy trình trả hàng nhập",
+                      "items": [
+                        "Lập biên bản bàn giao, ghi rõ số lượng, tình trạng hàng trả",
+                        "Thông báo cho nhà cung cấp trong vòng 48 giờ",
+                        "Gửi hoá đơn, chứng từ kèm theo hàng trả",
+                        "Yêu cầu nhà cung cấp xác nhận nhận hàng trả lại"
+                      ]
+                    },
+                    {
+                      "subTitle": "3. Bồi thường",
+                      "items": [
+                        "Yêu cầu nhà cung cấp cung cấp hàng thay thế trong thời hạn quy định",
+                        "Nếu không thể thay thế: yêu cầu hoàn tiền đầy đủ hoặc chiết khấu giá"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "customer-care",
+      "category": "III. Chăm sóc khách hàng",
+      "items": [
+        {
+          "id": "customer-benefits",
+          "title": "1. Ưu đãi khách hàng",
+          "sections": [
+            {
+              "heading": "QUY ĐỊNH VỀ ƯU ĐÃI VÀ KHUYẾN MÃI CHO KHÁCH HÀNG",
+              "subsections": [
+                {
+                  "title": "A. HÌNH THỨC KHUYẾN MÃI",
+                  "content": [
+                    {
+                      "subTitle": "1. Giảm giá trực tiếp",
+                      "items": [
+                        "Giảm giá theo phần trăm (VD: giảm 10%, 20%)",
+                        "Giảm giá theo số tiền cụ thể (VD: giảm 50,000 VNĐ)",
+                        "Phù hợp với quy định về giảm giá không bất hợp lý"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Khuyến mãi bộ sản phẩm",
+                      "items": [
+                        "Bán kèm sản phẩm thứ hai với giá rẻ hơn",
+                        "Mua 2 tặng 1, mua 3 tặng 1, v.v.",
+                        "Combo sản phẩm với giá ưu đãi so với mua lẻ"
+                      ]
+                    },
+                    {
+                      "subTitle": "3. Khuyến mãi khác",
+                      "items": [
+                        "Miễn phí vận chuyển cho đơn hàng từ giá trị nhất định",
+                        "Tặng voucher, điểm tích lũy cho khách hàng",
+                        "Chương trình hội viên, khách hàng thân thiết với ưu đãi đặc biệt",
+                        "Hoàn tiền (cashback), tặng bằng hình thức khác"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "title": "B. ĐIỀU KIỆN KHUYẾN MÃI",
+                  "content": [
+                    {
+                      "subTitle": "1. Giới hạn áp dụng",
+                      "items": [
+                        "Khuyến mãi chỉ áp dụng cho các sản phẩm được phép",
+                        "Không áp dụng khuyến mãi trên các sản phẩm thua lỗ, tồn kho lâu ngày",
+                        "Có thể giới hạn số lượng khách hàng, số lượng sản phẩm khuyến mãi"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Thời gian áp dụng",
+                      "items": [
+                        "Phải ghi rõ ngày bắt đầu, ngày kết thúc khuyến mãi",
+                        "Khuyến mãi phải được thông báo trước ít nhất 7 ngày",
+                        "Không được kéo dài hoặc cắt ngắn khuyến mãi một cách bất thường"
+                      ]
+                    },
+                    {
+                      "subTitle": "3. Mô tả khuyến mãi",
+                      "items": [
+                        "Thông tin khuyến mãi phải rõ ràng, dễ hiểu, không gây nhầm lẫn",
+                        "Mô tả chi tiết tỷ lệ giảm giá, điều kiện áp dụng",
+                        "Nêu rõ các sản phẩm nào được áp dụng khuyến mãi"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "title": "C. QUYỀN VÀ TRÁCH NHIỆM KHI KHUYẾN MÃI",
+                  "content": [
+                    {
+                      "subTitle": "1. Quyền của khách hàng",
+                      "items": [
+                        "Được hưởng khuyến mãi đầy đủ theo thông báo",
+                        "Không bị tăng giá trước khuyến mãi để làm cho khuyến mãi không có giá trị",
+                        "Được từ chối nếu khuyến mãi gây tổn thất cho khách hàng"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Trách nhiệm của công ty",
+                      "items": [
+                        "Thực hiện khuyến mãi đúng như thông báo",
+                        "Không tăng giá bất hợp lý trước khuyến mãi",
+                        "Lưu giữ bằng chứng về khuyến mãi (quảng cáo, hoá đơn, v.v.)",
+                        "Nếu lỗi, sẵn sàng bồi thường cho khách hàng"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "title": "D. CHƯƠNG TRÌNH KHÁCH HÀNG THÂN THIẾT",
+                  "content": [
+                    {
+                      "subTitle": "1. Điều kiện tham gia",
+                      "items": [
+                        "Khách hàng phải có tài khoản hợp lệ trên hệ thống",
+                        "Đạt giá trị mua hàng nhất định trong khoảng thời gian quy định",
+                        "Có thể yêu cầu cung cấp thông tin liên hệ, địa chỉ"
+                      ]
+                    },
+                    {
+                      "subTitle": "2. Quyền lợi",
+                      "items": [
+                        "Giảm giá đặc biệt cho khách hàng hạng vàng, hạng kim cương, v.v.",
+                        "Tích lũy điểm thưởng, có thể đổi lấy sản phẩm, voucher",
+                        "Được ưu tiên thông tin về sản phẩm mới, sự kiện đặc biệt",
+                        "Hỗ trợ khách hàng ưu tiên, hot-line riêng"
+                      ]
+                    },
+                    {
+                      "subTitle": "3. Thời hạn áp dụng",
+                      "items": [
+                        "Thẻ khách hàng thân thiết có thời hạn sử dụng (VD: 1 năm)",
+                        "Cần gia hạn hàng năm để tiếp tục sử dụng",
+                        "Nếu không sử dụng trong 12 tháng, sẽ bị xóa thẻ"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

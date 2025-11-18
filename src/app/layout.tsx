@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body className={`${beVietnam.className} dark:bg-gray-900`}>
+      <body className={`${beVietnam.className} dark:bg-gray-900 ` }>
         <ThemeProvider>
           <SidebarProvider>
             <AuthCheck>{children}</AuthCheck>
