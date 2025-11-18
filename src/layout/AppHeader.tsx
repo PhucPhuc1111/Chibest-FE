@@ -4,7 +4,7 @@ import BranchSelect from "@/components/header/BranchSelect";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
 import { useRouter } from "next/navigation";
-import { BoxCubeIcon, CalenderIcon, GridIcon, PieChartIcon  } from "@/icons";
+import {  CalenderIcon, GridIcon, PieChartIcon  } from "@/icons";
 import { ShoppingCartOutlined,BarChartOutlined  } from "@ant-design/icons";
 import { Button} from "antd";
 import Image from "next/image";
@@ -39,7 +39,7 @@ const AppHeader: React.FC = () => {
     { icon: <GridIcon />, name: "Quản trị hệ thống", megaMenu: true },
     { icon: <CalenderIcon />, name: "Hàng hóa", megaMenu: true },
     { icon: <PieChartIcon />, name: "Đơn hàng", megaMenu: true},
-    { icon: <BoxCubeIcon />, name: "Khách hàng", path: "#" },
+    // { icon: <BoxCubeIcon />, name: "Khách hàng", path: "#" },
   ];
 
   // ======== HÀNG HÓA MEGA MENU DATA =========
@@ -76,6 +76,7 @@ const AppHeader: React.FC = () => {
         { name: "Chi nhánh", path: "/branch" },
         { name: "Kho", path: "/warehouse" },
         { name: "Tài khoản", path: "/account" },
+        { name: "Quy định", path: "/rules" },
       ],
     },
   ];
@@ -84,7 +85,8 @@ const AppHeader: React.FC = () => {
       title: "Quản lý đơn hàng",
       items: [
         { name: "Hóa đơn", path: "/invoices" },
-
+        
+           
       ],
     },
   ];
