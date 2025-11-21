@@ -350,7 +350,7 @@ export default function SupplierList() {
                 });
               }}
               scroll={{ 
-                x: isMobile ? 500 : 1200,
+                x: isMobile ? 500 : 800,
                 y: 600 
               }}
               expandable={{

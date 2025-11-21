@@ -4,7 +4,7 @@ import BranchSelect from "@/components/header/BranchSelect";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
 import { useRouter } from "next/navigation";
-import {  CalenderIcon, GridIcon, PieChartIcon  } from "@/icons";
+import {  CalenderIcon, GridIcon, PieChartIcon ,GroupIcon } from "@/icons";
 import { ShoppingCartOutlined,BarChartOutlined  } from "@ant-design/icons";
 import { Button} from "antd";
 import Image from "next/image";
@@ -39,6 +39,7 @@ const AppHeader: React.FC = () => {
     { icon: <GridIcon />, name: "Quản trị hệ thống", megaMenu: true },
     { icon: <CalenderIcon />, name: "Hàng hóa", megaMenu: true },
     { icon: <PieChartIcon />, name: "Đơn hàng", megaMenu: true},
+    { icon: <GroupIcon />, name: "Nhà cung cấp", megaMenu: true},
     // { icon: <BoxCubeIcon />, name: "Khách hàng", path: "#" },
   ];
 
@@ -90,11 +91,27 @@ const AppHeader: React.FC = () => {
       ],
     },
   ];
+  const supplierMegaMenu = [
+    {
+      title: "Nhà cung cấp",
+      items: [
+        { name: "Phiếu bán hàng", path: "/salesOrder" },
+        { name: "Kế hoạch bán hàng", path: "/salesPlans" },
+        { name: "Báo cáo", path: "/" },
+        
+           
+      ],
+    },
+  ];
 const handleSalePage = () => {
     router.push("/sale");
   };
+  type MegaMenuType = typeof hangHoaMegaMenu | typeof quanTriMegaMenu | typeof donhangMegaMenu | typeof supplierMegaMenu;
+
   // ======== MEGA MENU COMPONENT =========
-  const renderMegaMenu = (menuData: typeof hangHoaMegaMenu | typeof quanTriMegaMenu) => {
+  const renderMegaMenu = (
+    menuData: typeof hangHoaMegaMenu | typeof quanTriMegaMenu | typeof donhangMegaMenu | typeof supplierMegaMenu
+  ) => {
     const groupCount = menuData.length;
     const columnClass =
       groupCount <= 1 ? "grid-cols-1" : groupCount === 2 ? "grid-cols-2" : "grid-cols-3";
@@ -146,15 +163,15 @@ const handleSalePage = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const megaMenuMap: Record<string, typeof hangHoaMegaMenu> = {
+  const megaMenuMap: Record<string, MegaMenuType> = {
     "Hàng hóa": hangHoaMegaMenu,
     "Đơn hàng": donhangMegaMenu,
     "Quản trị hệ thống": quanTriMegaMenu,
+    "Nhà cung cấp": supplierMegaMenu,
   };
 
   // ======== HEADER (FULL-WIDTH, FIXED) ========
   return (
-    // CHỈ SỬA Ở ĐÂY: sticky -> fixed, thêm inset-x-0 left-0 right-0 w-screen
     <div
       id="app-header"
       className="sticky  top-0 inset-x-0 left-0 right-0 w-screen bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 z-[60] lg:border-b"
