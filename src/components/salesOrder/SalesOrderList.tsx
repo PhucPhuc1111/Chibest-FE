@@ -5,13 +5,13 @@ import { Table, Tag, Input, Button, Select, Spin, message } from "antd";
 import type { TableProps } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import { useTransferStore } from "@/stores/useTransferStore";
+import { usePurchaseOrderStore } from "@/stores/usePurchaseOrderStore";
 import { useSessionStore } from "@/stores/useSessionStore";
-import type { TransferSummary, TransferStatus } from "@/types/transfer";
-import TransferDetail from "./TransferDetail";
+import type { PurchaseOrderSummary, PurchaseOrderStatus } from "@/types/purchaseOrder";
+import SalesOrderDetail from "./SalesOrderDetail";
 import DateFilter from "../ui/DateFilter/DateFilter";
 
-export default function TransferList() {
+export default function SalesOrderList() {
   const router = useRouter();
   const [messageApi, contextHolder] = message.useMessage();
   const {
@@ -21,7 +21,7 @@ export default function TransferList() {
     setFilters,
     resetFilters,
     filters,
-  } = useTransferStore();
+  } = usePurchaseOrderStore();
   const userBranchId = useSessionStore((state) => state.userBranchId);
   const activeBranchId = useSessionStore((state) => state.activeBranchId);
 
@@ -42,8 +42,7 @@ export default function TransferList() {
     }
   };
 
-
- const getStatusDisplayName = (status: string) => {
+  const getStatusDisplayName = (status: string) => {
     switch (status) {
       case "Draft":
         return "Nháp";
@@ -76,14 +75,14 @@ export default function TransferList() {
   }, [userBranchId, activeBranchId, filters.branchId, setFilters]);
 
   const handleCreateNew = () => {
-    router.push("/transfers/new");
+    router.push("/purchaseOrder/new");
   };
 
   const handleSearch = (value: string) => {
     setFilters({ search: value, pageIndex: 1 });
   };
 
-  const columns: TableProps<TransferSummary>["columns"] = useMemo(
+  const columns: TableProps<PurchaseOrderSummary>["columns"] = useMemo(
     () => [
       {
         title: "",
@@ -93,29 +92,23 @@ export default function TransferList() {
         render: () => <input type="checkbox" className="mx-2" />,
       },
       { 
-        title: "Mã phiếu chuyển", 
+        title: "Mã phiếu bán", 
         dataIndex: "code", 
         width: 160, 
         fixed: "left",
         render: (code: string) => code || "—"
       },
       { 
-        title: "Kho đi", 
-        dataIndex: "fromWarehouseName", 
-        width: 180,
-        render: (name: string) => name || "—"
-      },
-      { 
-        title: "Kho đến", 
-        dataIndex: "toWarehouseName", 
-        width: 180,
-        render: (name: string) => name || "—"
-      },
-      { 
         title: "Thời gian", 
         dataIndex: "time", 
         width: 180,
         render: (time: string) => time ? new Date(time).toLocaleDateString('vi-VN') : "—"
+      },
+      { 
+        title: "Nhà cung cấp", 
+        dataIndex: "supplierName", 
+        width: 240,
+        render: (name: string) => name || "—"
       },
       {
         title: "Tổng tiền",
@@ -128,7 +121,7 @@ export default function TransferList() {
         title: "Trạng thái",
         dataIndex: "status",
         width: 140,
-        render: (status: TransferStatus) => {
+        render: (status: PurchaseOrderStatus) => {
           const color = getStatusColor(status);
           const displayName = getStatusDisplayName(status);
           return <Tag color={color}>{displayName}</Tag>;
@@ -148,7 +141,7 @@ export default function TransferList() {
             <Input
               allowClear
               prefix={<SearchOutlined />}
-              placeholder="Theo mã phiếu chuyển"
+              placeholder="Theo mã phiếu nhập"
               defaultValue={filters.search}
               onPressEnter={(e) => handleSearch((e.target as HTMLInputElement).value)}
               onBlur={(e) => handleSearch(e.target.value)}
@@ -166,8 +159,9 @@ export default function TransferList() {
                 value={filters.status}
                 options={[
                   { label: "Nháp", value: "Draft" },
-                  { label: "Hoàn thành", value: "Hoàn Thành" },
-                  { label: "Đã hủy", value: "Đã Hủy" },
+                  { label: "Đã gửi", value: "Submitted" },
+                  { label: "Đã nhận", value: "Received" },
+                  { label: "Đã hủy", value: "Cancelled" },
                 ]}
                 onChange={(value) => setFilters({ status: value, pageIndex: 1 })}
               />
@@ -197,11 +191,11 @@ export default function TransferList() {
           <div className="bg-white rounded-md border border-gray-200 min-h-screen">
             <div className="flex justify-between items-center px-4 py-2 border-b">
               <div className="text-[13px] text-gray-500">
-                Tổng: <b>{list.length.toLocaleString()}</b> phiếu chuyển
+                Tổng: <b>{list.length.toLocaleString()}</b> phiếu nhập
               </div>
               <div className="flex gap-2">
                 <Button type="primary" onClick={handleCreateNew}>
-                  + Chuyển kho
+                  + Phiếu bán
                 </Button>
                 <Button>Xuất file</Button>
                 <Button>⚙️</Button>
@@ -213,7 +207,7 @@ export default function TransferList() {
                 <Spin />
               </div>
             ) : (
-              <Table<TransferSummary>
+              <Table<PurchaseOrderSummary>
                 rowKey="id"
                 columns={columns}
                 dataSource={list}
@@ -232,16 +226,14 @@ export default function TransferList() {
                 scroll={{ x: 800 }}
                 expandable={{
                   expandedRowRender: (record) => (
-                    <TransferDetail 
-                      id={record.id} 
-                      onDeleted={() => {
-                        setExpandedRowKeys([]);
-                      }}
-                      onStatusUpdated={(id, newStatus) => {
-                        // Có thể thêm logic xử lý khi status được update nếu cần
-                        console.log(`Transfer ${id} status updated to ${newStatus}`);
-                      }}
-                    />
+                    // <PurchaseOrderDetail id={record.id} />
+                     <SalesOrderDetail 
+      id={record.id} 
+      onDeleted={() => {
+        // Đơn giản là đóng tất cả expanded rows
+        setExpandedRowKeys([]);
+      }}
+    />
                   ),
                   expandRowByClick: true,
                   expandedRowKeys,

@@ -156,7 +156,7 @@ export default function PurchaseReturnList() {
 
         {/* TABLE + EXPAND DETAIL INLINE */}
         <section className="flex-1">
-          <div className="bg-white rounded-md border border-gray-200 min-h-screen">
+          <div className="bg-white rounded-md border border-gray-200 min-h-screen ">
             <div className="flex justify-between items-center px-4 py-2 border-b">
               <div className="text-[13px] text-gray-500">
                 Tổng: <b>{list.length.toLocaleString()}</b> phiếu trả
@@ -171,7 +171,7 @@ export default function PurchaseReturnList() {
             </div>
 
             {isLoading ? (
-              <div className="py-10 flex justify-center">
+              <div className="py-10 flex justify-center ">
                 <Spin />
               </div>
             ) : (
@@ -191,7 +191,10 @@ export default function PurchaseReturnList() {
                   },
                   onChange: (page, pageSize) => setFilters({ pageIndex: page, pageSize }),
                 }}
-                scroll={{ x: 1200 }}
+                scroll={{ 
+                    x: 800, 
+                   
+                  }}
                 expandable={{
                   expandedRowRender: (record) => (
                     <PurchaseReturnDetail 

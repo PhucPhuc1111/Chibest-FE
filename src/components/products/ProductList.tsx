@@ -701,8 +701,8 @@ const tableProducts = useMemo(() => {
 
       {/* Table cấp 1 */}
       <section className="flex-1">
-        <div className="bg-white rounded-md border border-gray-200 p-2">
-          <div className="flex items-center justify-between px-2 py-2">
+        <div className="bg-white rounded-md border border-gray-200 min-h-screen ">
+          <div className="flex items-center justify-between px-4 py-2">
             <div className="text-[13px] text-gray-500">
               Tổng: <b>{tableProducts.length.toLocaleString()}</b> hàng hoá
             </div>
@@ -751,7 +751,7 @@ const tableProducts = useMemo(() => {
                   });
                 }
               }}
-              scroll={{ x: 1200 }}
+              scroll={{ x: 800 }}
               // expandable={{
               // expandedRowRender: (record) => (
               //     <SubVariantTable master={record} />

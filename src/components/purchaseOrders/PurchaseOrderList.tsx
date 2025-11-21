@@ -223,7 +223,7 @@ export default function PurchaseOrderList() {
                   },
                   onChange: (page, pageSize) => setFilters({ pageIndex: page, pageSize }),
                 }}
-                scroll={{ x: 1200 }}
+                scroll={{ x: 800 }}
                 expandable={{
                   expandedRowRender: (record) => (
                     // <PurchaseOrderDetail id={record.id} />
