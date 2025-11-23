@@ -543,12 +543,12 @@ const tableProducts = useMemo(() => {
       render: () => <input type="checkbox" className="mx-2" />,
       fixed: "left",
     },
-    {
-      title: "Mã hàng",
-      dataIndex: "sku",
-      width: 180,
+     {
+      title: "",
+      dataIndex: "AvatarUrl",
+      width: 50,
       fixed: "left",
-      render: (sku: string, record: TableProduct) => (
+      render: ( _: string, record: TableProduct) => (
         <div className="flex items-center gap-2">
           <ProductThumbnail
             src={
@@ -561,11 +561,16 @@ const tableProducts = useMemo(() => {
             height={40}
             className="w-8 h-10 rounded object-cover"
           />
-          <div>
-            <div className="font-medium">{sku}</div>
-          </div>
+         
         </div>
       ),
+ 
+    },
+    {
+      title: "Mã hàng",
+      dataIndex: "sku",
+      width: 180,
+      fixed: "left",
       sorter: (a, b) => (a.sku || "").localeCompare(b.sku || ""),
     },
     {

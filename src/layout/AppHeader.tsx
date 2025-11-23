@@ -97,7 +97,7 @@ const AppHeader: React.FC = () => {
       items: [
         { name: "Phiếu bán hàng", path: "/salesOrder" },
         { name: "Kế hoạch bán hàng", path: "/salesPlans" },
-        { name: "Báo cáo", path: "/" },
+        { name: "Báo cáo", path: "/supplierReport" },
         
            
       ],
