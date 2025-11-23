@@ -3,176 +3,122 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Table, Tag, Input, Button, Select, Spin, message } from "antd";
+import { Table, Tag, Input, Button, Select, Spin, Image } from "antd";
 import type { TableProps } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
-import { useRouter } from "next/navigation";
 import SalesPlanDetail from "./SalesPlanDetail";
+import ModalCreateSalesPlan from "./modals/ModalCreateSalesPlan";
 
-// Mock data - import từ file JSON của bạn
-const mockSalesPlans = [
-  {
-    "id": "plan-001",
-    "name": "Kế hoạch Tháng 11/2025",
-    "description": "Xử lý các sản phẩm mới nhập",
-    "start-date": "2025-11-01",
-    "end-date": "2025-11-30",
-    "status": "Đang thực hiện",
-    "created-at": "2025-11-20T10:30:00Z",
-    "updated-at": "2025-11-21T15:45:00Z",
-    "created-by": "Trần Văn Quân Trị",
-    "supplier-id": "sup-001",
-    "supplier-name": "NCC Việt Phát",
-    "total-items": 5,
-    "completed-items": 2,
-    "in-progress-items": 2,
-    "pending-items": 1
-  },
-  {
-    "id": "plan-002",
-    "name": "Kế hoạch Tháng 10/2025",
-    "description": "Xử lý sản phẩm mùa thu",
-    "start-date": "2025-10-01",
-    "end-date": "2025-10-31",
-    "status": "Hoàn thành",
-    "created-at": "2025-10-15T08:00:00Z",
-    "updated-at": "2025-10-31T17:30:00Z",
-    "created-by": "Nguyễn Thị Hương",
-    "supplier-id": "sup-002",
-    "supplier-name": "NCC Hải Nam",
-    "total-items": 3,
-    "completed-items": 3,
-    "in-progress-items": 0,
-    "pending-items": 0
-  },
-  {
-    "id": "plan-003",
-    "name": "Kế hoạch Tháng 12/2025",
-    "description": "Chuẩn bị dịp Giáng sinh",
-    "start-date": "2025-12-01",
-    "end-date": "2025-12-31",
-    "status": "Chưa bắt đầu",
-    "created-at": "2025-11-15T09:00:00Z",
-    "updated-at": "2025-11-15T09:00:00Z",
-    "created-by": "Lê Minh Tuấn",
-    "supplier-id": "sup-001",
-    "supplier-name": "NCC Việt Phát",
-    "total-items": 4,
-    "completed-items": 0,
-    "in-progress-items": 0,
-    "pending-items": 4
-  },
-  {
-    "id": "plan-004",
-    "name": "Kế hoạch Quý 1/2025",
-    "description": "Xử lý hàng tồn kho đầu năm",
-    "start-date": "2025-01-01",
-    "end-date": "2025-03-31",
-    "status": "Hoàn thành",
-    "created-at": "2024-12-20T08:00:00Z",
-    "updated-at": "2025-03-31T18:00:00Z",
-    "created-by": "Phạm Văn Đạt",
-    "supplier-id": "sup-003",
-    "supplier-name": "NCC Thành Công",
-    "total-items": 8,
-    "completed-items": 8,
-    "in-progress-items": 0,
-    "pending-items": 0
-  },
-  {
-    "id": "plan-005",
-    "name": "Kế hoạch Tết Nguyên Đán",
-    "description": "Chuẩn bị hàng hóa dịp Tết",
-    "start-date": "2025-01-15",
-    "end-date": "2025-02-15",
-    "status": "Hoàn thành",
-    "created-at": "2024-12-01T07:30:00Z",
-    "updated-at": "2025-02-20T16:45:00Z",
-    "created-by": "Nguyễn Thị Hương",
-    "supplier-id": "sup-004",
-    "supplier-name": "NCC Minh Anh",
-    "total-items": 12,
-    "completed-items": 12,
-    "in-progress-items": 0,
-    "pending-items": 0
-  },
-  {
-    "id": "plan-006",
-    "name": "Kế hoạch Back to School",
-    "description": "Chuẩn bị hàng hóa mùa tựu trường",
-    "start-date": "2025-08-01",
-    "end-date": "2025-09-15",
-    "status": "Đang thực hiện",
-    "created-at": "2025-07-15T09:00:00Z",
-    "updated-at": "2025-08-20T14:30:00Z",
-    "created-by": "Hoàng Thị Lan",
-    "supplier-id": "sup-005",
-    "supplier-name": "NCC Phú Thái",
-    "total-items": 6,
-    "completed-items": 3,
-    "in-progress-items": 2,
-    "pending-items": 1
-  }
-];
+// Interface từ data JSON
+interface SalesPlanProduct {
+  id: string;
+  sku: string;
+  "product-name": string;
+  "avatar-url": string | null;
+  "sample-type": string;
+  "delivery-date": string;
+  "sample-quantity": number;
+  "sample-quantity-description": string;
+  "total-quantity": number;
+  "finalize-date": string;
+  status: string;
+  notes: string;
+  "supplier-name": string;
+  "cost-price": number;
+  "selling-price": number;
+  "stock-quantity"?: number;
+  "brand"?: string;
+  "inventory-location"?: string;
+  "weight"?: number;
+}
+
+interface SalesPlanDataResponse {
+  "status-code": number;
+  message: string;
+  data: {
+    "page-index": number;
+    "page-size": number;
+    "total-count": number;
+    "total-page": number;
+    "data-list": SalesPlanProduct[];
+  };
+}
 
 export default function SalesPlanList() {
-  const router = useRouter();
-  const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(false);
-  const [plans, setPlans] = useState<any[]>([]);
+  const [products, setProducts] = useState<SalesPlanProduct[]>([]);
   const [filters, setFilters] = useState({
     search: "",
-    status: "",
+    sampleType: "",
+    supplier: "",
     pageIndex: 1,
     pageSize: 15
   });
 
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<SalesPlanProduct | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      // Simulate API call
-      setTimeout(() => {
-        setPlans(mockSalesPlans);
+      try {
+        // Fetch data từ file JSON
+        const response = await fetch('/data/salesPlanData.json');
+        const data: SalesPlanDataResponse = await response.json();
+        
+        if (data["status-code"] === 200) {
+          setProducts(data.data["data-list"]);
+        } else {
+          console.error('Failed to load data:', data.message);
+        }
+      } catch (error) {
+        console.error('Error loading sales plan data:', error);
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
     };
     loadData();
   }, [filters]);
-
-  const handleCreateNew = () => {
-    router.push("/salesPlans/new");
-  };
 
   const handleSearch = (value: string) => {
     setFilters(prev => ({ ...prev, search: value, pageIndex: 1 }));
   };
 
-  const handleStatusChange = (value: string) => {
-    setFilters(prev => ({ ...prev, status: value, pageIndex: 1 }));
+  const handleSampleTypeChange = (value: string) => {
+    setFilters(prev => ({ ...prev, sampleType: value, pageIndex: 1 }));
+  };
+
+  const handleSupplierChange = (value: string) => {
+    setFilters(prev => ({ ...prev, supplier: value, pageIndex: 1 }));
   };
 
   const resetFilters = () => {
     setFilters({
       search: "",
-      status: "",
+      sampleType: "",
+      supplier: "",
       pageIndex: 1,
       pageSize: 15
     });
   };
 
-  const getStatusColor = (status: string) => {
-    const colorMap: { [key: string]: string } = {
-      "Hoàn thành": "green",
-      "Đang thực hiện": "blue", 
-      "Chưa bắt đầu": "orange",
-      "Tạm dừng": "red"
-    };
-    return colorMap[status] || "default";
+  const handleEdit = (product: SalesPlanProduct) => {
+    setEditingProduct(product);
+    setOpenCreateModal(true);
   };
 
-  const columns: TableProps<any>["columns"] = useMemo(
+  const handleCreateNew = () => {
+    setEditingProduct(null);
+    setOpenCreateModal(true);
+  };
+
+  const handleModalClose = () => {
+    setOpenCreateModal(false);
+    setEditingProduct(null);
+  };
+
+  const columns: TableProps<SalesPlanProduct>["columns"] = useMemo(
     () => [
       {
         title: "",
@@ -181,103 +127,139 @@ export default function SalesPlanList() {
         fixed: "left",
         render: () => <input type="checkbox" className="mx-2" />,
       },
-      { 
-        title: "Mã kế hoạch", 
-        dataIndex: "id", 
-        width: 140, 
+      {
+        title: "",
+        dataIndex: "avatar-url",
+        width: 40,
         fixed: "left",
-        render: (id: string) => id || "—"
+        render: (avatarUrl: string | null, record: SalesPlanProduct) => (
+          <div className="flex items-center justify-center">
+            <Image
+              width={40}
+              height={40}
+              src={avatarUrl || "/images/noimage.png"}
+              alt={record["product-name"]}
+              className="rounded object-cover"
+              fallback="/images/noimage.png"
+              preview={false}
+            />
+          </div>
+        ),
       },
       { 
-        title: "Tên kế hoạch", 
-        dataIndex: "name", 
-        width: 200,
+        title: "Mã SKU", 
+        dataIndex: "sku", 
+        width: 100,
+        fixed: "left",
+        render: (sku: string) => sku || "—"
+      },
+      { 
+        title: "Tên sản phẩm", 
+        dataIndex: "product-name", 
+        width: 180,
         render: (name: string) => name || "—"
       },
       { 
-        title: "Nhà cung cấp", 
-        dataIndex: "supplier-name", 
-        width: 150,
-        render: (supplier: string) => supplier || "—"
+        title: "Mẫu sống", 
+        dataIndex: "sample-type", 
+        width: 80,
+        render: (sampleType: string) => (
+          <Tag color={
+            sampleType === "Hàng tái" ? "blue" :
+            sampleType === "Mẫu hình" ? "green" :
+            sampleType === "Mẫu tái" ? "orange" : "purple"
+          }>
+            {sampleType}
+          </Tag>
+        )
       },
       { 
-        title: "Người tạo", 
-        dataIndex: "created-by", 
-        width: 150,
-        render: (creator: string) => creator || "—"
-      },
-      { 
-        title: "Thời gian bắt đầu", 
-        dataIndex: "start-date", 
-        width: 150,
+        title: "Ngày giao mẫu", 
+        dataIndex: "delivery-date", 
+        width: 100,
         render: (date: string) => date ? new Date(date).toLocaleDateString('vi-VN') : "—"
       },
+      // { 
+      //   title: "Số lượng mẫu", 
+      //   dataIndex: "sample-quantity", 
+      //   width: 90,
+      //   align: "center" as const,
+      //   render: (quantity: number) => quantity || 0
+      // },
+      {
+        title: "Số Lượng Mẫu",
+        dataIndex: "sample-quantity-description",
+        key: "sample-quantity-description",
+        width: 100,
+        render: (desc: string) => desc || "—"
+      },
       { 
-        title: "Thời gian kết thúc", 
-        dataIndex: "end-date", 
-        width: 150,
+        title: "Tổng số lượng", 
+        dataIndex: "total-quantity", 
+        width: 100,
+        align: "center" as const,
+        render: (quantity: number) => quantity || 0
+      },
+      { 
+        title: "Ngày chốt số lượng", 
+        dataIndex: "finalize-date", 
+        width: 100,
         render: (date: string) => date ? new Date(date).toLocaleDateString('vi-VN') : "—"
       },
-    //   {
-    //     title: "Tổng sản phẩm",
-    //     dataIndex: "total-items",
-    //     align: "center",
-    //     width: 120,
-    //     render: (total: number) => total || 0
-    //   },
-    //   {
-    //     title: "Hoàn thành",
-    //     dataIndex: "completed-items",
-    //     align: "center", 
-    //     width: 120,
-    //     render: (completed: number) => completed || 0
-    //   },
-    //   {
-    //     title: "Đang xử lý",
-    //     dataIndex: "in-progress-items",
-    //     align: "center",
-    //     width: 120,
-    //     render: (inProgress: number) => inProgress || 0
-    //   },
-    //   {
-    //     title: "Chờ xử lý", 
-    //     dataIndex: "pending-items",
-    //     align: "center",
-    //     width: 120,
-    //     render: (pending: number) => pending || 0
-    //   },
       {
         title: "Trạng thái",
         dataIndex: "status",
-        width: 140,
-        render: (status: string) => {
-          const color = getStatusColor(status);
-          return <Tag color={color}>{status}</Tag>;
-        },
+        width: 120,
+        render: (status: string) => (
+          <Tag color={status === "Unavailable" ? "red" : "green"}>
+            {status === "Unavailable" ? "Không khả dụng" : "Khả dụng"}
+          </Tag>
+        ),
+      },
+      // { 
+      //   title: "Ghi chú", 
+      //   dataIndex: "notes", 
+      //   width: 200,
+      //   ellipsis: true,
+      //   render: (notes: string) => notes || "—"
+      // },
+      { 
+        title: "Nhà cung cấp", 
+        dataIndex: "supplier-name", 
+        width: 120,
+        render: (supplier: string) => supplier || "—"
       },
     ],
     []
   );
 
-  const filteredPlans = plans.filter(plan => {
+  const filteredProducts = products.filter(product => {
     const matchesSearch = !filters.search || 
-      plan.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-      plan.id.toLowerCase().includes(filters.search.toLowerCase());
+      product["product-name"].toLowerCase().includes(filters.search.toLowerCase()) ||
+      product.sku.toLowerCase().includes(filters.search.toLowerCase());
     
-    const matchesStatus = !filters.status || plan.status === filters.status;
+    const matchesSampleType = !filters.sampleType || product["sample-type"] === filters.sampleType;
+    const matchesSupplier = !filters.supplier || product["supplier-name"] === filters.supplier;
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesSampleType && matchesSupplier;
   });
 
-  const STATUS_OPTIONS = [
-    { value: "Hoàn thành", label: "Hoàn thành" },
-    { value: "Đang thực hiện", label: "Đang thực hiện" },
-    { value: "Chưa bắt đầu", label: "Chưa bắt đầu" },
+  const SAMPLE_TYPE_OPTIONS = [
+    { value: "Hàng tái", label: "Hàng tái" },
+    { value: "Mẫu hình", label: "Mẫu hình" },
+    { value: "Mẫu tái", label: "Mẫu tái" },
+    { value: "Mẫu sống", label: "Mẫu sống" },
+  ];
+
+  const SUPPLIER_OPTIONS = [
+    { value: "NCC Phuc Le", label: "NCC Phuc Le" },
+    { value: "NCC Viet", label: "NCC Viet" },
+    { value: "NCC Hoang", label: "NCC Hoang" },
+    { value: "NCC Vlus", label: "NCC Vlus" },
   ];
 
   return (
     <>
-      {contextHolder}
       <div className="flex gap-4">
         {/* SIDEBAR FILTER */}
         <aside className="w-[300px] min-h-screen shrink-0 bg-white rounded-md border border-gray-200 p-3">
@@ -293,16 +275,29 @@ export default function SalesPlanList() {
           </div>
 
           <div className="space-y-4">
-            {/* Trạng thái */}
+            {/* Loại mẫu */}
             <div>
-              <div className="text-[13px] font-semibold mb-1">Trạng thái</div>
+              <div className="text-[13px] font-semibold mb-1">Loại mẫu</div>
               <Select
                 allowClear
                 className="w-full"
-                placeholder="Chọn trạng thái"
-                value={filters.status}
-                options={STATUS_OPTIONS}
-                onChange={handleStatusChange}
+                placeholder="Chọn loại mẫu"
+                value={filters.sampleType}
+                options={SAMPLE_TYPE_OPTIONS}
+                onChange={handleSampleTypeChange}
+              />
+            </div>
+
+            {/* Nhà cung cấp */}
+            <div>
+              <div className="text-[13px] font-semibold mb-1">Nhà cung cấp</div>
+              <Select
+                allowClear
+                className="w-full"
+                placeholder="Chọn nhà cung cấp"
+                value={filters.supplier}
+                options={SUPPLIER_OPTIONS}
+                onChange={handleSupplierChange}
               />
             </div>
 
@@ -319,7 +314,7 @@ export default function SalesPlanList() {
           <div className="bg-white rounded-md border border-gray-200 min-h-screen">
             <div className="flex justify-between items-center px-4 py-2 border-b">
               <div className="text-[13px] text-gray-500">
-                Tổng: <b>{filteredPlans.length.toLocaleString()}</b> kế hoạch
+                Tổng: <b>{filteredProducts.length.toLocaleString()}</b> sản phẩm
               </div>
               <div className="flex gap-2">
                 <Button type="primary" onClick={handleCreateNew}>
@@ -338,10 +333,10 @@ export default function SalesPlanList() {
               <Table
                 rowKey="id"
                 columns={columns}
-                dataSource={filteredPlans}
+                dataSource={filteredProducts}
                 size="middle"
                 pagination={{ 
-                  total: filteredPlans.length,
+                  total: filteredProducts.length,
                   current: filters.pageIndex,
                   pageSize: filters.pageSize,
                   showSizeChanger: true,
@@ -361,11 +356,8 @@ export default function SalesPlanList() {
                 expandable={{
                   expandedRowRender: (record) => (
                     <SalesPlanDetail 
-                      planId={record.id}
-                      onStatusUpdated={() => {
-                        // Refresh data if needed
-                        setExpandedRowKeys(prev => prev.filter(key => key !== record.id));
-                      }}
+                      product={record}
+                      onEdit={() => handleEdit(record)}
                     />
                   ),
                   expandRowByClick: true,
@@ -373,7 +365,24 @@ export default function SalesPlanList() {
                   onExpand: (expanded, record) => {
                     setExpandedRowKeys(expanded ? [record.id] : []);
                   },
+                  showExpandColumn: false, 
                 }}
+                onRow={(record) => ({
+                  onClick: (event) => {
+                    // Prevent expand when clicking on specific elements
+                    const target = event.target as HTMLElement;
+                    if (target.tagName === 'INPUT' || target.closest('button')) {
+                      return;
+                    }
+                    
+                    const isExpanded = expandedRowKeys.includes(record.id);
+                    if (isExpanded) {
+                      setExpandedRowKeys([]);
+                    } else {
+                      setExpandedRowKeys([record.id]);
+                    }
+                  },
+                })}
                 rowClassName="cursor-pointer hover:bg-blue-50"
                 sticky
               />
@@ -381,6 +390,14 @@ export default function SalesPlanList() {
           </div>
         </section>
       </div>
+
+      {/* Modal Create/Edit Sales Plan */}
+      <ModalCreateSalesPlan
+        open={openCreateModal}
+        onClose={handleModalClose}
+        productData={editingProduct}
+        isUpdate={!!editingProduct}
+      />
     </>
   );
 }

@@ -46,6 +46,7 @@
     "react-dropzone": "^14.3.5",
     "react-highlight-words": "^0.21.0",
     "react-hot-toast": "^2.6.0",
+    "recharts": "^3.5.0",
     "swiper": "^11.2.0",
     "tailwind-merge": "^2.6.0",
     "tailwindcss": "^4.1.14",

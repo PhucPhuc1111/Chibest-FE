@@ -1,577 +1,188 @@
-// app/sales-plans/new/page.tsx
+// src/components/salesPlans/SalesPlanNew.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Table, 
-  Input, 
-  Button, 
-  Card, 
-  Tag, 
-  Select, 
-  DatePicker, 
-  Form, 
-  message, 
-  Spin,
-  Image,
-  Space
-} from "antd";
+import { Table, Tag, Image, Button, Spin } from "antd";
 import type { TableProps } from "antd";
-import { useRouter } from "next/navigation";
-import { SearchOutlined, PlusOutlined, DeleteOutlined } from "@ant-design/icons";
+import ModalCreateSalesPlan from "./modals/ModalCreateSalesPlan";
 
-// Mock data cho sản phẩm unavailable
-const mockUnavailableProducts = [
-  {
-    id: "prod-001",
-    sku: "HH000009",
-    name: "Thịt bò khô 30g - Lỗi bao bì",
-    avatar: "https://cdn2-retail-images.kiotviet.vn/2025/11/03/shopledaihanh/78154db5ae074a3fbaf7c47bbdfff08c.jpg",
-    category: "Thực Phẩm",
-    costPrice: 48000,
-    sellingPrice: 65000,
-    currentStock: 50,
-    reason: "Bao bì rách, không đảm bảo vệ sinh",
-    status: "unavailable",
-    createdDate: "2025-11-20"
-  },
-  {
-    id: "prod-002", 
-    sku: "HH000011",
-    name: "Phở bò phố cổ - Hết hạn",
-    avatar: null,
-    category: "Thực Phẩm",
-    costPrice: 25000,
-    sellingPrice: 42000,
-    currentStock: 100,
-    reason: "Sắp hết hạn sử dụng",
-    status: "unavailable",
-    createdDate: "2025-11-19"
-  },
-  {
-    id: "prod-003",
-    sku: "HH000015", 
-    name: "Kem dưỡng da Johnson xanh - Lỗi in ấn",
-    avatar: "https://cdn2-retail-images.kiotviet.vn/2025/11/07/shopledaihanh/c1a6c327e8c741ed83b0aa62ced64a2f.jpg",
-    category: "Mỹ Phẩm",
-    costPrice: 10000,
-    sellingPrice: 35000,
-    currentStock: 200,
-    reason: "Nhãn mác in sai thông tin",
-    status: "unavailable", 
-    createdDate: "2025-11-18"
-  },
-  {
-    id: "prod-004",
-    sku: "HH000016",
-    name: "Kem dưỡng da Johnson đỏ - Trầy xước",
-    avatar: null,
-    category: "Mỹ Phẩm", 
-    costPrice: 1000,
-    sellingPrice: 5000,
-    currentStock: 500,
-    reason: "Vỏ hộp bị trầy xước",
-    status: "unavailable",
-    createdDate: "2025-11-17"
-  },
-  {
-    id: "prod-005",
-    sku: "HH000023", 
-    name: "Yếm váy jean túi nắp - Lỗi đường may",
-    avatar: "https://cdn2-retail-images.kiotviet.vn/2025/11/03/shopledaihanh/78154db5ae074a3fbaf7c47bbdfff08c.jpg",
-    category: "Thời Trang",
-    costPrice: 80000,
-    sellingPrice: 120000,
-    currentStock: 30,
-    reason: "Đường may bị lỗi, dễ bung chỉ",
-    status: "unavailable",
-    createdDate: "2025-11-16"
-  },
-  {
-    id: "prod-006",
-    sku: "HH000025",
-    name: "Set áo 2 dây dù viền bèo - Màu lỗi",
-    avatar: "https://cdn2-retail-images.kiotviet.vn/2025/11/07/shopledaihanh/c1a6c327e8c741ed83b0aa62ced64a2f.jpg",
-    category: "Thời Trang",
-    costPrice: 80000,
-    sellingPrice: 110000, 
-    currentStock: 75,
-    reason: "Màu sắc không đúng với mẫu",
-    status: "unavailable",
-    createdDate: "2025-11-15"
-  }
-];
-
-interface SelectedProduct {
+// Interface từ data JSON
+interface SalesPlanProduct {
   id: string;
   sku: string;
-  name: string;
-  avatar: string | null;
-  category: string;
-  costPrice: number;
-  sellingPrice: number;
-  currentStock: number;
-  reason: string;
-  plannedQuantity: number;
-  dispositionPlan: string;
+  "product-name": string;
+  "avatar-url": string | null;
+  "sample-type": string;
+  "delivery-date": string;
+  "sample-quantity": number;
+  "total-quantity": number;
+  "finalize-date": string;
+  status: string;
   notes: string;
+  "supplier-name": string;
+  "cost-price": number;
+  "selling-price": number;
+  "stock-quantity"?: number;
+  "brand"?: string;
+  "inventory-location"?: string;
+  "weight"?: number;
+}
+
+interface SalesPlanDataResponse {
+  "status-code": number;
+  message: string;
+  data: {
+    "page-index": number;
+    "page-size": number;
+    "total-count": number;
+    "total-page": number;
+    "data-list": SalesPlanProduct[];
+  };
 }
 
 export default function SalesPlanNew() {
-  const router = useRouter();
-  const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(false);
-  const [products, setProducts] = useState<any[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-
-  const [form] = Form.useForm();
+  const [products, setProducts] = useState<SalesPlanProduct[]>([]);
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<SalesPlanProduct | null>(null);
 
   useEffect(() => {
-    // Simulate API call
-    setLoading(true);
-    setTimeout(() => {
-      setProducts(mockUnavailableProducts);
-      setLoading(false);
-    }, 1000);
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        // Fetch data từ file JSON
+        const response = await fetch('/data/salesPlanData.json');
+        const data: SalesPlanDataResponse = await response.json();
+        
+        if (data["status-code"] === 200) {
+          setProducts(data.data["data-list"]);
+        } else {
+          console.error('Failed to load data:', data.message);
+        }
+      } catch (error) {
+        console.error('Error loading sales plan data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
-  const handleAddProduct = (product: any) => {
-    // Check if product already selected
-    if (selectedProducts.find(p => p.id === product.id)) {
-      messageApi.warning("Sản phẩm đã được chọn");
-      return;
-    }
-
-    const selectedProduct: SelectedProduct = {
-      ...product,
-      plannedQuantity: 1,
-      dispositionPlan: "discount",
-      notes: ""
-    };
-
-    setSelectedProducts(prev => [...prev, selectedProduct]);
-    messageApi.success("Đã thêm sản phẩm vào kế hoạch");
+  const handleEdit = (product: SalesPlanProduct) => {
+    setEditingProduct(product);
+    setOpenCreateModal(true);
   };
 
-  const handleRemoveProduct = (productId: string) => {
-    setSelectedProducts(prev => prev.filter(p => p.id !== productId));
-    messageApi.success("Đã xóa sản phẩm khỏi kế hoạch");
+  const handleCreateNew = () => {
+    setEditingProduct(null);
+    setOpenCreateModal(true);
   };
 
-  const handleQuantityChange = (productId: string, quantity: number) => {
-    setSelectedProducts(prev => 
-      prev.map(p => p.id === productId ? { ...p, plannedQuantity: quantity } : p)
-    );
+  const handleModalClose = () => {
+    setOpenCreateModal(false);
+    setEditingProduct(null);
   };
 
-  const handleDispositionChange = (productId: string, plan: string) => {
-    setSelectedProducts(prev => 
-      prev.map(p => p.id === productId ? { ...p, dispositionPlan: plan } : p)
-    );
-  };
-
-  const handleNotesChange = (productId: string, notes: string) => {
-    setSelectedProducts(prev => 
-      prev.map(p => p.id === productId ? { ...p, notes } : p)
-    );
-  };
-
-  const handleSubmit = async (values: any) => {
-    if (selectedProducts.length === 0) {
-      messageApi.error("Vui lòng chọn ít nhất một sản phẩm");
-      return;
-    }
-
-    setLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      messageApi.success("Tạo kế hoạch bán hàng thành công!");
-      setLoading(false);
-      router.push("/salesPlans");
-    }, 2000);
-  };
-
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = !searchTerm || 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = !selectedCategory || product.category === selectedCategory;
-    
-    return matchesSearch && matchesCategory;
-  });
-
-  const categories = Array.from(new Set(products.map(p => p.category)));
-
-  const productColumns: TableProps<any>['columns'] = [
+  const columns: TableProps<SalesPlanProduct>["columns"] = [
     {
-      title: 'Hình ảnh',
-      dataIndex: 'avatar',
-      key: 'avatar',
+      title: "Hình sản phẩm",
+      dataIndex: "avatar-url",
       width: 80,
-      render: (avatar: string) => 
-        avatar ? (
-          <Image 
-            width={40} 
-            height={40} 
-            src={avatar} 
-            alt="product" 
-            style={{ objectFit: "cover" }}
+      render: (avatarUrl: string | null, record: SalesPlanProduct) => (
+        <div className="flex items-center justify-center">
+          <Image
+            width={40}
+            height={40}
+            src={avatarUrl || "/images/noimage.png"}
+            alt={record["product-name"]}
+            className="rounded object-cover"
+            fallback="/images/noimage.png"
+            preview={false}
           />
-        ) : (
-          <div className="w-10 h-10 bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
-            No Image
-          </div>
-        )
+        </div>
+      ),
     },
-    {
-      title: 'Mã SKU',
-      dataIndex: 'sku',
-      key: 'sku',
+    { 
+      title: "Mã SKU", 
+      dataIndex: "sku", 
       width: 120,
     },
-    {
-      title: 'Tên sản phẩm',
-      dataIndex: 'name',
-      key: 'name',
+    { 
+      title: "Tên sản phẩm", 
+      dataIndex: "product-name", 
       width: 200,
     },
-    {
-      title: 'Danh mục',
-      dataIndex: 'category',
-      key: 'category',
+    { 
+      title: "Loại mẫu", 
+      dataIndex: "sample-type", 
       width: 120,
+      render: (sampleType: string) => (
+        <Tag color={
+          sampleType === "Hàng tái" ? "blue" :
+          sampleType === "Mẫu hình" ? "green" :
+          sampleType === "Mẫu tái" ? "orange" : "purple"
+        }>
+          {sampleType}
+        </Tag>
+      )
+    },
+    { 
+      title: "Nhà cung cấp", 
+      dataIndex: "supplier-name", 
+      width: 150,
     },
     {
-      title: 'Tồn kho',
-      dataIndex: 'currentStock',
-      key: 'currentStock',
-      width: 100,
-      align: 'center',
-    },
-    {
-      title: 'Giá vốn',
-      dataIndex: 'costPrice',
-      key: 'costPrice',
+      title: "Trạng thái",
+      dataIndex: "status",
       width: 120,
-      render: (price: number) => price?.toLocaleString("vi-VN") + " đ",
-    },
-    {
-      title: 'Lý do',
-      dataIndex: 'reason',
-      key: 'reason',
-      width: 200,
-      render: (reason: string) => (
-        <Tag color="orange" className="text-xs">
-          {reason}
+      render: (status: string) => (
+        <Tag color={status === "Unavailable" ? "red" : "green"}>
+          {status === "Unavailable" ? "Không khả dụng" : "Khả dụng"}
         </Tag>
       ),
     },
     {
-      title: 'Thao tác',
-      key: 'action',
-      width: 100,
+      title: "Hành động",
+      key: "action",
+      width: 120,
       render: (_, record) => (
-        <Button 
-          type="primary" 
-          size="small"
-          icon={<PlusOutlined />}
-          onClick={() => handleAddProduct(record)}
-          disabled={selectedProducts.some(p => p.id === record.id)}
-        >
-          Chọn
+        <Button type="link" onClick={() => handleEdit(record)}>
+          Chỉnh sửa
         </Button>
       ),
     },
   ];
 
-  const selectedProductColumns: TableProps<SelectedProduct>['columns'] = [
-    {
-      title: 'Mã SKU',
-      dataIndex: 'sku',
-      key: 'sku',
-      width: 120,
-    },
-    {
-      title: 'Tên sản phẩm',
-      dataIndex: 'name',
-      key: 'name',
-      width: 200,
-    },
-    {
-      title: 'SL tồn',
-      dataIndex: 'currentStock',
-      key: 'currentStock',
-      width: 80,
-      align: 'center',
-    },
-    {
-      title: 'SL xử lý',
-      key: 'plannedQuantity',
-      width: 120,
-      render: (_, record) => (
-        <Input
-          type="number"
-          min={1}
-          max={record.currentStock}
-          value={record.plannedQuantity}
-          onChange={(e) => handleQuantityChange(record.id, parseInt(e.target.value) || 1)}
-          style={{ width: 80 }}
-        />
-      ),
-    },
-    {
-      title: 'Phương án xử lý',
-      key: 'dispositionPlan',
-      width: 150,
-      render: (_, record) => (
-        <Select
-          value={record.dispositionPlan}
-          onChange={(value) => handleDispositionChange(record.id, value)}
-          style={{ width: '100%' }}
-          options={[
-            { value: 'discount', label: 'Giảm giá bán' },
-            { value: 'return', label: 'Trả nhà cung cấp' },
-            { value: 'repair', label: 'Sửa chữa' },
-            { value: 'destroy', label: 'Tiêu hủy' },
-            { value: 'donate', label: 'Quyên góp' },
-          ]}
-        />
-      ),
-    },
-    {
-      title: 'Ghi chú',
-      key: 'notes',
-      width: 200,
-      render: (_, record) => (
-        <Input
-          value={record.notes}
-          onChange={(e) => handleNotesChange(record.id, e.target.value)}
-          placeholder="Ghi chú..."
-        />
-      ),
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      width: 80,
-      render: (_, record) => (
-        <Button 
-          danger
-          type="text"
-          icon={<DeleteOutlined />}
-          onClick={() => handleRemoveProduct(record.id)}
-        />
-      ),
-    },
-  ];
-
-  const getDispositionPlanLabel = (plan: string) => {
-    const planMap: { [key: string]: string } = {
-      'discount': 'Giảm giá bán',
-      'return': 'Trả NCC',
-      'repair': 'Sửa chữa',
-      'destroy': 'Tiêu hủy',
-      'donate': 'Quyên góp'
-    };
-    return planMap[plan] || plan;
-  };
-
-  const getDispositionPlanColor = (plan: string) => {
-    const colorMap: { [key: string]: string } = {
-      'discount': 'blue',
-      'return': 'orange',
-      'repair': 'purple',
-      'destroy': 'red',
-      'donate': 'green'
-    };
-    return colorMap[plan] || 'default';
-  };
-
   return (
-    <>
-      {contextHolder}
-      <div className="p-0 min-h-screen mx-auto">
-        
-          {/* <p className="text-gray-600">Chọn sản phẩm không bán được và lập kế hoạch xử lý</p> */}
-        
-
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Thông tin kế hoạch */}
-            
-
-            {/* Danh sách sản phẩm */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Sản phẩm đã chọn */}
-              {selectedProducts.length > 0 && (
-                <Card 
-                  title={`Sản phẩm đã chọn (${selectedProducts.length})`}
-                  className="border-blue-200 bg-blue-50"
-                >
-                  <Table
-                    columns={selectedProductColumns}
-                    dataSource={selectedProducts}
-                    rowKey="id"
-                    pagination={false}
-                    size="small"
-                    scroll={{ x: 800 }}
-                  />
-                </Card>
-              )}
-
-              {/* Danh sách sản phẩm unavailable */}
-              <Card 
-                title="Danh sách sản phẩm không bán được"
-                extra={
-                  <Space>
-                    <Input
-                      prefix={<SearchOutlined />}
-                      placeholder="Tìm theo mã, tên sản phẩm..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      style={{ width: 250 }}
-                    />
-                    <Select
-                      placeholder="Tất cả danh mục"
-                      value={selectedCategory}
-                      onChange={setSelectedCategory}
-                      style={{ width: 150 }}
-                      options={categories.map(cat => ({ value: cat, label: cat }))}
-                      allowClear
-                    />
-                  </Space>
-                }
-              >
-                {loading ? (
-                  <div className="py-10 text-center">
-                    <Spin />
-                  </div>
-                ) : (
-                  <Table
-                    columns={productColumns}
-                    dataSource={filteredProducts}
-                    rowKey="id"
-                    pagination={{ pageSize: 10 }}
-                    size="small"
-                    scroll={{ x: 1000 }}
-                  />
-                )}
-              </Card>
-            </div>
-            <div className="lg:col-span-1">
-              <Card title="Thông tin kế hoạch" className="sticky top-0">
-                <div className="space-y-4">
-                  <Form.Item
-                    label="Tên kế hoạch"
-                    name="name"
-                    rules={[{ required: true, message: 'Vui lòng nhập tên kế hoạch' }]}
-                  >
-                    <Input placeholder="Nhập tên kế hoạch" />
-                  </Form.Item>
-
-                  <Form.Item
-                    label="Mô tả"
-                    name="description"
-                  >
-                    <Input.TextArea 
-                      placeholder="Mô tả kế hoạch xử lý..."
-                      rows={3}
-                    />
-                  </Form.Item>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <Form.Item
-                      label="Ngày bắt đầu"
-                      name="startDate"
-                      rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu' }]}
-                    >
-                      <DatePicker 
-                        style={{ width: '100%' }}
-                        placeholder="Chọn ngày"
-                      />
-                    </Form.Item>
-
-                    <Form.Item
-                      label="Ngày kết thúc"
-                      name="endDate"
-                      rules={[{ required: true, message: 'Vui lòng chọn ngày kết thúc' }]}
-                    >
-                      <DatePicker 
-                        style={{ width: '100%' }}
-                        placeholder="Chọn ngày"
-                      />
-                    </Form.Item>
-                  </div>
-
-                  <Form.Item
-                    label="Nhà cung cấp"
-                    name="supplier"
-                  >
-                    <Select
-                      placeholder="Chọn nhà cung cấp"
-                      options={[
-                        { value: 'sup-001', label: 'NCC Việt Phát' },
-                        { value: 'sup-002', label: 'NCC Hải Nam' },
-                        { value: 'sup-003', label: 'NCC Thành Công' },
-                        { value: 'sup-004', label: 'NCC Minh Anh' },
-                      ]}
-                    />
-                  </Form.Item>
-
-                  {/* Thống kê */}
-                  <div className="border-t pt-4">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Số sản phẩm:</span>
-                        <span className="font-semibold">{selectedProducts.length}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Tổng số lượng:</span>
-                        <span className="font-semibold">
-                          {selectedProducts.reduce((sum, p) => sum + p.plannedQuantity, 0)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Tổng giá vốn:</span>
-                        <span className="font-semibold">
-                          {selectedProducts
-                            .reduce((sum, p) => sum + (p.costPrice * p.plannedQuantity), 0)
-                            .toLocaleString("vi-VN")} đ
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <Button 
-                      type="primary" 
-                      htmlType="submit" 
-                      loading={loading}
-                      className="flex-1"
-                    >
-                      Tạo kế hoạch
-                    </Button>
-                    <Button 
-                      onClick={() => router.push('/salesPlans')}
-                      className="flex-1"
-                    >
-                      Hủy
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </Form>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Kế hoạch bán hàng mới</h1>
+        <Button type="primary" onClick={handleCreateNew}>
+          + Tạo kế hoạch mới
+        </Button>
       </div>
-    </>
+
+      {loading ? (
+        <div className="py-10 flex justify-center">
+          <Spin />
+        </div>
+      ) : (
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={products}
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: 800 }}
+        />
+      )}
+
+      {/* Modal Create/Edit Sales Plan */}
+      <ModalCreateSalesPlan
+        open={openCreateModal}
+        onClose={handleModalClose}
+        productData={editingProduct}
+        isUpdate={!!editingProduct}
+      />
+    </div>
   );
 }
