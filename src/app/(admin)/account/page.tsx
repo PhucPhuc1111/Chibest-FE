@@ -166,17 +166,11 @@ export default function AccountPage() {
       render: (value: string | null) => value || 'Chưa cập nhật',
     },
     {
-      title: 'Địa chỉ',
-      dataIndex: 'address',
-      key: 'address',
-      render: (value: string | null) => value || 'Chưa cập nhật',
-    },
-    {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag color={status === 'Hoạt động' ? 'green' : 'default'}>
+        <Tag color={status === 'Active' ? 'green' : 'default'}>
           {status}
         </Tag>
       ),

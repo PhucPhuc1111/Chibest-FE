@@ -33,7 +33,7 @@ export interface PurchaseOrder {
   paid: number;
   note: string | null;
   status: PurchaseOrderStatus;
-  warehouseName: string;
+  branchName: string;
   employeeName: string;
   supplierName: string;
   payMethod?: string;
@@ -48,7 +48,7 @@ export interface CreatePurchaseOrderPayload {
   "discount-amount": number;
   "paid": number;
   "note": string;
-  "warehouse-id": string;
+  "branch-id": string;
   "employee-id": string;
   "supplier-id": string;
   "purchase-order-details": Array<{

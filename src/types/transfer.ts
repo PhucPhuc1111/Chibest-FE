@@ -49,8 +49,8 @@
 //   "discount-amount": number;
 //   "paid": number;
 //   "note": string;
-//   "from-warehouse-id": string;
-//   "to-warehouse-id": string;
+//   "from-branch-id": string;
+//   "to-branch-id": string;
 //   "employee-id": string;
 //   "transfer-order-details": Array<{
 //     "quantity": number;
@@ -64,7 +64,7 @@
 // }
 
 // export interface CreateMultiTransferPayload {
-//   "from-warehouse-id": string;
+//   "from-branch-id": string;
 //   "employee-id": string;
 //   "order-date": string;
 //   "note": string;
@@ -73,7 +73,7 @@
 //   "sub-total": number;
 //   "paid": number;
 //   destinations: Array<{
-//     "to-warehouse-id": string;
+//     "to-branch-id": string;
 //     products: Array<{
 //       "product-id": string;
 //       quantity: number;
@@ -121,8 +121,8 @@ export type TransferStatus = "Draft" | "Submitted" | "Received" | "Cancelled";
 export interface TransferSummary {
   id: string;
   code: string;
-  fromWarehouseName: string;
-  toWarehouseName: string;
+  fromBranchName: string;
+  toBranchName: string;
   time: string;
   subTotal: number;
   status: TransferStatus;
@@ -153,8 +153,8 @@ export interface Transfer {
   paid: number;
   note: string | null;
   status: TransferStatus;
-  fromWarehouseName: string;
-  toWarehouseName: string;
+  fromBranchName: string;
+  toBranchName: string;
   payMethod?: string;
   items: TransferItem[];
 }
@@ -167,8 +167,8 @@ export interface CreateTransferPayload {
   "discount-amount": number;
   "paid": number;
   "note": string;
-  "from-warehouse-id": string;
-  "to-warehouse-id": string;
+  "from-branch-id": string;
+  "to-branch-id": string;
   "employee-id": string;
   "transfer-order-details": Array<{
     "quantity": number;
@@ -182,7 +182,7 @@ export interface CreateTransferPayload {
 }
 
 export interface CreateMultiTransferPayload {
-  "from-warehouse-id": string;
+  "from-branch-id": string;
   "employee-id": string;
   "order-date": string;
   "note": string;
@@ -191,7 +191,7 @@ export interface CreateMultiTransferPayload {
   "sub-total": number;
   "paid": number;
   destinations: Array<{
-    "to-warehouse-id": string;
+    "to-branch-id": string;
     products: Array<{
       "product-id": string;
       quantity: number;

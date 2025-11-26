@@ -26,7 +26,7 @@ import {
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { usePurchaseOrderStore } from "@/stores/usePurchaseOrderStore";
-import useWarehouseStore from "@/stores/useWarehouseStore";
+import { useBranchStore } from "@/stores/useBranchStore";
 import useAccountStore from "@/stores/useAccountStore";
 import { useProductStore } from "@/stores/useProductStore";
 import type { CreatePurchaseOrderPayload } from "@/types/purchaseOrder";
@@ -69,7 +69,7 @@ export default function SalesOrderNew() {
   // Stores 
   const { createOrder, importFile, isLoading } = usePurchaseOrderStore();
   const { suppliers,  getSuppliers } = useAccountStore();
-  const {  warehouses,  getWarehouses } = useWarehouseStore();
+  const {  branches,  getBranches, loading: branchLoading } = useBranchStore();
   const { products, searchProducts } = useProductStore();
   
   // State
@@ -80,14 +80,14 @@ export default function SalesOrderNew() {
   const [importedData, setImportedData] = useState<ImportedProduct[]>([]);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
 
-  // Load suppliers and warehouses on component mount
+  // Load suppliers and branches on component mount
   useEffect(() => {
     const loadInitialData = async () => {
       await getSuppliers();
-      await getWarehouses();
+      await getBranches();
     };
     loadInitialData();
-  }, [getSuppliers, getWarehouses]);
+  }, [getSuppliers, getBranches]);
 
   // Get user info from localStorage
   const getUserInfo = () => getStoredUserInfo();
@@ -352,8 +352,8 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
         return;
       }
 
-      if (!values.warehouseId || !values.supplierId) {
-        messageApi.warning("Vui lòng chọn nhà cung cấp và kho!");
+      if (!values.branchId || !values.supplierId) {
+        messageApi.warning("Vui lòng chọn nhà cung cấp và chi nhánh!");
         return;
       }
 
@@ -375,7 +375,7 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
         "discount-amount": totalDiscount + totalReFee,
         "paid": totalAmount ,
         "note": values.note || "",
-        "warehouse-id": values.warehouseId,
+        "branch-id": values.branchId,
         "employee-id": employeeId,
         "supplier-id": values.supplierId,
         "purchase-order-details": productsList.map((p) => ({
@@ -512,14 +512,14 @@ const totalReFee = productsList.reduce((sum, p) => sum + ((p.reFee || 0) * (p.qu
               </Form.Item>
 
               <Form.Item 
-                label="Kho nhập" 
-                name="warehouseId"
-                rules={[{ required: true, message: 'Vui lòng chọn kho' }]}
+                label="Chi nhánh nhập" 
+                name="branchId"
+                rules={[{ required: true, message: 'Vui lòng chọn chi nhánh' }]}
               >
-                <Select placeholder="Chọn kho" loading={isLoading}>
-                  {warehouses.map(warehouse => (
-                    <Select.Option key={warehouse.id} value={warehouse.id}>
-                      {warehouse.name} ({warehouse.code})
+                <Select placeholder="Chọn chi nhánh" loading={branchLoading}>
+                  {branches.map(branch => (
+                    <Select.Option key={branch.id} value={branch.id}>
+                      {branch.name} ({branch.code})
                     </Select.Option>
                   ))}
                 </Select>

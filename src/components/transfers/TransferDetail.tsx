@@ -494,7 +494,7 @@ export default function TransferDetail({ id, onDeleted, onStatusUpdated }: Trans
                 )}
               </div>
               <div className="text-sm text-gray-600">
-                Kho đi: <b>{order.fromWarehouseName}</b> → Kho đến: <b>{order.toWarehouseName}</b>
+                Chi nhánh đi: <b>{order.fromBranchName}</b> → Chi nhánh đến: <b>{order.toBranchName}</b>
               </div>
             </div>
             

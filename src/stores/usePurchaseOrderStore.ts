@@ -27,7 +27,7 @@ interface RawPurchaseOrderDetail {
   paid: number;
   note: string | null;
   status: PurchaseOrderStatus;
-  "warehouse-name": string;
+  "branch-name": string;
   "employee-name": string;
   "supplier-name": string;
   "pay-method"?: string;
@@ -254,7 +254,7 @@ const transformPurchaseOrderDetail = (rawData: RawPurchaseOrderDetail): Purchase
     paid: rawData.paid,
     note: rawData.note,
     status: rawData.status,
-    warehouseName: rawData["warehouse-name"],
+    branchName: rawData["branch-name"],
     employeeName: rawData["employee-name"],
     supplierName: rawData["supplier-name"],
     payMethod: rawData["pay-method"] || "Cash",

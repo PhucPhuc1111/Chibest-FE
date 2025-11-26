@@ -17,7 +17,6 @@ export interface StockAdjustment {
   adjustmentDate: string;
   adjustmentType: string;
   branchName: string;
-  warehouseName: string;
   employeeName: string;
   approveName: string | null;
   totalValueChange: number;
@@ -59,7 +58,6 @@ export interface RawStockAdjustment {
   "adjustment-date": string;
   "adjustment-type": string;
   "branch-name": string;
-  "warehouse-name": string;
   "employee-name": string;
   "approve-name": string | null;
   "total-value-change": number;
@@ -87,7 +85,6 @@ export interface CreateStockAdjustmentRequest {
   "adjustment-date": string;
   "adjustment-type": string;
   "branch-id": string;
-  "warehouse-id": string;
   "employee-id": string;
   status: string;
   note: string | null;

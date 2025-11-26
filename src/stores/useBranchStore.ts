@@ -9,10 +9,8 @@ interface Branch {
   address: string;
   "phone-number": string;
   "is-franchise": boolean;
-  "owner-name": string | null;
   status: string;
   "user-count": number;
-  "warehouse-count": number;
 }
 
 interface BranchState {

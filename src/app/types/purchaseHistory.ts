@@ -7,6 +7,6 @@ export interface PurchaseHistoryType {
   PurchaseDate: string;
   Note?: string | null;
   ProductId: string;
-  WarehouseId?: string | null;
+  BranchId?: string | null;
   SupplierId?: string | null;
 }

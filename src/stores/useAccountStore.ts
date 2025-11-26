@@ -45,7 +45,6 @@ export const useAccountStore = create<AccountState & AccountActions>()(
   immer((set) => ({
     // INITIAL STATE
     suppliers: [],
-    warehouses: [],
     isLoading: false,
     error: null,
 

@@ -4,7 +4,7 @@ import BranchSelect from "@/components/header/BranchSelect";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
 import { useRouter } from "next/navigation";
-import {  CalenderIcon, GridIcon, PieChartIcon ,GroupIcon } from "@/icons";
+import {  CalenderIcon, GridIcon, PieChartIcon ,GroupIcon, BoxCubeIcon } from "@/icons";
 import { ShoppingCartOutlined,BarChartOutlined  } from "@ant-design/icons";
 import { Button} from "antd";
 import Image from "next/image";
@@ -40,7 +40,7 @@ const AppHeader: React.FC = () => {
     { icon: <CalenderIcon />, name: "Hàng hóa", megaMenu: true },
     { icon: <PieChartIcon />, name: "Đơn hàng", megaMenu: true},
     { icon: <GroupIcon />, name: "Nhà cung cấp", megaMenu: true},
-    // { icon: <BoxCubeIcon />, name: "Khách hàng", path: "#" },
+    { icon: <BoxCubeIcon />, name: "Đại lý", megaMenu: true },
   ];
 
   // ======== HÀNG HÓA MEGA MENU DATA =========
@@ -75,7 +75,6 @@ const AppHeader: React.FC = () => {
       title: "Quản lý hệ thống",
       items: [
         { name: "Chi nhánh", path: "/branch" },
-        { name: "Kho", path: "/warehouse" },
         { name: "Tài khoản", path: "/account" },
         { name: "Quy định", path: "/rules" },
       ],
@@ -103,14 +102,24 @@ const AppHeader: React.FC = () => {
       ],
     },
   ];
+  const franchiseMegaMenu = [
+    {
+      title: "Đại lý",
+      items: [
+        { name: "Danh sách đại lý", path: "/franchise" },
+        { name: "Thiết lập giá", path: "/franchisePricebook" },
+        { name: "Nhập hàng", path: "/purchaseOrder" },
+      ],
+    },
+  ]; 
 const handleSalePage = () => {
     router.push("/sale");
   };
-  type MegaMenuType = typeof hangHoaMegaMenu | typeof quanTriMegaMenu | typeof donhangMegaMenu | typeof supplierMegaMenu;
+  type MegaMenuType = typeof hangHoaMegaMenu | typeof quanTriMegaMenu | typeof donhangMegaMenu | typeof supplierMegaMenu | typeof franchiseMegaMenu;
 
   // ======== MEGA MENU COMPONENT =========
   const renderMegaMenu = (
-    menuData: typeof hangHoaMegaMenu | typeof quanTriMegaMenu | typeof donhangMegaMenu | typeof supplierMegaMenu
+    menuData: typeof hangHoaMegaMenu | typeof quanTriMegaMenu | typeof donhangMegaMenu | typeof supplierMegaMenu | typeof franchiseMegaMenu
   ) => {
     const groupCount = menuData.length;
     const columnClass =
@@ -168,6 +177,7 @@ const handleSalePage = () => {
     "Đơn hàng": donhangMegaMenu,
     "Quản trị hệ thống": quanTriMegaMenu,
     "Nhà cung cấp": supplierMegaMenu,
+    "Đại lý": franchiseMegaMenu,
   };
 
   // ======== HEADER (FULL-WIDTH, FIXED) ========
@@ -234,7 +244,7 @@ const handleSalePage = () => {
 
         {/* Right side (Theme, Notif, User) */}
         <div
-          className={`${isApplicationMenuOpen ? "flex" : "hidden"} items-center justify-between w-full gap-4 px-5 py-4 lg:flex lg:justify-end lg:px-6`}
+          className={`${isApplicationMenuOpen ? "flex" : "hidden"} items-center justify-between w-full gap-3 px-4 py-2 lg:flex lg:justify-end lg:px-5`}
         >
           <div className="flex items-center gap-3">
             <BranchSelect />
@@ -246,13 +256,13 @@ const handleSalePage = () => {
       </header>
 
       {/* ======== NAVBAR ======== */}
-      <nav className="hidden lg:flex items-center bg-amber-100 dark:text-brand-500 dark:bg-gray-900 text-sm w-full">
-        <div className="w-full flex items-center justify-between px-10">
+      <nav className="hidden lg:flex items-center bg-amber-100 dark:text-brand-500 dark:bg-gray-900 text-sm w-full border-t border-amber-200">
+        <div className="w-full flex items-center justify-between px-6 py-2">
           <div className="flex">
         {navItems.map((nav) => (
           <div
             key={nav.name}
-            className="relative p-1"
+            className="relative px-1.5 py-1"
             onMouseEnter={() => {
               if (timeoutRef.current) clearTimeout(timeoutRef.current);
               if (nav.megaMenu) setActiveMenu(nav.name);
@@ -263,7 +273,7 @@ const handleSalePage = () => {
           >
             {/* Main nav item */}
             <button
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-amber-200 dark:hover:bg-gray-800 transition ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-amber-200 dark:hover:bg-gray-800 transition ${
                 activeMenu === nav.name ? "text-black-600 bg-amber-200 rounded-lg dark:bg-gray-800" : ""
               }`}
             >
@@ -297,13 +307,7 @@ const handleSalePage = () => {
         <Button 
           type="primary" 
           onClick={handleSalePage} 
-          className="
-            !bg-white
-            !text-black    
-            hover:!bg-gray-50
-            hover:!text-yellow-500 
-            "
-
+          className="!bg-white !text-black hover:!bg-gray-50 hover:!text-yellow-500"
         >
            <ShoppingCartOutlined style={{ fontSize: '20px', background: '' }} />
           Bán Hàng

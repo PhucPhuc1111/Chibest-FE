@@ -25,7 +25,7 @@ import {
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { useTransferStore } from "@/stores/useTransferStore";
-import useWarehouseStore from "@/stores/useWarehouseStore";
+import { useBranchStore } from "@/stores/useBranchStore";
 import {useProductStore} from "@/stores/useProductStore"; 
 import type { CreateMultiTransferPayload } from "@/types/transfer";
 import type { Product } from "@/types/product";
@@ -62,7 +62,7 @@ interface ImportedProduct {
 
 interface DestinationState {
   id: string;
-  toWarehouseId?: string;
+  toBranchId?: string;
   products: ProductRow[];
 }
 
@@ -84,7 +84,7 @@ function createEmptyProduct(): ProductRow {
 function createEmptyDestination(): DestinationState {
   return {
     id: `destination-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    toWarehouseId: undefined,
+    toBranchId: undefined,
     products: [],
   };
 }
@@ -112,7 +112,7 @@ export default function TransferNew() {
   
   // Stores 
   const { createMultiTransfer, importFile, isLoading } = useTransferStore();
-  const { warehouses, getWarehouses } = useWarehouseStore();
+  const { branches, getBranches, loading: branchLoading } = useBranchStore();
   const { products, searchProducts } = useProductStore();
 
   const initialDestination = useMemo(() => createEmptyDestination(), []);
@@ -128,15 +128,15 @@ export default function TransferNew() {
   const [searchModalState, setSearchModalState] = useState<{ destinationId: string | null; visible: boolean }>(
     { destinationId: null, visible: false }
   );
-  const fromWarehouseId = Form.useWatch("fromWarehouseId", form);
+  const fromBranchId = Form.useWatch("fromBranchId", form);
 
-  // Load warehouses on component mount
+  // Load branches on component mount
   useEffect(() => {
     const loadInitialData = async () => {
-      await getWarehouses();
+      await getBranches();
     };
     loadInitialData();
-  }, [getWarehouses]);
+  }, [getBranches]);
 
   // Get user info from localStorage
   const getUserInfo = () => getStoredUserInfo();
@@ -194,10 +194,10 @@ export default function TransferNew() {
     );
   };
 
-  const handleDestinationWarehouseChange = (destinationId: string, warehouseId?: string) => {
+  const handleDestinationBranchChange = (destinationId: string, branchId?: string) => {
     setDestinations((prev) =>
       prev.map((destination) =>
-        destination.id === destinationId ? { ...destination, toWarehouseId: warehouseId } : destination
+        destination.id === destinationId ? { ...destination, toBranchId: branchId } : destination
       )
     );
   };
@@ -522,19 +522,19 @@ export default function TransferNew() {
       const values = await form.validateFields();
 
       if (!destinations.length) {
-        messageApi.warning("Vui lòng thêm ít nhất một kho nhận!");
+        messageApi.warning("Vui lòng thêm ít nhất một chi nhánh nhận!");
         return;
       }
 
-      const invalidDestination = destinations.find((destination) => !destination.toWarehouseId);
+      const invalidDestination = destinations.find((destination) => !destination.toBranchId);
       if (invalidDestination) {
-        messageApi.warning("Vui lòng chọn kho nhận cho tất cả điểm đến!");
+        messageApi.warning("Vui lòng chọn chi nhánh nhận cho tất cả điểm đến!");
         return;
       }
 
       const emptyDestination = destinations.find((destination) => destination.products.length === 0);
       if (emptyDestination) {
-        messageApi.warning("Mỗi kho nhận cần có ít nhất một sản phẩm!");
+        messageApi.warning("Mỗi chi nhánh nhận cần có ít nhất một sản phẩm!");
         return;
       }
 
@@ -547,8 +547,8 @@ export default function TransferNew() {
         return;
       }
 
-      if (!values.fromWarehouseId) {
-        messageApi.warning("Vui lòng chọn kho đi!");
+      if (!values.fromBranchId) {
+        messageApi.warning("Vui lòng chọn chi nhánh đi!");
         return;
       }
 
@@ -565,7 +565,7 @@ export default function TransferNew() {
         : dayjs().format("YYYY-MM-DD");
 
       const payload: CreateMultiTransferPayload = {
-        "from-warehouse-id": values.fromWarehouseId,
+        "from-branch-id": values.fromBranchId,
         "employee-id": employeeId,
         "order-date": orderDateValue,
         "note": values.note || "",
@@ -574,7 +574,7 @@ export default function TransferNew() {
         "sub-total": aggregateTotals.totalAmount,
         "paid": 0,
         destinations: destinations.map((destination) => ({
-          "to-warehouse-id": destination.toWarehouseId as string,
+          "to-branch-id": destination.toBranchId as string,
           products: destination.products.map((product) => ({
             "product-id": product.productId as string,
             quantity: product.quantity || 0,
@@ -612,11 +612,11 @@ export default function TransferNew() {
               <div>
                 <h2 className="text-lg font-semibold text-gray-800">Chuyển hàng</h2>
                 <p className="text-sm text-gray-500">
-                  Phân bổ sản phẩm cho từng kho.
+                  Phân bổ sản phẩm cho từng chi nhánh.
                 </p>
               </div>
               <Button type="primary" icon={<PlusOutlined />} onClick={addDestination}>
-                Thêm kho nhận
+                Thêm chi nhánh nhận
               </Button>
             </div>
 
@@ -648,21 +648,21 @@ export default function TransferNew() {
                     <div className="flex items-start justify-between gap-3 border-b px-4 py-3">
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-3">
-                          <span className="font-semibold text-gray-700">Kho nhận {index + 1}</span>
+                          <span className="font-semibold text-gray-700">Chi nhánh nhận {index + 1}</span>
                           <Tag color="blue">{destination.products.length} SP</Tag>
                         </div>
                         <Select
-                          placeholder="Chọn kho nhận"
-                          value={destination.toWarehouseId}
-                          onChange={(value) => handleDestinationWarehouseChange(destination.id, value)}
-                          onClear={() => handleDestinationWarehouseChange(destination.id, undefined)}
+                          placeholder="Chọn chi nhánh nhận"
+                          value={destination.toBranchId}
+                          onChange={(value) => handleDestinationBranchChange(destination.id, value)}
+                          onClear={() => handleDestinationBranchChange(destination.id, undefined)}
                           allowClear
                           className="w-full"
-                          options={warehouses
-                            .filter((warehouse) => warehouse.id !== fromWarehouseId)
-                            .map((warehouse) => ({
-                              value: warehouse.id,
-                              label: `${warehouse.name} (${warehouse.code})`,
+                          options={branches
+                            .filter((branch) => branch.id !== fromBranchId)
+                            .map((branch) => ({
+                              value: branch.id,
+                              label: `${branch.name} (${branch.code})`,
                             }))}
                         />
                       </div>
@@ -754,7 +754,7 @@ export default function TransferNew() {
                         </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center border border-dashed border-gray-200 rounded-md py-10 text-sm text-gray-500 text-center">
-                          <p>Chưa có sản phẩm trong kho nhận này.</p>
+                          <p>Chưa có sản phẩm trong chi nhánh nhận này.</p>
                           <div className="mt-2 flex items-center gap-2">
                             <Button type="link" onClick={() => handleSearch(destination.id)}>
                               Tìm sản phẩm
@@ -786,16 +786,16 @@ export default function TransferNew() {
           <div className="w-full lg:w-[340px] bg-white border border-gray-200 rounded-md p-4 flex flex-col justify-between">
             <Form form={form} layout="vertical" className="space-y-3">
               <Form.Item
-                label="Kho đi"
-                name="fromWarehouseId"
-                rules={[{ required: true, message: "Vui lòng chọn kho đi" }]}
+                label="Chi nhánh đi"
+                name="fromBranchId"
+                rules={[{ required: true, message: "Vui lòng chọn chi nhánh đi" }]}
               >
                 <Select
-                  placeholder="Chọn kho đi"
-                  loading={isLoading}
-                  options={warehouses.map((warehouse) => ({
-                    value: warehouse.id,
-                    label: `${warehouse.name} (${warehouse.code})`,
+                  placeholder="Chọn chi nhánh đi"
+                  loading={branchLoading}
+                  options={branches.map((branch) => ({
+                    value: branch.id,
+                    label: `${branch.name} (${branch.code})`,
                   }))}
                 />
               </Form.Item>

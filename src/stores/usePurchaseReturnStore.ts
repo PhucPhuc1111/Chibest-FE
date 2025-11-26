@@ -21,8 +21,8 @@ interface RawPurchaseReturnDetail {
   "sub-total": number;
   note: string | null;
   status: PurchaseReturnStatus;
-  "from-warehouse-name": string;
-  "to-warehouse-name": string;
+  "from-branch-name": string;
+  "to-branch-name": string;
   "purchase-return-details": Array<{
     id: string;
     "container-code": string | null;
@@ -219,8 +219,8 @@ const transformPurchaseReturnDetail = (rawData: RawPurchaseReturnDetail): Purcha
     subTotal: rawData["sub-total"],
     note: rawData.note,
     status: rawData.status,
-    fromWarehouseName: rawData["from-warehouse-name"],
-    toWarehouseName: rawData["to-warehouse-name"],
+    fromBranchName: rawData["from-branch-name"],
+    toBranchName: rawData["to-branch-name"],
     items: items,
   };
 };

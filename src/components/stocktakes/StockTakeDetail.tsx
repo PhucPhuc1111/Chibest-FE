@@ -160,7 +160,6 @@ export default function StockTakeDetail({ adjustmentId }: StockTakeDetailProps) 
           <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
             <div>
               <div><strong>Chi nhánh:</strong> {adjustment.branchName}</div>
-              <div><strong>Kho:</strong> {adjustment.warehouseName}</div>
             </div>
             <div>
               <div>

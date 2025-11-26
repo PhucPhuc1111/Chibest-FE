@@ -4,7 +4,6 @@ export interface BranchFormData {
   address: string;
   'phone-number': string;
   'is-franchise': boolean;
-  'owner-name': string;
   status: 'Hoạt động' | 'Ngưng hoạt động';
 }
 
@@ -21,10 +20,8 @@ export interface Branch {
   address: string;
   "phone-number": string;
   "is-franchise": boolean;
-  "owner-name": string | null;
   status: string;
   "user-count": number;
-  "warehouse-count": number;
 }
 
 export interface BranchCreateRequest {
@@ -33,7 +30,6 @@ export interface BranchCreateRequest {
   address: string;
   "phone-number": string;
   "is-franchise": boolean;
-  "owner-name": string;
   status: string;
 }
 

@@ -9,8 +9,8 @@ interface CreateAccountModalProps {
 }
 
 const statusOptions = [
-  { label: 'Hoạt động', value: 'Hoạt động' },
-  { label: 'Ngưng hoạt động', value: 'Ngưng hoạt động' },
+  { label: 'Hoạt động', value: 'Active' },
+  { label: 'Ngưng hoạt động', value: 'Inactive' },
 ];
 
 const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
@@ -75,7 +75,7 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         layout="vertical"
         onFinish={handleSubmit}
         initialValues={{
-          status: 'Hoạt động',
+          status: 'Active',
         }}
       >
         <Form.Item
@@ -116,11 +116,6 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         <Form.Item label="Số điện thoại" name="phone-number">
           <Input placeholder="Nhập số điện thoại" />
         </Form.Item>
-
-        <Form.Item label="Địa chỉ" name="address">
-          <Input placeholder="Nhập địa chỉ" />
-        </Form.Item>
-
         <Form.Item
           label="Trạng thái"
           name="status"

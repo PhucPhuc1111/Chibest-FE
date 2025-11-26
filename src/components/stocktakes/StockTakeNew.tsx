@@ -26,7 +26,6 @@ import {
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { useStockTakeStore } from "@/stores/useStockTakeStore";
-import useWarehouseStore from "@/stores/useWarehouseStore";
 import { useProductStore } from "@/stores/useProductStore";
 import { useBranchStore } from "@/stores/useBranchStore";
 import type { CreateStockAdjustmentRequest, CreateStockAdjustmentDetailRequest } from "@/types/stocktake";
@@ -54,7 +53,6 @@ export default function StockTakeNew() {
   
   // Stores 
   const { createStockAdjustment, isLoading } = useStockTakeStore();
-  const { warehouses, getWarehouses } = useWarehouseStore();
   const { products, searchProducts } = useProductStore();
   const { branches, getBranches } = useBranchStore();
   
@@ -65,27 +63,14 @@ export default function StockTakeNew() {
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [, setImportedData] = useState<ProductRow[]>([]);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
-  const [selectedBranch, setSelectedBranch] = useState<string>("");
 
   // Load initial data on component mount
   useEffect(() => {
     const loadInitialData = async () => {
       await getBranches();
-      await getWarehouses();
     };
     loadInitialData();
-  }, [getBranches, getWarehouses]);
-
-  // Filter warehouses based on selected branch
-  const filteredWarehouses = warehouses.filter(warehouse => {
-    if (!selectedBranch) return true;
-    
-    // Find the selected branch to get its name
-    const selectedBranchObj = branches.find(branch => branch.id === selectedBranch);
-    if (!selectedBranchObj) return true;
-    
-    return warehouse.branchName.toLowerCase().includes(selectedBranchObj.name.toLowerCase());
-  });
+  }, [getBranches]);
 
   // Get user info from localStorage
   const getUserInfo = () => {
@@ -199,15 +184,6 @@ export default function StockTakeNew() {
     addProductRow(newProduct);
     setSearchModalVisible(false);
     setSearchTerm("");
-  };
-
-  const handleBranchChange = (branchId: string) => {
-    setSelectedBranch(branchId);
-    
-    // Reset warehouse selection when branch changes
-    setTimeout(() => {
-      form.setFieldValue("warehouseId", undefined);
-    }, 0);
   };
 
   const columns: TableProps<ProductRow>["columns"] = [
@@ -364,8 +340,8 @@ export default function StockTakeNew() {
         return;
       }
 
-      if (!values.branchId || !values.warehouseId) {
-        messageApi.warning("Vui lòng chọn chi nhánh và kho!");
+      if (!values.branchId) {
+        messageApi.warning("Vui lòng chọn chi nhánh!");
         return;
       }
 
@@ -393,7 +369,6 @@ export default function StockTakeNew() {
           : dayjs().format('YYYY-MM-DDTHH:mm:ss'),
         "adjustment-type": values.adjustmentType || "Kiểm Kê",
         "branch-id": values.branchId,
-        "warehouse-id": values.warehouseId,
         "employee-id": employeeId,
         "status": status,
         "note": values.note || "",
@@ -520,30 +495,11 @@ export default function StockTakeNew() {
               >
                 <Select 
                   placeholder="Chọn chi nhánh" 
-                  onChange={handleBranchChange}
                   allowClear
                 >
                   {branches.map(branch => (
                     <Select.Option key={branch.id} value={branch.id}>
                       {branch.name}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-
-              <Form.Item 
-                label="Kho điều chỉnh" 
-                name="warehouseId"
-                rules={[{ required: true, message: 'Vui lòng chọn kho' }]}
-              >
-                <Select 
-                  placeholder="Chọn kho" 
-                  loading={isLoading}
-                  allowClear
-                >
-                  {filteredWarehouses.map(warehouse => (
-                    <Select.Option key={warehouse.id} value={warehouse.id}>
-                      {warehouse.name} ({warehouse.code})
                     </Select.Option>
                   ))}
                 </Select>

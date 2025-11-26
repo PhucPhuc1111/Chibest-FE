@@ -100,14 +100,14 @@ export default function TransferList() {
         render: (code: string) => code || "—"
       },
       { 
-        title: "Kho đi", 
-        dataIndex: "fromWarehouseName", 
+        title: "Chi nhánh đi", 
+        dataIndex: "fromBranchName", 
         width: 180,
         render: (name: string) => name || "—"
       },
       { 
-        title: "Kho đến", 
-        dataIndex: "toWarehouseName", 
+        title: "Chi nhánh đến", 
+        dataIndex: "toBranchName", 
         width: 180,
         render: (name: string) => name || "—"
       },

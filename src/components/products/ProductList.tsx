@@ -1,8 +1,7 @@
 // components/products/ProductList.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useProductStore } from "@/stores/useProductStore";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCategoryStore } from "@/stores/useCategoryStore";
 import { useBranchStore } from "@/stores/useBranchStore";
 import { useSessionStore } from "@/stores/useSessionStore";
@@ -13,10 +12,11 @@ import SubVariantTable from "./SubVariantTable";
 import ModalCreateProduct from "./modals/ModalCreateProduct";
 import ModalCreateService from "./modals/ModalCreateService";
 import ModalCreateCombo from "./modals/ModalCreateCombo";
-import type { Product, TableProduct } from "@/types/product";
+import type { ProductMaster, ProductVariant } from "@/types/product";
 import ProductTabsDetail from "./ProductTabsDetail";
 import Image from "next/image";
 import api from "@/api/axiosInstance";
+import { DEFAULT_PRODUCT_IMAGE, resolveProductImageSrc } from "@/utils/productImage";
 interface ProductFilters {
   SearchTerm?: string;
   CategoryId?: string;
@@ -38,6 +38,38 @@ interface ProductImportResponse {
     updated?: number;
     errors?: string[];
   };
+}
+
+interface MasterProductChildApi {
+  id: string;
+  "avartar-url"?: string | null;
+  sku: string;
+  name: string;
+  status: string;
+  "cost-price"?: number | null;
+  "selling-price"?: number | null;
+  "stock-quantity"?: number | null;
+  description?: string | null;
+  color?: string | null;
+  size?: string | null;
+  brand?: string | null;
+  material?: string | null;
+  weight?: number | null;
+  "parent-sku"?: string | null;
+  "category-name"?: string | null;
+  style?: string | null;
+}
+
+interface MasterProductApi extends MasterProductChildApi {
+  "is-master": boolean;
+  "children-no"?: number;
+  children?: MasterProductChildApi[];
+}
+
+interface MasterProductApiResponse {
+  "status-code": number;
+  message: string;
+  data?: MasterProductApi[];
 }
 
 const PRODUCT_EXPORT_COLUMNS: string[] = [
@@ -65,39 +97,48 @@ const PRODUCT_EXPORT_COLUMNS: string[] = [
   "CategoryName",
 ];
 
-const DEFAULT_PRODUCT_IMAGE = "/images/noimage.png";
+const mapApiChildToVariant = (child: MasterProductChildApi): ProductVariant => ({
+  id: child.id,
+  name: child.name,
+  sellingPrice: child["selling-price"] ?? 0,
+  costPrice: child["cost-price"] ?? 0,
+  stockQuantity: child["stock-quantity"] ?? 0,
+  avartarUrl: resolveProductImageSrc(child["avartar-url"]),
+  sku: child.sku,
+  description: child.description ?? undefined,
+  color: child.color ?? undefined,
+  size: child.size ?? undefined,
+  brand: child.brand ?? undefined,
+  material: child.material ?? undefined,
+  weight: child.weight ?? undefined,
+  status: child.status,
+  parentSku: child["parent-sku"] ?? undefined,
+  categoryName: child["category-name"] ?? undefined,
+  style: child.style ?? undefined,
+  isMaster: false,
+});
 
-const normalizeImageSrc = (src?: string | null): string => {
-  if (!src) {
-    return DEFAULT_PRODUCT_IMAGE;
-  }
-
-  const trimmed = src.trim();
-  if (!trimmed) {
-    return DEFAULT_PRODUCT_IMAGE;
-  }
-
-  const normalized = trimmed.replace(/\\/g, "/");
-
-  if (
-    normalized.startsWith("http://") ||
-    normalized.startsWith("https://") ||
-    normalized.startsWith("data:") ||
-    normalized.startsWith("blob:")
-  ) {
-    return normalized;
-  }
-
-  if (normalized.startsWith("//")) {
-    return normalized;
-  }
-
-  if (normalized.startsWith("/")) {
-    return normalized;
-  }
-
-  return `/${normalized}`;
-};
+const mapApiMasterToProduct = (item: MasterProductApi): ProductMaster => ({
+  id: item.id,
+  name: item.name,
+  sellingPrice: item["selling-price"] ?? 0,
+  costPrice: item["cost-price"] ?? 0,
+  stockQuantity: item["stock-quantity"] ?? 0,
+  avartarUrl: resolveProductImageSrc(item["avartar-url"]),
+  sku: item.sku,
+  description: item.description ?? undefined,
+  color: item.color ?? undefined,
+  size: item.size ?? undefined,
+  brand: item.brand ?? undefined,
+  material: item.material ?? undefined,
+  weight: item.weight ?? undefined,
+  status: item.status,
+  isMaster: item["is-master"],
+  parentSku: item["parent-sku"] ?? undefined,
+  categoryName: item["category-name"] ?? undefined,
+  style: item.style ?? undefined,
+  variants: (item.children ?? []).map(mapApiChildToVariant),
+});
 
 function ProductThumbnail({
   src,
@@ -112,10 +153,10 @@ function ProductThumbnail({
   height: number;
   className?: string;
 }) {
-  const [imageSrc, setImageSrc] = useState(() => normalizeImageSrc(src));
+  const [imageSrc, setImageSrc] = useState(() => resolveProductImageSrc(src));
 
   useEffect(() => {
-    setImageSrc(normalizeImageSrc(src));
+    setImageSrc(resolveProductImageSrc(src));
   }, [src]);
 
   return (
@@ -125,19 +166,16 @@ function ProductThumbnail({
       width={width}
       height={height}
       className={className}
+      unoptimized
       onError={() => setImageSrc(DEFAULT_PRODUCT_IMAGE)}
     />
   );
 }
 
 export default function ProductList() {
-  const {
-    products,
-    loading,
-    error,
-    getProducts,
-    searchProducts,
-  } = useProductStore();
+  const [masterProducts, setMasterProducts] = useState<ProductMaster[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { categories, getCategories } = useCategoryStore();
   const {  getBranches } = useBranchStore();
@@ -151,17 +189,47 @@ export default function ProductList() {
     SortBy: "createdat",
     SortDescending: true,
   });
-   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
+  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const fetchProductMasters = useCallback(async (query: ProductFilters) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const sanitizedParams = Object.fromEntries(
+        Object.entries(query).filter(([, value]) => value !== undefined && value !== null),
+      );
+
+      const response = await api.get<MasterProductApiResponse>("/api/product/master", {
+        params: sanitizedParams,
+      });
+
+      if (response.data["status-code"] === 200) {
+        const mappedMasters = (response.data.data ?? []).map(mapApiMasterToProduct);
+        setMasterProducts(mappedMasters);
+      } else {
+        const apiMessage = response.data.message || "Không thể tải danh sách hàng hoá.";
+        setError(apiMessage);
+      }
+    } catch (err: unknown) {
+      const apiError = err as { response?: { data?: { message?: string } } };
+      const errorMessage = apiError?.response?.data?.message || "Không thể tải danh sách hàng hoá.";
+      console.error("Fetch product masters error:", err);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Fetch data khi component mount và khi filters thay đổi
   useEffect(() => {
-    getProducts(filters);
+    fetchProductMasters(filters);
     getCategories();
     getBranches();
-  }, [filters, getProducts, getCategories, getBranches]);
+  }, [filters, fetchProductMasters, getCategories, getBranches]);
 
   // Đồng bộ BranchId với session store
   useEffect(() => {
@@ -241,147 +309,8 @@ export default function ProductList() {
   
   // });
   // }, [products]);
-// Transform products từ API format sang frontend format cho table
-const tableProducts = useMemo(() => {
-  // Tạo map để group
-  const productMap = new Map<string, { master: Product | null; variants: Product[] }>();
-  
-  // Phân loại products
-  products.forEach(product => {
-    if (product.isMaster) {
-      // Sản phẩm master - tạo group mới
-      if (!productMap.has(product.id)) {
-        productMap.set(product.id, {
-          master: product,
-          variants: [],
-        });
-      } else {
-        const existingGroup = productMap.get(product.id);
-        if (existingGroup) {
-          existingGroup.master = product;
-        }
-      }
-    } else {
-      // Sản phẩm variant
-      if (product.parentSku) {
-        // Variant có parent - tìm master
-        const masterProduct = products.find(p => p.sku === product.parentSku && p.isMaster);
-        if (masterProduct) {
-          // Có master - thêm vào group của master
-          const masterGroup = productMap.get(masterProduct.id);
-          if (masterGroup) {
-            masterGroup.variants.push(product);
-          } else {
-            productMap.set(masterProduct.id, {
-              master: masterProduct,
-              variants: [product],
-            });
-          }
-        } else {
-          // Không tìm thấy master - tạo group độc lập cho variant
-          const existingGroup = productMap.get(product.id);
-          if (existingGroup) {
-            existingGroup.variants.push(product);
-          } else {
-            productMap.set(product.id, {
-              master: null,
-              variants: [product],
-            });
-          }
-        }
-      } else {
-        // Variant không có parentSku - tạo group độc lập
-        const existingGroup = productMap.get(product.id);
-        if (existingGroup) {
-          existingGroup.variants.push(product);
-        } else {
-          productMap.set(product.id, {
-            master: null,
-            variants: [product],
-          });
-        }
-      }
-    }
-  });
-
-  // Tạo danh sách hiển thị
-  const result: TableProduct[] = [];
-  
-  productMap.forEach((group: { master: Product | null; variants: Product[] }) => {
-    const { master, variants } = group;
-    
-    if (master) {
-      // Có master - master hiển thị đầu, variants trong expanded row
-      result.push({
-        id: master.id,
-        name: master.name,
-        variant: master.description || "",
-        sellingPrice: master.sellingPrice || 0,
-        costPrice: master.costPrice || 0,
-        stockQuantity: master.stockQuantity || 0,
-        createdAt: "",
-        avartarUrl: normalizeImageSrc(master.avartarUrl),
-        type: "product",
-        group: master.categoryName || "",
-        supplier: master.brand || "",
-        attrs: {
-          color: master.color,
-          size: master.size,
-        },
-        status: master.status,
-        sku: master.sku,
-        description: master.description,
-        color: master.color,
-        size: master.size,
-        brand: master.brand,
-        material: master.material,
-        weight: master.weight,
-        isMaster: true,
-        parentSku: master.parentSku,
-        variants: variants,
-        isGroupMaster: true,
-        hasVariants: variants.length > 0,
-      });
-    } else if (variants.length > 0) {
-      // Không có master, chỉ có variants độc lập
-      variants.forEach((variant) => {
-        result.push({
-          id: variant.id,
-          name: variant.name,
-          variant: variant.description || "",
-          sellingPrice: variant.sellingPrice || 0,
-          costPrice: variant.costPrice || 0,
-          stockQuantity: variant.stockQuantity || 0,
-          createdAt: "",
-          avartarUrl: normalizeImageSrc(variant.avartarUrl),
-          type: "product",
-          group: variant.categoryName || "",
-          supplier: variant.brand || "",
-          attrs: {
-            color: variant.color,
-            size: variant.size,
-          },
-          status: variant.status,
-          sku: variant.sku,
-          description: variant.description,
-          color: variant.color,
-          size: variant.size,
-          brand: variant.brand,
-          material: variant.material,
-          weight: variant.weight,
-          isMaster: false,
-          parentSku: variant.parentSku,
-          variants: [],
-          isGroupMaster: false,
-          hasVariants: false,
-          isOrphanVariant: true, // ✅ Flag để biết đây là variant độc lập
-        });
-      });
-    }
-  });
-
-  return result;
-}, [products]);
+// Không cần transform phức tạp nữa vì API trả về master cùng children.
+const tableProducts = masterProducts;
   // Cập nhật filters
   const handleFilterChange = (newFilters: Partial<ProductFilters>) => {
     setFilters(prev => ({
@@ -411,11 +340,10 @@ const tableProducts = useMemo(() => {
 
   // Search products
   const handleSearch = (value: string) => {
-    if (value.trim()) {
-      searchProducts(value);
-    } else {
-      getProducts(filters);
-    }
+    const searchTerm = value.trim();
+    handleFilterChange({
+      SearchTerm: searchTerm || undefined,
+    });
   };
 
   const handleImportClick = () => {
@@ -459,7 +387,7 @@ const tableProducts = useMemo(() => {
           console.warn("Product import errors:", result.errors);
         }
 
-        getProducts(filters);
+        fetchProductMasters(filters);
       } else {
         const apiMessage = response.data?.message || "Import sản phẩm thất bại.";
         message.error(apiMessage);
@@ -526,7 +454,7 @@ const tableProducts = useMemo(() => {
   };
 
 
-  const handleExpand = (expanded: boolean, record: TableProduct) => {
+  const handleExpand = (expanded: boolean, record: ProductMaster) => {
     if (expanded) {
        setExpandedRowKeys([record.id]);
     } else {
@@ -535,7 +463,7 @@ const tableProducts = useMemo(() => {
   };
 
   // Cột bảng
-  const columns: ColumnsType<TableProduct> = [
+  const columns: ColumnsType<ProductMaster> = [
     {
       title: "",
       dataIndex: "select",
@@ -548,22 +476,22 @@ const tableProducts = useMemo(() => {
       dataIndex: "AvatarUrl",
       width: 50,
       fixed: "left",
-      render: ( _: string, record: TableProduct) => (
-        <div className="flex items-center gap-2">
-          <ProductThumbnail
-            src={
-              record.isGroupMaster
-                ? record.avartarUrl
-                : record.variants?.[0]?.avartarUrl ?? record.avartarUrl ?? DEFAULT_PRODUCT_IMAGE
-            }
-            alt={record.name}
-            width={32}
-            height={40}
-            className="w-8 h-10 rounded object-cover"
-          />
-         
-        </div>
-      ),
+      render: (_: string, record: ProductMaster) => {
+        const thumbnailSrc =
+          record.avartarUrl || record.variants?.[0]?.avartarUrl || DEFAULT_PRODUCT_IMAGE;
+
+        return (
+          <div className="flex items-center gap-2">
+            <ProductThumbnail
+              src={thumbnailSrc}
+              alt={record.name}
+              width={32}
+              height={40}
+              className="w-8 h-10 rounded object-cover"
+            />
+          </div>
+        );
+      },
  
     },
     {
@@ -577,7 +505,7 @@ const tableProducts = useMemo(() => {
       title: "Tên hàng",
       dataIndex: "name",
       ellipsis: true,
-      render: (name: string, record: TableProduct) => (
+      render: (name: string, record: ProductMaster) => (
         <div>
           <div>{name}</div>
           <div className="text-xs text-gray-500">
@@ -615,35 +543,29 @@ const tableProducts = useMemo(() => {
       title: "Trạng thái",
       dataIndex: "status",
       width: 120,
-      render: (status: string) => (
-        <span className={`px-2 py-1 rounded text-xs ${
-          status === "Available" ? "bg-green-100 text-green-800" : 
-          status === "Unavailable" ? "bg-red-100 text-red-800" : 
-          "bg-gray-100 text-gray-800"
-        }`}>
-          {status === "Available" ? "Đang bán" : 
-           status === "Unavailable" ? "Ngừng bán" : 
-           status === "OutOfStock" ? "Hết hàng" : status}
-        </span>
-      ),
+      render: (status: string) => {
+        const normalized = (status || "").toLowerCase();
+        let badgeClass = "bg-gray-100 text-gray-800";
+        let label = status || "Không xác định";
+
+        if (normalized === "available") {
+          badgeClass = "bg-green-100 text-green-800";
+          label = "Đang bán";
+        } else if (normalized === "unavailable") {
+          badgeClass = "bg-red-100 text-red-800";
+          label = "Ngừng bán";
+        } else if (normalized === "outofstock") {
+          badgeClass = "bg-gray-100 text-gray-800";
+          label = "Hết hàng";
+        }
+
+        return (
+          <span className={`px-2 py-1 rounded text-xs ${badgeClass}`}>
+            {label}
+          </span>
+        );
+      },
     },
-//     {
-//   title: "Loại",
-//   dataIndex: "isGroupMaster",
-//   width: 140,
-//   render: (isGroupMaster: boolean, record: TableProduct) => {
-//     if (record.isOrphanVariant) {
-//       return <span className="px-2 py-1 rounded text-xs bg-orange-100 text-orange-800">Biến thể độc lập</span>;
-//     }
-//     return (
-//       <span className={`px-2 py-1 rounded text-xs ${
-//         isGroupMaster ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"
-//       }`}>
-//         {isGroupMaster ? "Sản phẩm chính" : "Biến thể"}
-//       </span>
-//     );
-//   },
-// },
   ];
 
   // Dropdown items cho tạo mới
@@ -767,36 +689,20 @@ const tableProducts = useMemo(() => {
               // }}
 expandable={{
   expandedRowRender: (record) => {
-    if (record.isGroupMaster && record.hasVariants) {
-      // Master có variants - hiển thị SubVariantTable
+    if (record.variants && record.variants.length > 0) {
       return <SubVariantTable master={record} />;
-    } else if (record.isOrphanVariant) {
-      // Variant độc lập - hiển thị ProductTabsDetail
-      return (
-        <ProductTabsDetail 
-          master={record} 
-          variant={record}
-        />
-      );
-    } else {
-      // Master không có variants - hiển thị ProductTabsDetail
-      return (
-        <ProductTabsDetail 
-          master={record} 
-          variant={record}
-        />
-      );
     }
+
+    return (
+      <ProductTabsDetail
+        master={record}
+        variant={record as ProductVariant}
+      />
+    );
   },
-  expandedRowKeys: expandedRowKeys, 
-  onExpand: handleExpand, 
-  rowExpandable: (record) => {
-    // Cho phép expand nếu:
-    // - Là master có variants
-    // - Là variant độc lập
-    // - Là master không có variants (để chỉnh sửa)
-    return record.isGroupMaster || record.isOrphanVariant || record.isMaster;
-  },
+  expandedRowKeys: expandedRowKeys,
+  onExpand: handleExpand,
+  rowExpandable: () => true,
   expandRowByClick: true,
   columnWidth: 0,
   expandIcon: () => null,

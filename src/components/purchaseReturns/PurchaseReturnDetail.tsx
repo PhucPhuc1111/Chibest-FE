@@ -225,7 +225,7 @@ export default function PurchaseReturnDetail({ id, onDeleted, onStatusUpdated }:
                 )}
               </div>
               <div className="text-sm text-gray-600">
-                Kho trả: <b>{order.fromWarehouseName}</b>
+                Chi nhánh trả: <b>{order.fromBranchName}</b>
               </div>
             </div>
             
@@ -273,7 +273,7 @@ export default function PurchaseReturnDetail({ id, onDeleted, onStatusUpdated }:
           {/* Thông tin kho */}
           <div className="text-sm text-gray-600 mb-3">
             <span>
-              Từ kho: <b>{order.fromWarehouseName}</b> → Đến: <b>{order.toWarehouseName}</b>
+              Từ chi nhánh: <b>{order.fromBranchName}</b> → Đến: <b>{order.toBranchName}</b>
             </span>
           </div>
 

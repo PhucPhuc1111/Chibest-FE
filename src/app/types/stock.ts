@@ -5,5 +5,5 @@ export interface StockItemType {
   LastTransactionDate?: string | null;
   Status: string;
   ProductID: string;
-  WarehouseID?: string | null;
+  BranchId?: string | null;
 }

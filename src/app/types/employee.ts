@@ -4,5 +4,5 @@ export interface EmployyeeType {
   StartDate: string; // DATE -> ISO string
   EndDate?: string | null; // DATE -> ISO string
   AccountId: string; // Khóa ngoại đến bảng Account
-  BranchId?: string | null; // Khóa ngoại đến bảng Warehouse (chi nhánh)
+  BranchId?: string | null; // Khóa ngoại đến bảng Branch
 }

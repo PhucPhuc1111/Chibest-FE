@@ -54,8 +54,8 @@ export interface PurchaseReturn {
   subTotal: number;
   note: string | null;
   status: PurchaseReturnStatus;
-  fromWarehouseName: string;
-  toWarehouseName: string;
+  fromBranchName: string;
+  toBranchName: string;
   items: PurchaseReturnItem[];
 }
 
@@ -67,7 +67,7 @@ export interface CreatePurchaseReturnPayload {
   "discount-amount": number;
   "paid": number;
   "note": string;
-  "warehouse-id": string;
+  "branch-id": string;
   "employee-id": string;
   "supplier-id": string;
   "purchase-order-details": Array<{

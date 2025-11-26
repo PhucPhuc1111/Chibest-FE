@@ -58,13 +58,6 @@ const BranchForm: React.FC<BranchFormProps> = ({
         <Input />
       </Form.Item>
 
-      <Form.Item
-        label="Chủ sở hữu"
-        name="owner-name"
-        rules={[{ required: true, message: 'Vui lòng nhập tên chủ sở hữu' }]}
-      >
-        <Input />
-      </Form.Item>
 
       <Form.Item
         label="Loại chi nhánh"
@@ -83,8 +76,8 @@ const BranchForm: React.FC<BranchFormProps> = ({
         rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
       >
         <Select>
-          <Select.Option value="Hoạt động">Hoạt động</Select.Option>
-          <Select.Option value="Ngưng hoạt động">Ngưng hoạt động</Select.Option>
+          <Select.Option value="Active">Hoạt động</Select.Option>
+          <Select.Option value="Inactive">Ngưng hoạt động</Select.Option>
         </Select>
       </Form.Item>
 

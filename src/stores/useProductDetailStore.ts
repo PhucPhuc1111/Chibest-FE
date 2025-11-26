@@ -12,8 +12,7 @@ export interface RawProductDetail {
   status: string;
   "product-id": string;
   "branch-id": string;
-  "warehouse-id": string;
-  "online-warehouse-id": string | null;
+  "online-branch-id": string | null;
   "container-code": string | null;
 }
 
@@ -74,8 +73,7 @@ export const useProductDetailStore = create<ProductDetailState & ProductDetailAc
           status: item.status,
           productId: item["product-id"],
           branchId: item["branch-id"],
-          warehouseId: item["warehouse-id"],
-          onlineWarehouseId: item["online-warehouse-id"],
+          onlineBranchId: item["online-branch-id"],
           containerCode: item["container-code"],
         }));
         
@@ -115,8 +113,7 @@ export const useProductDetailStore = create<ProductDetailState & ProductDetailAc
           status: item.status,
           productId: item["product-id"],
           branchId: item["branch-id"],
-          warehouseId: item["warehouse-id"],
-          onlineWarehouseId: item["online-warehouse-id"],
+          onlineBranchId: item["online-branch-id"],
           containerCode: item["container-code"],
         };
         
@@ -155,8 +152,7 @@ export const useProductDetailStore = create<ProductDetailState & ProductDetailAc
           status: item.status,
           productId: item["product-id"],
           branchId: item["branch-id"],
-          warehouseId: item["warehouse-id"],
-          onlineWarehouseId: item["online-warehouse-id"],
+          onlineBranchId: item["online-branch-id"],
           containerCode: item["container-code"],
         };
         

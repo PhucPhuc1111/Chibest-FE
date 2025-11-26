@@ -7,8 +7,7 @@ export interface ProductDetail {
   status: string;
   productId: string;
   branchId: string;
-  warehouseId: string;
-  onlineWarehouseId: string | null;
+  onlineBranchId: string | null;
   containerCode: string | null;
 }
 
@@ -16,7 +15,6 @@ export interface ProductDetailQueryParams {
   ChipCode?: string;
   ProductId?: string;
   BranchId?: string;
-  WarehouseId?: string;
   Status?: string;
   SupplierId?: string;
   ImportDateFrom?: string;

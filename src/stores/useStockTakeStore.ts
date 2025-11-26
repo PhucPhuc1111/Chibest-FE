@@ -96,7 +96,6 @@ export const useStockTakeStore = create<StockTakeState & StockTakeActions>()(
             adjustmentDate: rawData["adjustment-date"],
             adjustmentType: rawData["adjustment-type"],
             branchName: rawData["branch-name"],
-            warehouseName: rawData["warehouse-name"],
             employeeName: rawData["employee-name"],
             approveName: rawData["approve-name"],
             totalValueChange: rawData["total-value-change"],

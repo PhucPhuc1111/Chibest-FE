@@ -489,7 +489,7 @@ useEffect(() => {
                 )}
               </div>
               <div className="text-sm text-gray-600">
-                Kho nhập: <b>{order.warehouseName}</b>
+                Chi nhánh nhập: <b>{order.branchName}</b>
               </div>
             </div>
             

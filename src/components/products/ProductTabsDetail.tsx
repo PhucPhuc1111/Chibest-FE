@@ -4,11 +4,14 @@ import { Tabs } from "antd";
 import type { TabsProps } from "antd";
 import ProductInfoTab from "./tabs/ProductInfoTab";
 import ProductNoteTab from "./tabs/ProductNoteTab";
-import ProductWarehouseTab from "./tabs/ProductWarehouseTab";
+// import ProductWarehouseTab from "./tabs/ProductWarehouseTab";
 import { ProductMaster, ProductVariant } from "@/types/product";
-// Định nghĩa local interfaces (giống với SubVariantTable)
+import { resolveProductImageSrc } from "@/utils/productImage";
 
-
+const enhanceVariant = (item: ProductVariant): ProductVariant => ({
+  ...item,
+  avartarUrl: resolveProductImageSrc(item.avartarUrl),
+});
 
 export default function ProductTabsDetail({
   master,
@@ -17,22 +20,30 @@ export default function ProductTabsDetail({
   master: ProductMaster;
   variant: ProductVariant;
 }) {
+  const normalizedMaster: ProductMaster = {
+    ...master,
+    avartarUrl: resolveProductImageSrc(master.avartarUrl),
+    variants: master.variants?.map(enhanceVariant),
+  };
+
+  const normalizedVariant: ProductVariant = enhanceVariant(variant);
+
   const items: TabsProps["items"] = [
     {
       key: "info",
       label: "Thông tin",
-      children: <ProductInfoTab master={master} variant={variant} />,
+      children: <ProductInfoTab master={normalizedMaster} variant={normalizedVariant} />,
     },
     {
       key: "note",
       label: "Mô tả, ghi chú",
-      children: <ProductNoteTab master={master} variant={variant} />,
+      children: <ProductNoteTab master={normalizedMaster} variant={normalizedVariant} />,
     },
-    {
-      key: "card",
-      label: "Thẻ kho",
-      children: <ProductWarehouseTab master={master} variant={variant} />,
-    },
+    // {
+    //   key: "card",
+    //   label: "Thẻ kho",
+    //   children: <ProductWarehouseTab master={master} variant={variant} />,
+    // },
     {
       key: "stock",
       label: "Tồn kho",
@@ -47,8 +58,8 @@ export default function ProductTabsDetail({
       label: "Hàng hóa cùng loại",
       children: (
         <div className="text-sm">
-          {master?.variants?.length ? (
-            master.variants.map((v: ProductVariant) => (
+          {normalizedMaster?.variants?.length ? (
+            normalizedMaster.variants.map((v: ProductVariant) => (
               <div key={v.id} className="py-1">
                 • {v.name} — Giá bán {v.sellingPrice?.toLocaleString()}₫
               </div>

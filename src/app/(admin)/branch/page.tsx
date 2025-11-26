@@ -17,10 +17,8 @@ interface BranchData {
   address: string;
   'phone-number': string;
   'is-franchise': boolean;
-  'owner-name': string;
   status: string;
   'user-count': number;
-  'warehouse-count': number;
 }
 
 interface BranchResponse {
@@ -148,24 +146,14 @@ export default function Page() {
       ),
     },
     {
-      title: 'Chủ sở hữu',
-      dataIndex: 'owner-name',
-      key: 'owner-name',
-    },
-    {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag color={status === 'Hoạt Động' ? 'success' : 'error'}>
+        <Tag color={status === 'Active' ? 'success' : 'error'}>
           {status}
         </Tag>
       ),
-    },
-    {
-      title: 'Số kho',
-      dataIndex: 'warehouse-count',
-      key: 'warehouse-count',
     },
     {
       title: 'Thao tác',
@@ -198,22 +186,23 @@ export default function Page() {
     <div className="space-y-3">
       <PageBreadcrumb pageTitle="Chi nhánh" />
       
-      <div className="mb-4">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Input
           placeholder="Tìm kiếm chi nhánh..."
           prefix={<SearchOutlined />}
           onChange={(e) => handleSearch(e.target.value)}
           allowClear
-          className="max-w-xs"
+          className="w-full sm:max-w-sm"
         />
-      </div>
 
-      <Button 
-        type="primary" 
-        onClick={() => setIsCreateModalVisible(true)}
-      >
-        Tạo chi nhánh mới
-      </Button>
+        <Button 
+          type="primary" 
+          onClick={() => setIsCreateModalVisible(true)}
+          className="w-full sm:w-auto"
+        >
+          Tạo chi nhánh mới
+        </Button>
+      </div>
 
       <Table
         columns={columns}
@@ -244,7 +233,7 @@ export default function Page() {
           }}
           initialData={{
             ...selectedBranch,
-            status: selectedBranch.status === 'Hoạt Động' ? 'Hoạt động' : 'Ngưng hoạt động'
+            status: selectedBranch.status === 'Active' ? 'Hoạt động' : 'Ngưng hoạt động'
           }}
         />
       )}

@@ -25,8 +25,8 @@
 //   paid: number;
 //   note: string | null;
 //   status: TransferStatus;
-//   "from-warehouse-name": string;
-//   "to-warehouse-name": string;
+//   "from-branch-name": string;
+//   "to-branch-name": string;
 //   "transfer-order-details": Array<{
 //     id: string;
 //     "container-code": string | null;
@@ -45,8 +45,8 @@
 // interface RawTransferSummary {
 //   id: string;
 //   "invoice-code": string;
-//   "from-warehouse-name": string;
-//   "to-warehouse-name": string;
+//   "from-branch-name": string;
+//   "to-branch-name": string;
 //   "order-date": string;
 //   "sub-total": number;
 //   status: TransferStatus;
@@ -204,8 +204,8 @@
 //   return data.map(x => ({
 //     id: x.id,
 //     code: x["invoice-code"],
-//     fromWarehouseName: x["from-warehouse-name"],
-//     toWarehouseName: x["to-warehouse-name"],
+//     fromBranchName: x["from-branch-name"],
+//     toBranchName: x["to-branch-name"],
 //     time: x["order-date"],
 //     subTotal: x["sub-total"],
 //     status: x.status,
@@ -238,8 +238,8 @@
 //     paid: rawData.paid,
 //     note: rawData.note,
 //     status: rawData.status,
-//     fromWarehouseName: rawData["from-warehouse-name"],
-//     toWarehouseName: rawData["to-warehouse-name"],
+//     fromBranchName: rawData["from-branch-name"],
+//     toBranchName: rawData["to-branch-name"],
 //     items: items,
 //   };
 // };
@@ -474,8 +474,8 @@ interface RawTransferDetail {
   paid: number;
   note: string | null;
   status: TransferStatus;
-  "from-warehouse-name": string;
-  "to-warehouse-name": string;
+  "from-branch-name": string;
+  "to-branch-name": string;
   "transfer-order-details": Array<{
     id: string;
     "container-code": string | null;
@@ -494,8 +494,8 @@ interface RawTransferDetail {
 interface RawTransferSummary {
   id: string;
   "invoice-code": string;
-  "from-warehouse-name": string;
-  "to-warehouse-name": string;
+  "from-branch-name": string;
+  "to-branch-name": string;
   "order-date": string;
   "sub-total": number;
   status: TransferStatus;
@@ -675,8 +675,8 @@ const transformTransferSummary = (data: RawTransferSummary[]): TransferSummary[]
   return data.map(x => ({
     id: x.id,
     code: x["invoice-code"],
-    fromWarehouseName: x["from-warehouse-name"],
-    toWarehouseName: x["to-warehouse-name"],
+    fromBranchName: x["from-branch-name"],
+    toBranchName: x["to-branch-name"],
     time: x["order-date"],
     subTotal: x["sub-total"],
     status: x.status,
@@ -709,8 +709,8 @@ const transformTransferDetail = (rawData: RawTransferDetail): Transfer => {
     paid: rawData.paid,
     note: rawData.note,
     status: rawData.status,
-    fromWarehouseName: rawData["from-warehouse-name"],
-    toWarehouseName: rawData["to-warehouse-name"],
+    fromBranchName: rawData["from-branch-name"],
+    toBranchName: rawData["to-branch-name"],
     items: items,
   };
 };
