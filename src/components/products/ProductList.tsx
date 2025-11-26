@@ -10,13 +10,11 @@ import type { ColumnsType } from "antd/es/table";
 import { SearchOutlined } from "@ant-design/icons";
 import SubVariantTable from "./SubVariantTable";
 import ModalCreateProduct from "./modals/ModalCreateProduct";
-import ModalCreateService from "./modals/ModalCreateService";
-import ModalCreateCombo from "./modals/ModalCreateCombo";
 import type { ProductMaster, ProductVariant } from "@/types/product";
 import ProductTabsDetail from "./ProductTabsDetail";
 import Image from "next/image";
 import api from "@/api/axiosInstance";
-import { DEFAULT_PRODUCT_IMAGE, resolveProductImageSrc } from "@/utils/productImage";
+import { DEFAULT_PRODUCT_IMAGE, resolveProductImageSrc, buildProductVideoUrl } from "@/utils/productImage";
 interface ProductFilters {
   SearchTerm?: string;
   CategoryId?: string;
@@ -43,6 +41,7 @@ interface ProductImportResponse {
 interface MasterProductChildApi {
   id: string;
   "avartar-url"?: string | null;
+  "video-url"?: string | null;
   sku: string;
   name: string;
   status: string;
@@ -104,6 +103,7 @@ const mapApiChildToVariant = (child: MasterProductChildApi): ProductVariant => (
   costPrice: child["cost-price"] ?? 0,
   stockQuantity: child["stock-quantity"] ?? 0,
   avartarUrl: resolveProductImageSrc(child["avartar-url"]),
+  videoUrl: buildProductVideoUrl(child["video-url"]),
   sku: child.sku,
   description: child.description ?? undefined,
   color: child.color ?? undefined,
@@ -125,6 +125,7 @@ const mapApiMasterToProduct = (item: MasterProductApi): ProductMaster => ({
   costPrice: item["cost-price"] ?? 0,
   stockQuantity: item["stock-quantity"] ?? 0,
   avartarUrl: resolveProductImageSrc(item["avartar-url"]),
+  videoUrl: buildProductVideoUrl(item["video-url"]),
   sku: item.sku,
   description: item.description ?? undefined,
   color: item.color ?? undefined,
@@ -550,7 +551,7 @@ const tableProducts = masterProducts;
 
         if (normalized === "available") {
           badgeClass = "bg-green-100 text-green-800";
-          label = "Đang bán";
+          label = "Đang bán";  
         } else if (normalized === "unavailable") {
           badgeClass = "bg-red-100 text-red-800";
           label = "Ngừng bán";
@@ -733,8 +734,6 @@ expandable={{
 
       {/* Modals */}
       <ModalCreateProduct open={openType === "product"} onClose={() => setOpenType(null)} />
-      <ModalCreateService open={openType === "service"} onClose={() => setOpenType(null)} />
-      <ModalCreateCombo open={openType === "combo"} onClose={() => setOpenType(null)} />
     </div>
   );
 }

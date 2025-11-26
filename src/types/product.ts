@@ -61,6 +61,7 @@ export interface ProductVariant {
   stockQuantity: number;
   createdAt?: string;
   avartarUrl?: string;
+  videoUrl?: string;
   sku?: string;
   description?: string;
   color?: string;
@@ -86,6 +87,7 @@ export interface ProductMaster {
   stockQuantity: number;
   createdAt?: string;
   avartarUrl?: string;
+  videoUrl?: string;
   variants?: ProductVariant[];
   sku?: string;
   description?: string;
@@ -168,6 +170,9 @@ export interface ProductFormValues {
   categoryId: string;
   sellingPrice?: number;
   costPrice?: number;
+  colorIds?: string[];
+  sizeIds?: string[];
+  note?: string;
 }
 export interface ModalCreateProductProps {
   open: boolean;
