@@ -76,6 +76,8 @@ const AppHeader: React.FC = () => {
       items: [
         { name: "Chi nhánh", path: "/branch" },
         { name: "Tài khoản", path: "/account" },
+        { name: "Quyền hạn", path: "/permission" },
+        { name: "Vai trò", path: "/role" },
         { name: "Quy định", path: "/rules" },
       ],
     },
@@ -85,8 +87,6 @@ const AppHeader: React.FC = () => {
       title: "Quản lý đơn hàng",
       items: [
         { name: "Hóa đơn", path: "/invoices" },
-        
-           
       ],
     },
   ];

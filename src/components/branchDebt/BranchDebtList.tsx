@@ -16,6 +16,7 @@ import DateFilter, {
   DEFAULT_DATE_PRESET,
 } from "@/components/suppliers/components/DateFilter";
 import api from "@/api/axiosInstance";
+import { useRouter } from "next/navigation";
 
 function getFileNameFromContentDisposition(
   contentDisposition?: string
@@ -45,6 +46,7 @@ type ResetFiltersFn = () => void;
 export default function BranchDebtList() {
   const { data, isLoading, getAll, setFilters, resetFilters, filters, total } =
     useBranchDebtStore();
+  const router = useRouter();
 
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   const [isExporting, setIsExporting] = useState(false);
@@ -200,7 +202,9 @@ export default function BranchDebtList() {
               Tổng: <b>{total.toLocaleString()}</b> chi nhánh
             </div>
             <div className="flex gap-2">
-              <Button type="primary">+ Chi nhánh</Button>
+              <Button type="primary" onClick={() => router.push("/branch")}>
+                + Chi nhánh
+              </Button>
               <Button>Import file</Button>
               <Button loading={isExporting} onClick={handleExport}>
                 Xuất file

@@ -39,9 +39,9 @@ const BranchSelect: React.FC = () => {
           const response = await api.get("/api/branch");
           if (!isCancelled && response.data["status-code"] === 200) {
             const branches = Array.isArray(response.data.data) ? response.data.data : [];
-            const mappedOptions: BranchOption[] = branches.map((branch: { id: string; name: string }) => ({
+            const mappedOptions: BranchOption[] = branches.map((branch: { id: string; name: string; code: string }) => ({
               value: branch.id,
-              label: branch.name,
+              label: branch.name + " (" + branch.code + ")",
             }));
             setOptions([{ value: null, label: "Toàn hệ thống" }, ...mappedOptions]);
           }

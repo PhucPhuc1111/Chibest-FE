@@ -24,6 +24,7 @@ import DateFilter, {
   DEFAULT_DATE_PRESET,
 } from "./components/DateFilter";
 import api from "@/api/axiosInstance";
+import { useRouter } from "next/navigation";
 
 function getFileNameFromContentDisposition(
   contentDisposition?: string
@@ -53,6 +54,7 @@ type ResetFiltersFn = () => void;
 export default function SupplierList() {
   const { data, isLoading, getAll, setFilters, resetFilters, filters, total } =
     useSupplierStore();
+  const router = useRouter();
 
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   const [showFilters, setShowFilters] = useState(false);
@@ -296,6 +298,7 @@ export default function SupplierList() {
                 type="primary" 
                 size="small" 
                 className="text-xs sm:text-base h-7 sm:h-auto"
+                onClick={() => router.push("/account")}
               >
                 + Nhà cung cấp
               </Button>
