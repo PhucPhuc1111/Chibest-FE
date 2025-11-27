@@ -1,5 +1,5 @@
 // src/app/(admin)/purchaseOrders/new/page.tsx
-import SalesOrderNew from "@/components/salesOrder/salesOrderNew";
+import SalesOrderNew from "@/components/salesOrder/SalesOrderNew";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 export default function NewPurchaseOrderPage() {
   return (

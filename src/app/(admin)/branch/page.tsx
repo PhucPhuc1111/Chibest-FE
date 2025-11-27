@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-'use client';
+"use client";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { Table, Tag, Input, Button, Space, Modal, message } from 'antd';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import type { TablePaginationConfig } from "antd/es/table";
 import api from '@/api/axiosInstance';
 import { SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import CreateBranchModal from "@/components/branch/CreateBranchModal";
@@ -41,11 +40,14 @@ export default function Page() {
     showSizeChanger: true,
   });
 
+  const paginationCurrent = pagination.current;
+  const paginationPageSize = pagination.pageSize;
+
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<BranchData | null>(null);
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
 
-  const fetchBranches = async (page: number, pageSize: number, search: string = '') => {
+  const fetchBranches = useCallback(async (page: number, pageSize: number, search = '') => {
     setLoading(true);
     try {
       const response = await api.get<BranchResponse>(
@@ -53,14 +55,15 @@ export default function Page() {
       );
       setData(response.data.data || []);
       setLoading(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching branches:', error);
-      if (error.response?.status === 404) {
+      const apiError = error as { response?: { status?: number } };
+      if (apiError.response?.status === 404) {
         setData([]);
       }
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (searchTimeout.current) {
@@ -68,7 +71,7 @@ export default function Page() {
     }
 
     searchTimeout.current = setTimeout(() => {
-      fetchBranches(pagination.current, pagination.pageSize, searchText);
+      fetchBranches(paginationCurrent, paginationPageSize, searchText);
     }, 500); 
 
     return () => {
@@ -76,7 +79,7 @@ export default function Page() {
         clearTimeout(searchTimeout.current);
       }
     };
-  }, [searchText]); 
+  }, [fetchBranches, paginationCurrent, paginationPageSize, searchText]);
 
   const handleSearch = (value: string) => {
     setSearchText(value);
@@ -86,9 +89,14 @@ export default function Page() {
     });
   };
 
-  const handleTableChange = (pag: any) => {
-    setPagination(pag);
-    fetchBranches(pag.current, pag.pageSize, searchText);
+  const handleTableChange = (pag: TablePaginationConfig) => {
+    setPagination((prev) => ({
+      ...prev,
+      current: pag.current ?? prev.current,
+      pageSize: pag.pageSize ?? prev.pageSize,
+      total: pag.total ?? prev.total,
+    }));
+    fetchBranches(pag.current ?? 1, pag.pageSize ?? pagination.pageSize, searchText);
   };
 
   const handleDelete = async (record: BranchData) => {
@@ -158,7 +166,7 @@ export default function Page() {
     {
       title: 'Thao tác',
       key: 'action',
-      render: (_: any, record: BranchData) => (
+      render: (_: unknown, record: BranchData) => (
         <Space size="middle">
           <Button
             type="primary"

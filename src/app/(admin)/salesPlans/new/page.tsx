@@ -4,7 +4,7 @@ export const metadata = {
   title: "Chi Tiết Kế Hoạch Bán Hàng | Chibest",
 };
 
-export default function SalesPlanDetailPage({ params }: { params: { id: string } }) {
+export default function SalesPlanDetailPage() {
   return (
     <div className="space-y-3">
       <PageBreadcrumb pageTitle="Tạo kế hoạch bán hàng mới" />

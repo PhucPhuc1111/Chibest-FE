@@ -74,20 +74,20 @@ export default function PurchaseOrderDetail({ id, onDeleted, onStatusUpdated }: 
   const [editingStatus, setEditingStatus] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<PurchaseOrderStatus>();
 
-useEffect(() => {
-  const loadDetail = async () => {
-    if (!detail || detail.id !== id) {
-      setLoading(true);
-      const result = await getById(id);
-      setLoading(false);
-      if (!result.success && result.message) {
-        message.error(result.message);
+  useEffect(() => {
+    const loadDetail = async () => {
+      if (!detail || detail.id !== id) {
+        setLoading(true);
+        const result = await getById(id);
+        setLoading(false);
+        if (!result.success && result.message) {
+          message.error(result.message);
+        }
       }
-    }
-  };
+    };
   
-  loadDetail();
-}, [id]);
+    loadDetail();
+  }, [detail, getById, id]);
   useEffect(() => {
     if (detail) {
       setSelectedStatus(detail.status);

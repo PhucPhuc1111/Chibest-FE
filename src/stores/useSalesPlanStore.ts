@@ -1,5 +1,7 @@
 import { create } from "zustand";
-import type { SalesPlan, SalesPlanItem, SalesPlanResponse } from "@/types/salesPlan";
+import type { SalesPlan, SalesPlanItem, SalesPlanResponse } from "@/types/SalesPlan";
+
+type SalesPlanPayload = Record<string, unknown>;
 
 interface SalesPlanState {
   plans: SalesPlan[];
@@ -10,9 +12,9 @@ interface SalesPlanState {
   // Actions
   fetchPlans: () => Promise<void>;
   getPlanById: (id: string) => Promise<void>;
-  createPlan: (data: any) => Promise<boolean>;
-  updatePlanStatus: (planId: string, status: string) => Promise<boolean>;
-  updateItemStatus: (planId: string, itemId: string, status: string) => Promise<boolean>;
+  createPlan: (data: SalesPlanPayload) => Promise<boolean>;
+  updatePlanStatus: (planId: string, status: SalesPlan["status"]) => Promise<boolean>;
+  updateItemStatus: (planId: string, itemId: string, status: SalesPlanItem["status"]) => Promise<boolean>;
   deletePlan: (planId: string) => Promise<boolean>;
 }
 
@@ -50,7 +52,7 @@ export const useSalesPlanStore = create<SalesPlanState>((set, get) => ({
     }
   },
 
-  createPlan: async (formData: any) => {
+  createPlan: async (formData: SalesPlanPayload) => {
     try {
       set({ loading: true });
       // TODO: Call real API POST /api/sales-plans
@@ -70,7 +72,7 @@ export const useSalesPlanStore = create<SalesPlanState>((set, get) => ({
     }
   },
 
-  updatePlanStatus: async (planId: string, status: string) => {
+  updatePlanStatus: async (planId: string, status: SalesPlan["status"]) => {
     try {
       set({ loading: true });
       // TODO: Call real API PUT /api/sales-plans/{planId}/status
@@ -92,7 +94,7 @@ export const useSalesPlanStore = create<SalesPlanState>((set, get) => ({
     }
   },
 
-  updateItemStatus: async (planId: string, itemId: string, status: string) => {
+  updateItemStatus: async (planId: string, itemId: string, status: SalesPlanItem["status"]) => {
     try {
       set({ loading: true });
       // TODO: Call real API PUT /api/sales-plans/{planId}/items/{itemId}/status
