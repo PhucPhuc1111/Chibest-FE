@@ -4,13 +4,16 @@ import { Button, Descriptions, Tag, Modal } from "antd";
 import { Image } from 'antd';
 import { ProductMaster, ProductVariant, ParentProduct } from "@/types/product";
 import { DeleteOutlined, EditOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useProductStore } from "@/stores/useProductStore";
+import { useAttributeStore } from "@/stores/useAttributeStore";
 import ModalCreateProduct from "../modals/ModalCreateProduct";
 
 interface Props {
   master: ProductMaster;
   variant: ProductVariant;
+  onDeleteSuccess?: () => void;
+  onSuccess?: () => void;
 }
 
 type MasterLegacyFields = {
@@ -31,13 +34,29 @@ const toParentProduct = (product: ProductMaster): ParentProduct => {
   };
 };
 
-export default function ProductInfoTab({ master, variant }: Props) {
+export default function ProductInfoTab({ master, variant, onDeleteSuccess, onSuccess }: Props) {
   const [showCreateVariant, setShowCreateVariant] = useState(false);
   const data = { ...master, ...variant };
   const { deleteProduct } = useProductStore();
+  const { colors, sizes, getColors, getSizes } = useAttributeStore();
   
   // State modal chỉnh sửa
   const [openEditModal, setOpenEditModal] = useState(false);
+  
+  // Fetch colors và sizes từ store (chỉ 1 lần nếu chưa có)
+  useEffect(() => {
+    getColors();
+    getSizes();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Lấy color và size name từ store
+  const variantWithIds = variant as ProductVariant & { colorId?: string; sizeId?: string };
+  const colorName = variantWithIds.colorId 
+    ? colors.find(c => c.id === variantWithIds.colorId)?.code || ""
+    : "";
+  const sizeName = variantWithIds.sizeId 
+    ? sizes.find(s => s.id === variantWithIds.sizeId)?.code || ""
+    : "";
 
   const handleDelete = () => {
     Modal.confirm({
@@ -48,7 +67,17 @@ export default function ProductInfoTab({ master, variant }: Props) {
       okType: "danger",
       cancelText: "Hủy",
       onOk: async () => {
-        await deleteProduct(data.id);
+        try {
+          const success = await deleteProduct(data.id);
+          if (success && onDeleteSuccess) {
+            // Đợi một chút để đảm bảo API đã xử lý xong trước khi fetch lại
+            setTimeout(() => {
+              onDeleteSuccess();
+            }, 300);
+          }
+        } catch (error) {
+          console.error("Error deleting product:", error);
+        }
       },
     });
   };
@@ -72,16 +101,32 @@ export default function ProductInfoTab({ master, variant }: Props) {
         <div className="flex-1">
           {/* Tên + thuộc tính */}
           <div className="flex items-center gap-2 mb-2">
-            <h3 className="text-[18px] font-semibold">{master.name}</h3>
-            {data.color && <Tag>{data.color}</Tag>}
-            {data.size && <Tag>{data.size}</Tag>}
+            <h3 className="text-[18px] font-semibold">{variant.name}</h3>
+            {colorName && <Tag>{colorName}</Tag>}
+            {sizeName && <Tag>{sizeName}</Tag>}
           </div>
 
           {/* Tag loại sản phẩm */}
           <div className="flex gap-2 mb-3">
-            <Tag color="blue">Sản phẩm</Tag>
-            <Tag color="green">{data.isMaster ? 'Master' : 'Variant'}</Tag>
-            <Tag>{data.status}</Tag>
+            <Tag color="green">{data.isMaster ? 'Sản phẩm chính' : 'Biến thể'}</Tag>
+            {(() => {
+              const normalized = (data.status || "").toLowerCase();
+              let tagColor: string = "default";
+              let label: string = data.status || "Không xác định";
+
+              if (normalized === "available") {
+                tagColor = "green";
+                label = "Đang bán";
+              } else if (normalized === "unavailable") {
+                tagColor = "red";
+                label = "Ngừng bán";
+              } else if (normalized === "noncommercial") {
+                tagColor = "default";
+                label = "Chưa bán";
+              }
+
+              return <Tag color={tagColor}>{label}</Tag>;
+            })()}
           </div>
 
           {/* Mô tả chi tiết */}
@@ -92,12 +137,9 @@ export default function ProductInfoTab({ master, variant }: Props) {
             className="max-w-full"
           >
             <Descriptions.Item label="Mã hàng">{variant.sku}</Descriptions.Item>
-            <Descriptions.Item label="Tồn kho">{variant.stockQuantity}</Descriptions.Item>
             <Descriptions.Item label="Giá vốn">{variant.costPrice?.toLocaleString()}₫</Descriptions.Item>
             <Descriptions.Item label="Giá bán">{variant.sellingPrice?.toLocaleString()}₫</Descriptions.Item>
-            <Descriptions.Item label="Thương hiệu">{data.brand || 'Chưa có'}</Descriptions.Item>
-            <Descriptions.Item label="Định mức tồn">0 - 0</Descriptions.Item>
-            <Descriptions.Item label="Vị trí">Chưa có</Descriptions.Item>
+            <Descriptions.Item label="Tồn kho">{variant.stockQuantity}</Descriptions.Item>
             <Descriptions.Item label="Trọng lượng">{data.weight || 0} g</Descriptions.Item>
           </Descriptions>
         </div>
@@ -121,6 +163,7 @@ export default function ProductInfoTab({ master, variant }: Props) {
         open={showCreateVariant}
         onClose={() => setShowCreateVariant(false)}
         parentProduct={data.isMaster ? toParentProduct(master) : null}
+        onSuccess={onSuccess}
       />
 
       {/* Modal chỉnh sửa sản phẩm */}
@@ -131,6 +174,7 @@ export default function ProductInfoTab({ master, variant }: Props) {
           productData={data}
           isUpdate={true}
           parentProduct={data.isMaster ? toParentProduct(master) : null}
+          onSuccess={onSuccess}
         />
       )}
     </div>

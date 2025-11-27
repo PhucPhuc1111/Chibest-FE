@@ -89,8 +89,15 @@ export default function ProductDetail() {
               <h1 className="text-2xl font-bold mb-2">{product.name}</h1>
               <div className="flex items-center gap-2 mb-3">
                 <Tag color="blue">{product.isMaster ? "Sản phẩm chính" : "Biến thể"}</Tag>
-                <Tag color={product.status === "Available" ? "green" : "red"}>
-                  {product.status === "Available" ? "Đang bán" : "Ngừng bán"}
+                <Tag color={
+                  product.status === "Available" ? "green" : 
+                  product.status === "Unavailable" ? "red" : 
+                  "default"
+                }>
+                  {product.status === "Available" ? "Đang bán" : 
+                   product.status === "Unavailable" ? "Ngừng bán" : 
+                   product.status === "NonCommercial" ? "Chưa bán" : 
+                   product.status || "Không xác định"}
                 </Tag>
                 {product.color && <Tag>Màu: {product.color}</Tag>}
                 {product.size && <Tag>Size: {product.size}</Tag>}
@@ -126,10 +133,6 @@ export default function ProductDetail() {
                   {product.stockQuantity}
                 </span>
               </Descriptions.Item>
-              <Descriptions.Item label="Thương hiệu" span={1}>
-                {product.brand || "Chưa có"}
-              </Descriptions.Item>
-
               <Descriptions.Item label="Chất liệu" span={1}>
                 {product.material || "Chưa có"}
               </Descriptions.Item>

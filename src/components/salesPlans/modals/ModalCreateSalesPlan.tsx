@@ -372,14 +372,6 @@ export default function ModalCreateSalesPlan({
               </Form.Item>
 
               <Form.Item
-                label="Thương hiệu"
-                name="brand"
-                className="col-span-2"
-              >
-                <Input placeholder="Nhập thương hiệu" />
-              </Form.Item>
-
-              <Form.Item
                 label="Vị trí kho"
                 name="inventory-location"
                 className="col-span-2"

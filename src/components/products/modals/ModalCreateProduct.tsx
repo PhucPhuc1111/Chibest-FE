@@ -16,6 +16,7 @@ import { useCategoryStore } from "@/stores/useCategoryStore";
 import { useBranchStore } from "@/stores/useBranchStore";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useFileStore } from "@/stores/useFileStore";
+import { useAttributeStore } from "@/stores/useAttributeStore";
 import TiptapEditor from "@/components/ui/tiptap/TiptapEditor";
 import ProductImageUploader from "../components/ProductImageUploader";
 import type { 
@@ -71,6 +72,7 @@ export default function ModalCreateProduct({
   parentProduct = null,
   productData = null,
   isUpdate = false,
+  onSuccess,
 }: ModalCreateProductProps) {
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState("1");
@@ -88,67 +90,48 @@ export default function ModalCreateProduct({
   const [sizeLoading, setSizeLoading] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  const { updateProduct, loading, getProducts } = useProductStore();
+  const { updateProduct, loading } = useProductStore();
   const { categories, getCategories } = useCategoryStore();
   const { branches, getBranches } = useBranchStore();
   const { uploadImage } = useFileStore();
+  const { colors, sizes, getColors, getSizes, loading: attributeLoading } = useAttributeStore();
   const activeBranchId = useSessionStore((state) => state.activeBranchId);
 
   const isCreatingVariant = !!parentProduct;
 
-  const fetchColors = useCallback(async () => {
-    setColorLoading(true);
-    try {
-      const response = await api.get<{
-        "status-code": number;
-        data: { id: string; code: string }[];
-      }>("/api/color");
-      if (response.data["status-code"] === 200) {
-        const items = response.data.data || [];
-        setColorOptions(items.map((item) => ({ label: item.code, value: item.id })));
-      } else {
-        setColorOptions([]);
-      }
-    } catch (error) {
-      console.error("Failed to fetch colors", error);
-      message.error("Không thể tải danh sách màu sắc.");
-    } finally {
-      setColorLoading(false);
+  // Chỉ fetch categories và branches nếu chưa có data
+  useEffect(() => {
+    if (categories.length === 0) {
+      getCategories();
     }
-  }, []);
-
-  const fetchSizes = useCallback(async () => {
-    setSizeLoading(true);
-    try {
-      const response = await api.get<{
-        "status-code": number;
-        data: { id: string; code: string }[];
-      }>("/api/size");
-      if (response.data["status-code"] === 200) {
-        const items = response.data.data || [];
-        setSizeOptions(items.map((item) => ({ label: item.code, value: item.id })));
-      } else {
-        setSizeOptions([]);
-      }
-    } catch (error) {
-      console.error("Failed to fetch sizes", error);
-      message.error("Không thể tải danh sách kích thước.");
-    } finally {
-      setSizeLoading(false);
-    }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    getCategories();
-    getBranches();
-  }, [getCategories, getBranches]);
+    if (branches.length === 0) {
+      getBranches();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch colors và sizes từ store (chỉ 1 lần nếu chưa có)
+  useEffect(() => {
+    getColors();
+    getSizes();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cập nhật options khi colors và sizes thay đổi
+  useEffect(() => {
+    setColorOptions(colors.map((item) => ({ label: item.code, value: item.id })));
+  }, [colors]);
 
   useEffect(() => {
-    if (open) {
-      fetchColors();
-      fetchSizes();
-    }
-  }, [open, fetchColors, fetchSizes]);
+    setSizeOptions(sizes.map((item) => ({ label: item.code, value: item.id })));
+  }, [sizes]);
+
+  // Cập nhật loading state
+  useEffect(() => {
+    setColorLoading(attributeLoading);
+    setSizeLoading(attributeLoading);
+  }, [attributeLoading]);
 
   useEffect(() => {
     if (open) {
@@ -221,16 +204,6 @@ export default function ModalCreateProduct({
     parentSkuValue: string | null;
     previousDate: string;
   }) => {
-    if (!avatarFile) {
-      message.warning("Vui lòng chọn ảnh sản phẩm (1 ảnh)");
-      return;
-    }
-
-    if (!videoFile) {
-      message.warning("Vui lòng chọn video sản phẩm (1 video)");
-      return;
-    }
-
     setCreating(true);
     try {
       const formData = new FormData();
@@ -265,8 +238,12 @@ export default function ModalCreateProduct({
         formData.append("SizeIds", id);
       });
 
-      formData.append("AvatarFile", avatarFile);
-      formData.append("VideoFile", videoFile);
+      if (avatarFile) {
+        formData.append("AvatarFile", avatarFile);
+      }
+      if (videoFile) {
+        formData.append("VideoFile", videoFile);
+      }
 
       const response = await api.post("/api/product", formData, {
         headers: {
@@ -276,7 +253,7 @@ export default function ModalCreateProduct({
 
       if (response.data?.["status-code"] === 201) {
         message.success("Tạo hàng hóa thành công");
-        await getProducts();
+        onSuccess?.();
         onClose();
       } else {
         const apiMessage = response.data?.message || "Tạo hàng hóa thất bại";
@@ -313,11 +290,6 @@ export default function ModalCreateProduct({
       }
       
       const categoryId = form.getFieldValue("categoryId");
-      if (!categoryId) {
-        message.warning("Vui lòng chọn nhóm hàng trước khi upload ảnh");
-        return [];
-      }
-      
       const file = files[0];
       if (!file) {
         return [];
@@ -473,6 +445,7 @@ export default function ModalCreateProduct({
         const success = await updateProduct(productRequestData);
         if (success) {
           message.success("Cập nhật hàng hóa thành công");
+          onSuccess?.();
           onClose();
         }
       } else {
@@ -634,21 +607,6 @@ export default function ModalCreateProduct({
               </Form.Item>
             </div>
 
-            <Form.Item 
-              label="Thương hiệu" 
-              name="brand" 
-              className="[&_label]:text-[13px] [&_label]:font-normal [&_label]:text-red-600"
-              rules={[{ required: true, message: "Bắt buộc chọn thương hiệu" }]}
-            >
-              <Select
-                placeholder="Chọn thương hiệu"
-                options={branches.map(branch => ({
-                  label: branch.name,
-                  value: branch.name,
-                }))}
-              />
-            </Form.Item>
-
             <Form.Item label="Ảnh sản phẩm" className="col-span-1 row-span-3">
               <ProductImageUploader 
                 onImagesChange={handleImageUpload}
@@ -702,7 +660,7 @@ export default function ModalCreateProduct({
             </Form.Item>
           </div>
           <div className="mt-3 flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-4">
+            {/* <div className="grid grid-cols-2 gap-4">
               <Form.Item label="Màu sắc" name="color" className="col-span-1">
               <Input placeholder="Nhập màu sắc" />
             </Form.Item>
@@ -710,7 +668,7 @@ export default function ModalCreateProduct({
             <Form.Item label="Kích thước" name="size" className="col-span-1">
               <Input placeholder="Nhập kích thước" />
             </Form.Item>
-            </div>
+            </div> */}
             <div className="grid grid-cols-2 gap-4">
               <Form.Item
                 label="Màu sắc (tạo biến thể)"
@@ -797,9 +755,9 @@ export default function ModalCreateProduct({
                         <Form.Item label="Trạng thái" name="status" className="mb-0">
                           <Select
                             options={[
+                              { label: "Chưa bán", value: "NonCommercial" },
                               { label: "Đang bán", value: "Available" },
-                              { label: "Ngừng bán", value: "Unavailable" },
-                              { label: "Hết hàng", value: "OutOfStock" },
+                              { label: "Ngừng bán", value: "UnAvailable" },
                             ]}
                           />
                         </Form.Item>

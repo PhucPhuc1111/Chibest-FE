@@ -181,4 +181,5 @@ export interface ModalCreateProductProps {
   // productData?: Product | ProductVariant | null;
     productData?: Product | ProductVariant | TableProduct | null;
   isUpdate?: boolean;
+  onSuccess?: () => void;
 }

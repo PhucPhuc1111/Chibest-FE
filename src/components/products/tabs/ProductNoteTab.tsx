@@ -9,6 +9,7 @@ interface Props {
 
 export default function ProductNoteTab({ master, variant }: Props) {
   const [descriptionValue, setDescriptionValue] = useState("");
+  const [noteValue, setNoteValue] = useState("");
 
   useEffect(() => {
     const htmlToPlainText = (html?: string | null): string => {
@@ -24,7 +25,13 @@ export default function ProductNoteTab({ master, variant }: Props) {
     };
 
     setDescriptionValue(htmlToPlainText(variant.description));
-  }, [variant.description]);
+    
+    // Lấy note từ variant hoặc master
+    const variantWithNote = variant as ProductVariant & { note?: string };
+    const masterWithNote = master as ProductMaster & { note?: string };
+    const note = variantWithNote.note || masterWithNote.note || "";
+    setNoteValue(note);
+  }, [variant.description, variant, master]);
 
   return (
     <div className="space-y-3">
@@ -44,6 +51,8 @@ export default function ProductNoteTab({ master, variant }: Props) {
       <Input.TextArea 
         rows={3} 
         placeholder="Nhập ghi chú..." 
+        value={noteValue}
+        readOnly
       />
     </div>
   );

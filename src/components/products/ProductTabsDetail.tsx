@@ -17,9 +17,13 @@ const enhanceVariant = (item: ProductVariant): ProductVariant => ({
 export default function ProductTabsDetail({
   master,
   variant,
+  onDeleteSuccess,
+  onSuccess,
 }: {
   master: ProductMaster;
   variant: ProductVariant;
+  onDeleteSuccess?: () => void;
+  onSuccess?: () => void;
 }) {
   const [activeKey, setActiveKey] = useState("info");
   const [videoLoaded, setVideoLoaded] = useState(false);
@@ -51,7 +55,7 @@ export default function ProductTabsDetail({
     {
       key: "info",
       label: "Thông tin",
-      children: <ProductInfoTab master={normalizedMaster} variant={normalizedVariant} />,
+      children: <ProductInfoTab master={normalizedMaster} variant={normalizedVariant} onDeleteSuccess={onDeleteSuccess} onSuccess={onSuccess} />,
     },
     {
       key: "note",

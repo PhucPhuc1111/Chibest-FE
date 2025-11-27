@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCategoryStore } from "@/stores/useCategoryStore";
 import { useBranchStore } from "@/stores/useBranchStore";
 import { useSessionStore } from "@/stores/useSessionStore";
+import { useAttributeStore } from "@/stores/useAttributeStore";
 import { Button, Input, Select, Table, Skeleton, Dropdown, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { SearchOutlined } from "@ant-design/icons";
@@ -51,12 +52,15 @@ interface MasterProductChildApi {
   description?: string | null;
   color?: string | null;
   size?: string | null;
+  "color-id"?: string | null;
+  "size-id"?: string | null;
   brand?: string | null;
   material?: string | null;
   weight?: number | null;
   "parent-sku"?: string | null;
   "category-name"?: string | null;
   style?: string | null;
+  note?: string | null;
 }
 
 interface MasterProductApi extends MasterProductChildApi {
@@ -96,7 +100,7 @@ const PRODUCT_EXPORT_COLUMNS: string[] = [
   "CategoryName",
 ];
 
-const mapApiChildToVariant = (child: MasterProductChildApi): ProductVariant => ({
+const mapApiChildToVariant = (child: MasterProductChildApi): ProductVariant & { note?: string; colorId?: string; sizeId?: string } => ({
   id: child.id,
   name: child.name,
   sellingPrice: child["selling-price"] ?? 0,
@@ -115,10 +119,13 @@ const mapApiChildToVariant = (child: MasterProductChildApi): ProductVariant => (
   parentSku: child["parent-sku"] ?? undefined,
   categoryName: child["category-name"] ?? undefined,
   style: child.style ?? undefined,
+  note: child.note ?? undefined,
+  colorId: child["color-id"] ?? undefined,
+  sizeId: child["size-id"] ?? undefined,
   isMaster: false,
 });
 
-const mapApiMasterToProduct = (item: MasterProductApi): ProductMaster => ({
+const mapApiMasterToProduct = (item: MasterProductApi): ProductMaster & { note?: string; childrenNo?: number } => ({
   id: item.id,
   name: item.name,
   sellingPrice: item["selling-price"] ?? 0,
@@ -138,6 +145,8 @@ const mapApiMasterToProduct = (item: MasterProductApi): ProductMaster => ({
   parentSku: item["parent-sku"] ?? undefined,
   categoryName: item["category-name"] ?? undefined,
   style: item.style ?? undefined,
+  note: item.note ?? undefined,
+  childrenNo: item["children-no"] ?? undefined,
   variants: (item.children ?? []).map(mapApiChildToVariant),
 });
 
@@ -179,7 +188,8 @@ export default function ProductList() {
   const [error, setError] = useState<string | null>(null);
 
   const { categories, getCategories } = useCategoryStore();
-  const {  getBranches } = useBranchStore();
+  const { branches, getBranches } = useBranchStore();
+  const { getColors, getSizes } = useAttributeStore();
   const activeBranchId = useSessionStore((state) => state.activeBranchId);
   const setActiveBranchId = useSessionStore((state) => state.setActiveBranchId);
 
@@ -225,12 +235,28 @@ export default function ProductList() {
     }
   }, []);
 
+  // Fetch categories, branches, colors và sizes chỉ 1 lần khi mount (nếu chưa có data)
+  useEffect(() => {
+    if (categories.length === 0) {
+      getCategories();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (branches.length === 0) {
+      getBranches();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    getColors();
+    getSizes();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Fetch data khi component mount và khi filters thay đổi
   useEffect(() => {
     fetchProductMasters(filters);
-    getCategories();
-    getBranches();
-  }, [filters, fetchProductMasters, getCategories, getBranches]);
+  }, [filters, fetchProductMasters]);
 
   // Đồng bộ BranchId với session store
   useEffect(() => {
@@ -262,55 +288,6 @@ export default function ProductList() {
     }));
   }, [categories]);
 
-
-  // Transform branches cho select options
-  // const branchOptions = useMemo(() => {
-  //   return branches.map(branch => ({
-  //     label: branch.name,
-  //     value: branch.id,
-  //   }));
-  // }, [branches]);
-
-  // const tableProducts = useMemo(() => {
-  //   const masterProducts = products.filter(product => product.isMaster);
-  //     return masterProducts.map(product => {
-  //   // Tìm tất cả variants của product này (có parentSku trùng với sku của master)
-  //   const variants = products.filter(variant => 
-  //     variant.parentSku === product.sku && !variant.isMaster
-  //   );
-  //   return {
-  //     id: product.id,
-  //     name: product.name,
-  //     variant: product.description || "",
-  //     sellingPrice: product.sellingPrice || 0, 
-  //     costPrice: product.costPrice || 0,      
-  //     stockQuantity: product.stockQuantity || 0, 
-  //     createdAt: "",
-  //     avartarUrl: product.avartarUrl || "/default-product.png",
-  //     type: "product",
-  //     group: product.categoryName || "",
-  //     supplier: product.brand || "",
-  //     attrs: {
-  //       color: product.color,
-  //       size: product.size,
-  //     },
-  //     status: product.status,
-  //     sku: product.sku,
-  //     description: product.description,
-  //     color: product.color,
-  //     size: product.size,
-  //     brand: product.brand,
-  //     material: product.material,
-  //     weight: product.weight,
-  //     isMaster: product.isMaster,
-  //     parentSku: product.parentSku,
-  //     variants: variants, 
-  //   };
-
-  
-  // });
-  // }, [products]);
-// Không cần transform phức tạp nữa vì API trả về master cùng children.
 const tableProducts = masterProducts;
   // Cập nhật filters
   const handleFilterChange = (newFilters: Partial<ProductFilters>) => {
@@ -463,6 +440,15 @@ const tableProducts = masterProducts;
     }
   };
 
+  const handleDeleteSuccess = useCallback(() => {
+    setExpandedRowKeys([]);
+    fetchProductMasters(filters);
+  }, [filters, fetchProductMasters]);
+
+  const handleCreateUpdateSuccess = useCallback(() => {
+    fetchProductMasters(filters);
+  }, [filters, fetchProductMasters]);
+
   // Cột bảng
   const columns: ColumnsType<ProductMaster> = [
     {
@@ -500,6 +486,18 @@ const tableProducts = masterProducts;
       dataIndex: "sku",
       width: 180,
       fixed: "left",
+      render: (sku: string, record: ProductMaster) => {
+        const recordWithChildrenNo = record as ProductMaster & { childrenNo?: number };
+        const childrenNo = recordWithChildrenNo.childrenNo;
+        return (
+          <div>
+            {sku}
+            {childrenNo !== undefined && childrenNo > 0 && (
+              <span className="text-gray-500 ml-1">({childrenNo})</span>
+            )}
+          </div>
+        );
+      },
       sorter: (a, b) => (a.sku || "").localeCompare(b.sku || ""),
     },
     {
@@ -518,20 +516,20 @@ const tableProducts = masterProducts;
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
-      title: "Giá bán",
-      dataIndex: "sellingPrice",
-      align: "right" as const,
-      width: 120,
-      render: (v: number) => v?.toLocaleString() + "₫",
-      sorter: (a, b) => (a.sellingPrice || 0) - (b.sellingPrice || 0),
-    },
-    {
       title: "Giá vốn",
       dataIndex: "costPrice",
       align: "right" as const,
       width: 120,
       render: (v: number) => v?.toLocaleString() + "₫",
       sorter: (a, b) => (a.costPrice || 0) - (b.costPrice || 0),
+    },
+    {
+      title: "Giá bán",
+      dataIndex: "sellingPrice",
+      align: "right" as const,
+      width: 120,
+      render: (v: number) => v?.toLocaleString() + "₫",
+      sorter: (a, b) => (a.sellingPrice || 0) - (b.sellingPrice || 0),
     },
     {
       title: "Tồn kho",
@@ -555,9 +553,9 @@ const tableProducts = masterProducts;
         } else if (normalized === "unavailable") {
           badgeClass = "bg-red-100 text-red-800";
           label = "Ngừng bán";
-        } else if (normalized === "outofstock") {
+        } else if (normalized === "noncommercial") {
           badgeClass = "bg-gray-100 text-gray-800";
-          label = "Hết hàng";
+          label = "Chưa bán";
         }
 
         return (
@@ -612,8 +610,8 @@ const tableProducts = masterProducts;
               placeholder="Chọn trạng thái"
               options={[
                 { label: "Đang bán", value: "Available" },
-                { label: "Ngừng bán", value: "Unavailable" },
-                { label: "Hết hàng", value: "OutOfStock" },
+                { label: "Ngừng bán", value: "UnAvailable" },
+                { label: "Chưa bán", value: "NonCommercial" },
               ]}
               onChange={(v) => handleFilterChange({ Status: v })}
             />
@@ -698,6 +696,8 @@ expandable={{
       <ProductTabsDetail
         master={record}
         variant={record as ProductVariant}
+        onDeleteSuccess={handleDeleteSuccess}
+        onSuccess={handleCreateUpdateSuccess}
       />
     );
   },
@@ -733,7 +733,11 @@ expandable={{
       </section>
 
       {/* Modals */}
-      <ModalCreateProduct open={openType === "product"} onClose={() => setOpenType(null)} />
+      <ModalCreateProduct 
+        open={openType === "product"} 
+        onClose={() => setOpenType(null)}
+        onSuccess={handleCreateUpdateSuccess}
+      />
     </div>
   );
 }
