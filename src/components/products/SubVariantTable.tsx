@@ -9,7 +9,21 @@ import { ProductMaster, ProductVariant } from "@/types/product";
 import Image from "next/image";
 import { resolveProductImageSrc } from "@/utils/productImage";
 
-export default function SubVariantTable({ master }: { master: ProductMaster }) {
+interface SubVariantTableProps {
+  master: ProductMaster;
+  onDeleteSuccess?: () => void;
+  onSuccess?: () => void;
+  selectedProductIds: string[];
+  onSelectionChange: (id: string, checked: boolean) => void;
+}
+
+export default function SubVariantTable({
+  master,
+  onDeleteSuccess,
+  onSuccess,
+  selectedProductIds,
+  onSelectionChange,
+}: SubVariantTableProps) {
   const [showCreateVariant, setShowCreateVariant] = useState(false);
   const [expandedVariantKeys, setExpandedVariantKeys] = useState<string[]>([]);
 
@@ -32,7 +46,14 @@ export default function SubVariantTable({ master }: { master: ProductMaster }) {
       title: "",
       dataIndex: "select",
       width: 48,
-      render: () => <input type="checkbox" className="mx-2" />,
+      render: (_: unknown, record: ProductVariant) => (
+        <input
+          type="checkbox"
+          className="mx-2"
+          checked={selectedProductIds.includes(record.id)}
+          onChange={(e) => onSelectionChange(record.id, e.target.checked)}
+        />
+      ),
     },
     {
       title: "",
@@ -135,7 +156,12 @@ export default function SubVariantTable({ master }: { master: ProductMaster }) {
         size="small"
         expandable={{
           expandedRowRender: (record) => (
-            <ProductTabsDetail master={master} variant={record} />
+            <ProductTabsDetail
+              master={master}
+              variant={record}
+              onDeleteSuccess={onDeleteSuccess}
+              onSuccess={onSuccess}
+            />
           ),
           expandedRowKeys: expandedVariantKeys,
           onExpand: handleVariantExpand,
@@ -164,6 +190,7 @@ export default function SubVariantTable({ master }: { master: ProductMaster }) {
           brand: master.brand || "",
           "is-master": true
         }}
+        onSuccess={onSuccess}
       />
     </div>
   );

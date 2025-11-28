@@ -4,10 +4,11 @@ import { Button, Descriptions, Tag, Modal } from "antd";
 import { Image } from 'antd';
 import { ProductMaster, ProductVariant, ParentProduct } from "@/types/product";
 import { DeleteOutlined, EditOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useProductStore } from "@/stores/useProductStore";
 import { useAttributeStore } from "@/stores/useAttributeStore";
 import ModalCreateProduct from "../modals/ModalCreateProduct";
+import ModalUpdateProduct from "../modals/ModalUpdateProduct";
 
 interface Props {
   master: ProductMaster;
@@ -153,7 +154,6 @@ export default function ProductInfoTab({ master, variant, onDeleteSuccess, onSuc
         <div className="flex flex-wrap gap-3">
           <Button type="primary" onClick={() => setOpenEditModal(true)}><EditOutlined /> Chỉnh sửa</Button>
           <Button>In tem mã</Button>
-          <Button onClick={() => setShowCreateVariant(true)}>+ Thêm hàng hóa cùng loại</Button>
           <Button>...</Button>
         </div>
       </div>
@@ -168,12 +168,10 @@ export default function ProductInfoTab({ master, variant, onDeleteSuccess, onSuc
 
       {/* Modal chỉnh sửa sản phẩm */}
       {openEditModal && (
-        <ModalCreateProduct
-           open={openEditModal}
+        <ModalUpdateProduct
+          open={openEditModal}
           onClose={() => setOpenEditModal(false)}
           productData={data}
-          isUpdate={true}
-          parentProduct={data.isMaster ? toParentProduct(master) : null}
           onSuccess={onSuccess}
         />
       )}

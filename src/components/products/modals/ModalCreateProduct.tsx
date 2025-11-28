@@ -10,68 +10,25 @@ import {
   Button,
   message,
 } from "antd";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useProductStore } from "@/stores/useProductStore";
 import { useCategoryStore } from "@/stores/useCategoryStore";
 import { useBranchStore } from "@/stores/useBranchStore";
 import { useSessionStore } from "@/stores/useSessionStore";
-import { useFileStore } from "@/stores/useFileStore";
 import { useAttributeStore } from "@/stores/useAttributeStore";
 import TiptapEditor from "@/components/ui/tiptap/TiptapEditor";
 import ProductImageUploader from "../components/ProductImageUploader";
 import type { 
-  ProductCreateRequest,
   ProductFormValues,
-  ModalCreateProductProps,
-  Product,
-  ProductVariant,
-  TableProduct
+  ModalCreateProductProps
 } from "@/types/product";
 import api from "@/api/axiosInstance";
 import { PlusOutlined } from "@ant-design/icons";
-
-interface FormData {
-  name: string;
-  color: string;
-  size: string;
-  style: string;
-  brand: string;
-  material: string;
-  weight: number;
-  status: string;
-  categoryId: string;
-  sellingPrice: number;
-  costPrice: number;
-}
-
-type ProductLegacyFields = {
-  "category-id"?: string;
-  "is-master"?: boolean;
-  "parent-sku"?: string | null;
-  "created-at"?: string;
-};
-
-const getLegacyField = <K extends keyof ProductLegacyFields>(
-  data: Product | ProductVariant | TableProduct | null,
-  field: K
-): ProductLegacyFields[K] | undefined => {
-  if (!data) {
-    return undefined;
-  }
-
-  return (data as ProductLegacyFields)[field];
-};
-
-const hasStyle = (
-  data: Product | ProductVariant | TableProduct
-): data is Product | ProductVariant => "style" in data;
 
 export default function ModalCreateProduct({
   open,
   onClose,
   parentProduct = null,
-  productData = null,
-  isUpdate = false,
   onSuccess,
 }: ModalCreateProductProps) {
   const [form] = Form.useForm();
@@ -90,10 +47,9 @@ export default function ModalCreateProduct({
   const [sizeLoading, setSizeLoading] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  const { updateProduct, loading } = useProductStore();
+  const { loading } = useProductStore();
   const { categories, getCategories } = useCategoryStore();
   const { branches, getBranches } = useBranchStore();
-  const { uploadImage } = useFileStore();
   const { colors, sizes, getColors, getSizes, loading: attributeLoading } = useAttributeStore();
   const activeBranchId = useSessionStore((state) => state.activeBranchId);
 
@@ -148,30 +104,7 @@ export default function ModalCreateProduct({
       });
       formSubmittedRef.current = false;
 
-      if (isUpdate && productData) {
-        // Pre-fill data cho update với type safety
-        setSku(productData.sku || "");
-        setDescription(productData.description || "");
-        setAvatarUrl(productData.avartarUrl || "");
-        
-        setTimeout(() => {
-          const legacyCategoryId = getLegacyField(productData, "category-id");
-          const formValues: Partial<FormData> = {
-            name: productData.name,
-            categoryId: legacyCategoryId ?? "",
-            brand: productData.brand || "",
-            color: productData.color || "",
-            size: productData.size || "",
-            style: hasStyle(productData) ? productData.style || "" : "",
-            material: productData.material || "",
-            weight: productData.weight || 0,
-            status: productData.status || "Available",
-            sellingPrice: productData.sellingPrice || 0,
-            costPrice: productData.costPrice || 0,
-          };
-          form.setFieldsValue(formValues);
-        }, 0);
-      } else if (parentProduct) {
+      if (parentProduct) {
         setSku(generateVariantSku(parentProduct.sku));
         setTimeout(() => {
           form.setFieldsValue({
@@ -183,7 +116,7 @@ export default function ModalCreateProduct({
         setSku("");
       }
     }
-  }, [open, parentProduct, productData, isUpdate, form]);
+  }, [open, parentProduct, form]);
 
   const generateVariantSku = (parentSku: string): string => {
     const baseSku = parentSku.replace(/-VARIANT-\d+$/, '');
@@ -289,23 +222,8 @@ export default function ModalCreateProduct({
         return [];
       }
       
-      const categoryId = form.getFieldValue("categoryId");
       const file = files[0];
       if (!file) {
-        return [];
-      }
-
-      if (isUpdate) {
-        const category = categories.find(cat => cat.id === categoryId);
-        let categoryNameForUpload = category?.name || "product";
-        categoryNameForUpload = normalizeCategoryName(categoryNameForUpload);
-        const imageUrl = await uploadImage(file, sku, categoryNameForUpload);
-        if (imageUrl) {
-          setAvatarUrl(imageUrl);
-          setAvatarFile(null);
-          message.success("Upload ảnh thành công");
-          return [imageUrl];
-        }
         return [];
       }
 
@@ -319,17 +237,6 @@ export default function ModalCreateProduct({
       message.error("Upload ảnh thất bại");
       return [];
     }
-  };
-
-  const normalizeCategoryName = (categoryName: string): string => {
-    if (!categoryName) return "product";
-    return categoryName
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9\s]/g, "")
-      .replace(/\s+/g, '-')
-      .substring(0, 20);
   };
 
   const handleVideoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -379,7 +286,7 @@ export default function ModalCreateProduct({
 
     try {
       let finalSku = sku;
-      if (!finalSku && values.name && !isUpdate) {
+      if (!finalSku && values.name) {
         finalSku = isCreatingVariant && parentProduct
           ? generateVariantSku(parentProduct.sku)
           : generateSku(values.name);
@@ -390,22 +297,10 @@ export default function ModalCreateProduct({
         return;
       }
 
-      const currentDate = new Date().toISOString().split("T")[0];
-      const previousDate = (() => {
-        const date = new Date();
-        date.setDate(date.getDate() - 1);
-        return date.toISOString().split("T")[0];
-      })();
-
       let isMasterValue: boolean;
       let parentSkuValue: string | null = null;
       
-      if (isUpdate && productData) {
-        const legacyIsMaster = getLegacyField(productData, "is-master");
-        const legacyParentSku = getLegacyField(productData, "parent-sku");
-        isMasterValue = legacyIsMaster ?? productData.isMaster ?? true;
-        parentSkuValue = legacyParentSku ?? productData.parentSku ?? null;
-      } else if (isCreatingVariant && parentProduct) {
+      if (isCreatingVariant && parentProduct) {
         isMasterValue = false;
         parentSkuValue = parentProduct.sku;
       } else {
@@ -413,53 +308,22 @@ export default function ModalCreateProduct({
         parentSkuValue = null;
       }
 
-      if (isUpdate) {
-        const finalAvatarUrl = avatarUrl;
-        const productRequestData: ProductCreateRequest = {
-          id: productData?.id,
-          sku: finalSku,
-          name: values.name,
-          description: description || "",
-          "avatar-url": finalAvatarUrl || "",
-          color: values.color || "",
-          size: values.size || "",
-          style: values.style || "",
-          brand: values.brand || "",
-          material: values.material || "",
-          weight: values.weight || 0,
-          "is-master": isMasterValue,
-          status: values.status || "Available",
-          "created-at": productData
-            ? getLegacyField(productData, "created-at") || currentDate
-            : currentDate,
-          "updated-at": currentDate,
-          "category-id": values.categoryId,
-          "parent-sku": parentSkuValue,
-          "selling-price": values.sellingPrice || 0,
-          "cost-price": values.costPrice || 0,
-          "effective-date": previousDate,
-          "expiry-date": "2099-12-31",
-          "branch-id": activeBranchId ?? branches[0]?.id ?? "",
-        };
+      const previousDate = (() => {
+        const date = new Date();
+        date.setDate(date.getDate() - 1);
+        return date.toISOString().split("T")[0];
+      })();
 
-        const success = await updateProduct(productRequestData);
-        if (success) {
-          message.success("Cập nhật hàng hóa thành công");
-          onSuccess?.();
-          onClose();
-        }
-      } else {
-        await createProductWithFormData({
-          values,
-          finalSku,
-          isMasterValue,
-          parentSkuValue,
-          previousDate,
-        });
-      }
+      await createProductWithFormData({
+        values,
+        finalSku,
+        isMasterValue,
+        parentSkuValue,
+        previousDate,
+      });
     } catch (error) {
-      console.error(`Error ${isUpdate ? "updating" : "creating"} product:`, error);
-      message.error(isUpdate ? "Cập nhật hàng hóa thất bại" : "Tạo hàng hóa thất bại");
+      console.error("Error creating product:", error);
+      message.error("Tạo hàng hóa thất bại");
     } finally {
       formSubmittedRef.current = false;
     }
@@ -467,7 +331,7 @@ export default function ModalCreateProduct({
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const name = e.target.value;
-    if (name && !sku && !isUpdate) {
+    if (name && !sku) {
       generateSku(name);
     }
   };
@@ -479,7 +343,6 @@ export default function ModalCreateProduct({
   };
 
   const getModalTitle = (): string => {
-    if (isUpdate) return "Cập nhật hàng hóa";
     if (isCreatingVariant) return "Tạo sản phẩm phụ";
     return "Tạo hàng hóa";
   };
@@ -510,15 +373,6 @@ export default function ModalCreateProduct({
         <div className="bg-blue-50 border border-blue-200 p-3 m-4 rounded-md">
           <div className="text-sm text-blue-800">
             <strong>Đang tạo sản phẩm phụ:</strong> {parentProduct.name} (SKU: {parentProduct.sku})
-          </div>
-        </div>
-      )}
-
-      {/* Hiển thị thông báo nếu đang update */}
-      {isUpdate && productData && (
-        <div className="bg-yellow-50 border border-yellow-200 p-3 m-4 rounded-md">
-          <div className="text-sm text-yellow-800">
-            <strong>Đang cập nhật sản phẩm:</strong> {productData.name} (SKU: {productData.sku})
           </div>
         </div>
       )}
@@ -560,20 +414,14 @@ export default function ModalCreateProduct({
                 placeholder={isCreatingVariant ? "SKU variant sẽ tự động tạo" : "SKU sẽ tự động tạo từ tên hàng"}
                 onChange={(e) => setSku(e.target.value)}
                 onBlur={(e) => {
-                  if (!e.target.value && form.getFieldValue("name") && !isUpdate) {
+                  if (!e.target.value && form.getFieldValue("name")) {
                     generateSku(form.getFieldValue("name"));
                   }
                 }}
-                disabled={isUpdate}
               />
               {isCreatingVariant && (
                 <div className="text-xs text-gray-500 mt-1">
                   SKU variant được tạo tự động từ SKU cha
-                </div>
-              )}
-              {isUpdate && (
-                <div className="text-xs text-gray-500 mt-1">
-                  Không thể thay đổi SKU khi cập nhật
                 </div>
               )}
             </Form.Item>
@@ -714,7 +562,7 @@ export default function ModalCreateProduct({
               items={[
                 {
                   key: "price",
-                  label: <b>Giá vốn, giá bán</b>,
+                  label: <b>Giá Sản phẩm, Tồn kho</b>,
                   children: (
                     <div className="grid grid-cols-2 gap-4">
                       <Form.Item label="Giá vốn" name="costPrice" className="mb-0">
@@ -775,11 +623,9 @@ export default function ModalCreateProduct({
           {/* ----- Footer ----- */}
          <div className="flex justify-end items-center gap-2 mt-3 border-t pt-3">
             <Button onClick={onClose}>Bỏ qua</Button>
-            {!isUpdate && (
-              <Button type="default">Lưu & Tạo thêm hàng</Button>
-            )}
+            <Button type="default">Lưu & Tạo thêm hàng</Button>
             <Button type="primary" htmlType="submit" loading={loading || creating}>
-              {isUpdate ? "Cập nhật" : "Lưu"}
+              Lưu
             </Button>
           </div>
         </Form>

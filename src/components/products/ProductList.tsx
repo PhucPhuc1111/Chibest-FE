@@ -6,9 +6,9 @@ import { useCategoryStore } from "@/stores/useCategoryStore";
 import { useBranchStore } from "@/stores/useBranchStore";
 import { useSessionStore } from "@/stores/useSessionStore";
 import { useAttributeStore } from "@/stores/useAttributeStore";
-import { Button, Input, Select, Table, Skeleton, Dropdown, message } from "antd";
+import { Button, Input, Select, Table, Skeleton, Dropdown, message, Modal } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { SearchOutlined } from "@ant-design/icons";
+import { SearchOutlined, DeleteOutlined } from "@ant-design/icons";
 import SubVariantTable from "./SubVariantTable";
 import ModalCreateProduct from "./modals/ModalCreateProduct";
 import type { ProductMaster, ProductVariant } from "@/types/product";
@@ -203,7 +203,9 @@ export default function ProductList() {
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
   const fetchProductMasters = useCallback(async (query: ProductFilters) => {
     setLoading(true);
@@ -443,11 +445,58 @@ const tableProducts = masterProducts;
   const handleDeleteSuccess = useCallback(() => {
     setExpandedRowKeys([]);
     fetchProductMasters(filters);
+    setSelectedProductIds([]);
   }, [filters, fetchProductMasters]);
 
   const handleCreateUpdateSuccess = useCallback(() => {
     fetchProductMasters(filters);
+    setSelectedProductIds([]);
   }, [filters, fetchProductMasters]);
+
+  const handleSelectionChange = useCallback((id: string, checked: boolean) => {
+    setSelectedProductIds((prev) => {
+      if (checked) {
+        if (prev.includes(id)) return prev;
+        return [...prev, id];
+      }
+      return prev.filter((itemId) => itemId !== id);
+    });
+  }, []);
+
+  const handleBulkDelete = () => {
+    if (!selectedProductIds.length) return;
+    Modal.confirm({
+      title: "Xác nhận xóa sản phẩm",
+      content: `Bạn có chắc chắn muốn xóa ${selectedProductIds.length} sản phẩm đã chọn?`,
+      okText: "Xóa",
+      okType: "danger",
+      cancelText: "Hủy",
+      onOk: async () => {
+        setBulkDeleting(true);
+        try {
+          const response = await api.delete("/api/product", {
+            headers: {
+              "Content-Type": "application/json-patch+json",
+            },
+            data: selectedProductIds,
+          });
+          if (response.data?.["status-code"] === 200) {
+            message.success("Xóa sản phẩm thành công");
+            setSelectedProductIds([]);
+            fetchProductMasters(filters);
+          } else {
+            const apiMessage = response.data?.message || "Xóa sản phẩm thất bại";
+            message.error(apiMessage);
+          }
+        } catch (error) {
+          console.error("Bulk delete product error:", error);
+          message.error("Xóa sản phẩm thất bại");
+        } finally {
+          setBulkDeleting(false);
+        }
+      },
+    });
+  };
 
   // Cột bảng
   const columns: ColumnsType<ProductMaster> = [
@@ -455,7 +504,14 @@ const tableProducts = masterProducts;
       title: "",
       dataIndex: "select",
       width: 48,
-      render: () => <input type="checkbox" className="mx-2" />,
+      render: (_: unknown, record: ProductMaster) => (
+        <input
+          type="checkbox"
+          className="mx-2"
+          checked={selectedProductIds.includes(record.id)}
+          onChange={(e) => handleSelectionChange(record.id, e.target.checked)}
+        />
+      ),
       fixed: "left",
     },
      {
@@ -653,6 +709,15 @@ const tableProducts = masterProducts;
               <Button onClick={handleExport} loading={exporting} disabled={exporting}>
                 Export file
               </Button>
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                onClick={handleBulkDelete}
+                disabled={!selectedProductIds.length}
+                loading={bulkDeleting}
+              >
+                Xóa ({selectedProductIds.length})
+              </Button>
             </div>
           </div>
 
@@ -689,7 +754,15 @@ const tableProducts = masterProducts;
 expandable={{
   expandedRowRender: (record) => {
     if (record.variants && record.variants.length > 0) {
-      return <SubVariantTable master={record} />;
+      return (
+        <SubVariantTable
+          master={record}
+          onDeleteSuccess={handleDeleteSuccess}
+          onSuccess={handleCreateUpdateSuccess}
+          selectedProductIds={selectedProductIds}
+          onSelectionChange={handleSelectionChange}
+        />
+      );
     }
 
     return (
